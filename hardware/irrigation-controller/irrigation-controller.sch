@@ -13,115 +13,8 @@ Comment2 ""
 Comment3 ""
 Comment4 ""
 $EndDescr
-Text GLabel 9800 1100 3    50   Input ~ 0
-AMOSI
-Text GLabel 9900 1100 3    50   Input ~ 0
-AMISO
-Text GLabel 10000 1100 3    50   Input ~ 0
-ASCK
-Text GLabel 9900 1950 3    50   Input ~ 0
-ARXD
-Text GLabel 9800 1950 3    50   Input ~ 0
-ATXD
-Text GLabel 10100 1100 3    50   Input ~ 0
-ARESET
-$Comp
-L power:+3.3V #PWR028
-U 1 1 61384461
-P 9500 1100
-F 0 "#PWR028" H 9500 950 50  0001 C CNN
-F 1 "+3.3V" H 9515 1273 50  0000 C CNN
-F 2 "" H 9500 1100 50  0001 C CNN
-F 3 "" H 9500 1100 50  0001 C CNN
-	1    9500 1100
-	1    0    0    -1  
-$EndComp
-Wire Wire Line
-	9500 1100 9500 1200
-Wire Wire Line
-	9500 1200 9700 1200
-Wire Wire Line
-	9700 1200 9700 1100
-Wire Wire Line
-	10200 1200 10200 1100
-Text GLabel 10000 1950 3    50   Input ~ 0
-ADTR
-$Comp
-L Connector:Conn_01x06_Male J1
-U 1 1 6137F4B1
-P 10000 900
-F 0 "J1" V 9800 800 50  0000 L CNN
-F 1 "ATMEGA ICSP" V 9900 600 50  0000 L CNN
-F 2 "Connector_PinHeader_2.54mm:PinHeader_2x03_P2.54mm_Vertical" H 10000 900 50  0001 C CNN
-F 3 "~" H 10000 900 50  0001 C CNN
-	1    10000 900 
-	0    1    1    0   
-$EndComp
-Text GLabel 10100 1950 3    50   Input ~ 0
-ARESET
-$Comp
-L Connector:Conn_01x07_Male J3
-U 1 1 6138A907
-P 10000 2550
-F 0 "J3" V 9835 2528 50  0000 C CNN
-F 1 "RF Module" V 9926 2528 50  0000 C CNN
-F 2 "Connector_PinSocket_2.54mm:PinSocket_1x07_P2.54mm_Vertical" H 10000 2550 50  0001 C CNN
-F 3 "~" H 10000 2550 50  0001 C CNN
-	1    10000 2550
-	0    1    1    0   
-$EndComp
-$Comp
-L Connector:Conn_01x06_Male J2
-U 1 1 613922D9
-P 10000 1750
-F 0 "J2" V 9835 1728 50  0000 C CNN
-F 1 "ATMEGA UART" V 9926 1728 50  0000 C CNN
-F 2 "Connector_PinHeader_2.54mm:PinHeader_2x03_P2.54mm_Vertical" H 10000 1750 50  0001 C CNN
-F 3 "~" H 10000 1750 50  0001 C CNN
-	1    10000 1750
-	0    1    1    0   
-$EndComp
-Wire Wire Line
-	9500 2000 9700 2000
-Wire Wire Line
-	9700 2000 9700 1950
-$Comp
-L power:GND #PWR033
-U 1 1 61384F23
-P 10400 2950
-F 0 "#PWR033" H 10400 2700 50  0001 C CNN
-F 1 "GND" H 10405 2777 50  0000 C CNN
-F 2 "" H 10400 2950 50  0001 C CNN
-F 3 "" H 10400 2950 50  0001 C CNN
-	1    10400 2950
-	1    0    0    -1  
-$EndComp
-Wire Wire Line
-	10400 1200 10200 1200
-Wire Wire Line
-	10200 1950 10400 1950
-Wire Wire Line
-	10300 2750 10300 2850
-Wire Wire Line
-	10300 2850 10400 2850
-Wire Wire Line
-	10400 2850 10400 2950
-Text GLabel 10100 2750 3    50   Input ~ 0
-RFEN
-Text GLabel 10000 2750 3    50   Input ~ 0
-ATXD
-Text GLabel 9900 2750 3    50   Input ~ 0
-ARXD
-Text GLabel 9800 2750 3    50   Input ~ 0
-RFAUX
-Wire Wire Line
-	10200 2750 10200 3150
-Wire Wire Line
-	10200 3150 9500 3150
-Text Notes 9450 6350 0    50   ~ 0
-Todo:\nExtra IO: i2c, spi, io pins\nESP32\nExtra signal relay?
-Text GLabel 9700 2750 3    50   Input ~ 0
-RFSET
+Text Notes 11900 4100 0    50   ~ 0
+Todo:\nESP32\nExtra signal relay?
 Text Notes 500  550  0    50   ~ 0
 Atmega
 Connection ~ 1750 1400
@@ -151,6 +44,7 @@ F 3 "https://datasheet.lcsc.com/lcsc/1809301912_YAGEO-CC0603KRX7R9BB104_C14663.p
 F 4 "C14663" V 850 950 50  0001 C CNN "JLCPCB Part"
 F 5 "0.01" H 850 950 50  0001 C CNN "JLCPCB UP"
 F 6 "" H 850 950 50  0001 C CNN "JLCPCB Basic"
+F 7 "NA" H 850 950 50  0001 C CNN "Purchase Link"
 	1    850  950 
 	0    1    1    0   
 $EndComp
@@ -186,6 +80,7 @@ F 3 "https://datasheet.lcsc.com/lcsc/1809301717_UNI-ROYAL-Uniroyal-Elec-0402WGF1
 F 4 "C25744" H 2800 3100 50  0001 C CNN "JLCPCB Part"
 F 5 "0.01" H 2800 3100 50  0001 C CNN "JLCPCB UP"
 F 6 "" H 2800 3100 50  0001 C CNN "JLCPCB Basic"
+F 7 "NA" H 2800 3100 50  0001 C CNN "Purchase Link"
 	1    2800 3100
 	1    0    0    -1  
 $EndComp
@@ -221,6 +116,7 @@ F 3 "https://datasheet.lcsc.com/lcsc/1809301912_YAGEO-CC0603KRX7R9BB104_C14663.p
 F 4 "C14663" V 3300 3350 50  0001 C CNN "JLCPCB Part"
 F 5 "0.01" H 3300 3350 50  0001 C CNN "JLCPCB UP"
 F 6 "" H 3300 3350 50  0001 C CNN "JLCPCB Basic"
+F 7 "NA" H 3300 3350 50  0001 C CNN "Purchase Link"
 	1    3300 3350
 	0    1    1    0   
 $EndComp
@@ -261,6 +157,7 @@ F 3 "https://datasheet.lcsc.com/lcsc/1809301912_YAGEO-CC0603KRX7R9BB104_C14663.p
 F 4 "C14663" V 850 1400 50  0001 C CNN "JLCPCB Part"
 F 5 "0.01" H 850 1400 50  0001 C CNN "JLCPCB UP"
 F 6 "" H 850 1400 50  0001 C CNN "JLCPCB Basic"
+F 7 "NA" H 850 1400 50  0001 C CNN "Purchase Link"
 	1    850  1400
 	0    1    1    0   
 $EndComp
@@ -350,6 +247,7 @@ F 3 "https://datasheet.lcsc.com/lcsc/2103291135_Yangxing-Tech-X50328MSB2GI_C1159
 F 4 "C115962" H 2950 2500 50  0001 C CNN "JLCPCB Part"
 F 5 "0.26" H 2950 2500 50  0001 C CNN "JLCPCB UP"
 F 6 "" H 2950 2500 50  0001 C CNN "JLCPCB Basic"
+F 7 "NA" H 2950 2500 50  0001 C CNN "Purchase Link"
 	1    2950 2500
 	0    1    1    0   
 $EndComp
@@ -366,6 +264,7 @@ F 3 "https://datasheet.lcsc.com/lcsc/1811141710_FH-Guangdong-Fenghua-Advanced-Te
 F 4 "C1555" V 3450 2700 50  0001 C CNN "JLCPCB Part"
 F 5 "0.01" H 3450 2700 50  0001 C CNN "JLCPCB UP"
 F 6 "" H 3450 2700 50  0001 C CNN "JLCPCB Basic"
+F 7 "NA" H 3450 2700 50  0001 C CNN "Purchase Link"
 	1    3450 2700
 	0    1    1    0   
 $EndComp
@@ -380,6 +279,7 @@ F 3 "https://datasheet.lcsc.com/lcsc/1809301912_YAGEO-CC0603KRX7R9BB104_C14663.p
 F 4 "C14663" V 850 1850 50  0001 C CNN "JLCPCB Part"
 F 5 "0.01" H 850 1850 50  0001 C CNN "JLCPCB UP"
 F 6 "" H 850 1850 50  0001 C CNN "JLCPCB Basic"
+F 7 "NA" H 850 1850 50  0001 C CNN "Purchase Link"
 	1    850  1850
 	0    1    1    0   
 $EndComp
@@ -420,6 +320,7 @@ F 3 "https://datasheet.lcsc.com/lcsc/1811141710_FH-Guangdong-Fenghua-Advanced-Te
 F 4 "C1555" V 3450 2300 50  0001 C CNN "JLCPCB Part"
 F 5 "0.01" H 3450 2300 50  0001 C CNN "JLCPCB UP"
 F 6 "" H 3450 2300 50  0001 C CNN "JLCPCB Basic"
+F 7 "NA" H 3450 2300 50  0001 C CNN "Purchase Link"
 	1    3450 2300
 	0    1    1    0   
 $EndComp
@@ -434,6 +335,7 @@ F 3 "http://ww1.microchip.com/downloads/en/DeviceDoc/ATmega328_P%20AVR%20MCU%20w
 F 4 "C14877" H 1650 3050 50  0001 C CNN "JLCPCB Part"
 F 5 "3.96" H 1650 3050 50  0001 C CNN "JLCPCB UP"
 F 6 "" H 1650 3050 50  0001 C CNN "JLCPCB Basic"
+F 7 "NA" H 1650 3050 50  0001 C CNN "Purchase Link"
 	1    1650 3050
 	1    0    0    -1  
 $EndComp
@@ -448,67 +350,13 @@ Wire Notes Line
 Wire Notes Line
 	11150 600  11150 3250
 Wire Notes Line
-	9350 3250 9350 600 
+	8650 3250 8650 600 
 Wire Notes Line
-	9350 600  11150 600 
-Text Notes 9350 550  0    50   ~ 0
+	8650 600  11150 600 
+Text Notes 8650 550  0    50   ~ 0
 Connectors
-$Comp
-L power:GND #PWR032
-U 1 1 614A1B8E
-P 10400 2050
-F 0 "#PWR032" H 10400 1800 50  0001 C CNN
-F 1 "GND" H 10405 1877 50  0000 C CNN
-F 2 "" H 10400 2050 50  0001 C CNN
-F 3 "" H 10400 2050 50  0001 C CNN
-	1    10400 2050
-	1    0    0    -1  
-$EndComp
-$Comp
-L power:GND #PWR031
-U 1 1 614A3FA6
-P 10400 1300
-F 0 "#PWR031" H 10400 1050 50  0001 C CNN
-F 1 "GND" H 10405 1127 50  0000 C CNN
-F 2 "" H 10400 1300 50  0001 C CNN
-F 3 "" H 10400 1300 50  0001 C CNN
-	1    10400 1300
-	1    0    0    -1  
-$EndComp
-Wire Wire Line
-	10400 1200 10400 1300
-Wire Wire Line
-	10400 1950 10400 2050
-$Comp
-L power:+3.3V #PWR029
-U 1 1 614A8723
-P 9500 1900
-F 0 "#PWR029" H 9500 1750 50  0001 C CNN
-F 1 "+3.3V" H 9515 2073 50  0000 C CNN
-F 2 "" H 9500 1900 50  0001 C CNN
-F 3 "" H 9500 1900 50  0001 C CNN
-	1    9500 1900
-	1    0    0    -1  
-$EndComp
-$Comp
-L power:+3.3V #PWR030
-U 1 1 614A9053
-P 9500 3050
-F 0 "#PWR030" H 9500 2900 50  0001 C CNN
-F 1 "+3.3V" H 9515 3223 50  0000 C CNN
-F 2 "" H 9500 3050 50  0001 C CNN
-F 3 "" H 9500 3050 50  0001 C CNN
-	1    9500 3050
-	1    0    0    -1  
-$EndComp
-Wire Wire Line
-	9500 2000 9500 1900
-Wire Wire Line
-	9500 3150 9500 3050
 Text Notes 500  4950 0    50   ~ 0
 Relays
-Wire Notes Line
-	500  5000 3450 5000
 $Comp
 L Relay_SolidState:TLP222A U1
 U 1 1 614F72BF
@@ -532,6 +380,7 @@ F 3 "https://datasheet.lcsc.com/lcsc/1811081712_UNI-ROYAL-Uniroyal-Elec-0603WAF6
 F 4 "C23220" H 950 5500 50  0001 C CNN "JLCPCB Part"
 F 5 "0.01" H 950 5500 50  0001 C CNN "JLCPCB UP"
 F 6 "" H 950 5500 50  0001 C CNN "JLCPCB Basic"
+F 7 "NA" H 950 5500 50  0001 C CNN "Purchase Link"
 	1    950  5500
 	0    1    1    0   
 $EndComp
@@ -570,73 +419,75 @@ AIO2
 $Comp
 L Relay:EC2-5NU K1
 U 1 1 6152BDC7
-P 2150 7000
-F 0 "K1" V 1383 7000 50  0000 C CNN
-F 1 "UA2-5NU" V 1474 7000 50  0000 C CNN
-F 2 "kicad-lib-jlcpcb:Relay_DPDT_NEXEM_UA2_Pitch3.2mm" H 2150 7000 50  0001 C CNN
-F 3 "https://www.farnell.com/datasheets/2302216.pdf" H 2150 7000 50  0001 C CNN
-F 4 "https://au.element14.com/nexem/ua2-5nu/signal-relay-dpdt-1a-250vac-th/dp/2766147" H 2150 7000 50  0001 C CNN "Purchase Link"
-	1    2150 7000
+P 2200 7000
+F 0 "K1" V 1433 7000 50  0000 C CNN
+F 1 "UA2-5NU" V 1524 7000 50  0000 C CNN
+F 2 "kicad-lib-jlcpcb:Relay_DPDT_NEXEM_UA2_Pitch3.2mm" H 2200 7000 50  0001 C CNN
+F 3 "https://www.farnell.com/datasheets/2302216.pdf" H 2200 7000 50  0001 C CNN
+F 4 "https://au.element14.com/nexem/ua2-5nu/signal-relay-dpdt-1a-250vac-th/dp/2766147" H 2200 7000 50  0001 C CNN "Purchase Link"
+	1    2200 7000
 	0    1    1    0   
 $EndComp
 $Comp
 L power:+5V #PWR07
 U 1 1 61534921
-P 2550 6000
-F 0 "#PWR07" H 2550 5850 50  0001 C CNN
-F 1 "+5V" H 2565 6173 50  0000 C CNN
-F 2 "" H 2550 6000 50  0001 C CNN
-F 3 "" H 2550 6000 50  0001 C CNN
-	1    2550 6000
+P 2600 6000
+F 0 "#PWR07" H 2600 5850 50  0001 C CNN
+F 1 "+5V" H 2615 6173 50  0000 C CNN
+F 2 "" H 2600 6000 50  0001 C CNN
+F 3 "" H 2600 6000 50  0001 C CNN
+	1    2600 6000
 	1    0    0    -1  
 $EndComp
 Wire Wire Line
-	2550 6000 2550 6100
+	2600 6000 2600 6100
 Wire Wire Line
-	2550 6600 2450 6600
+	2600 6600 2500 6600
 $Comp
 L Transistor_BJT:MMBT3904 Q1
 U 1 1 6154A75E
-P 1000 6950
-F 0 "Q1" H 1191 6996 50  0000 L CNN
-F 1 "MMBT3904" H 1191 6905 50  0000 L CNN
-F 2 "Package_TO_SOT_SMD:SOT-23" H 1200 6875 50  0001 L CIN
-F 3 "https://www.onsemi.com/pub/Collateral/2N3903-D.PDF" H 1000 6950 50  0001 L CNN
-F 4 "" H 1000 6950 50  0001 C CNN "JLCPCB Basic"
-F 5 "C20526" H 1000 6950 50  0001 C CNN "JLCPCB Part"
-F 6 "0.03" H 1000 6950 50  0001 C CNN "JLCPCB UP"
-	1    1000 6950
+P 1050 6950
+F 0 "Q1" H 1241 6996 50  0000 L CNN
+F 1 "MMBT3904" H 1241 6905 50  0000 L CNN
+F 2 "Package_TO_SOT_SMD:SOT-23" H 1250 6875 50  0001 L CIN
+F 3 "https://www.onsemi.com/pub/Collateral/2N3903-D.PDF" H 1050 6950 50  0001 L CNN
+F 4 "" H 1050 6950 50  0001 C CNN "JLCPCB Basic"
+F 5 "C20526" H 1050 6950 50  0001 C CNN "JLCPCB Part"
+F 6 "0.03" H 1050 6950 50  0001 C CNN "JLCPCB UP"
+F 7 "NA" H 1050 6950 50  0001 C CNN "Purchase Link"
+	1    1050 6950
 	1    0    0    -1  
 $EndComp
 $Comp
 L power:GND #PWR03
 U 1 1 61559592
-P 1100 7300
-F 0 "#PWR03" H 1100 7050 50  0001 C CNN
-F 1 "GND" H 1105 7127 50  0000 C CNN
-F 2 "" H 1100 7300 50  0001 C CNN
-F 3 "" H 1100 7300 50  0001 C CNN
-	1    1100 7300
+P 1150 7300
+F 0 "#PWR03" H 1150 7050 50  0001 C CNN
+F 1 "GND" H 1155 7127 50  0000 C CNN
+F 2 "" H 1150 7300 50  0001 C CNN
+F 3 "" H 1150 7300 50  0001 C CNN
+	1    1150 7300
 	1    0    0    -1  
 $EndComp
 Wire Wire Line
-	1100 7300 1100 7150
+	1150 7300 1150 7150
 Wire Wire Line
-	1850 6600 1750 6600
+	1900 6600 1800 6600
 Wire Wire Line
-	1100 6600 1100 6750
+	1150 6600 1150 6750
 $Comp
 L Device:D D1
 U 1 1 615610BE
-P 2150 6100
-F 0 "D1" H 2150 5883 50  0000 C CNN
-F 1 "SM4007PL" H 2150 5974 50  0000 C CNN
-F 2 "Diode_SMD:D_SMA" H 2150 6100 50  0001 C CNN
-F 3 "https://datasheet.lcsc.com/lcsc/1810311713_MDD%EF%BC%88Microdiode-Electronics%EF%BC%89-M7_C95872.pdf" H 2150 6100 50  0001 C CNN
-F 4 "" H 2150 6100 50  0001 C CNN "JLCPCB Basic"
-F 5 "C95872" H 2150 6100 50  0001 C CNN "JLCPCB Part"
-F 6 "0.03" H 2150 6100 50  0001 C CNN "JLCPCB UP"
-	1    2150 6100
+P 2200 6100
+F 0 "D1" H 2200 5883 50  0000 C CNN
+F 1 "SM4007PL" H 2200 5974 50  0000 C CNN
+F 2 "Diode_SMD:D_SMA" H 2200 6100 50  0001 C CNN
+F 3 "https://datasheet.lcsc.com/lcsc/1810311713_MDD%EF%BC%88Microdiode-Electronics%EF%BC%89-M7_C95872.pdf" H 2200 6100 50  0001 C CNN
+F 4 "" H 2200 6100 50  0001 C CNN "JLCPCB Basic"
+F 5 "C95872" H 2200 6100 50  0001 C CNN "JLCPCB Part"
+F 6 "0.03" H 2200 6100 50  0001 C CNN "JLCPCB UP"
+F 7 "NA" H 2200 6100 50  0001 C CNN "Purchase Link"
+	1    2200 6100
 	-1   0    0    1   
 $EndComp
 $Comp
@@ -650,6 +501,7 @@ F 3 "https://datasheet.lcsc.com/lcsc/1811081712_UNI-ROYAL-Uniroyal-Elec-0603WAF6
 F 4 "C23220" H 2350 5500 50  0001 C CNN "JLCPCB Part"
 F 5 "0.01" H 2350 5500 50  0001 C CNN "JLCPCB UP"
 F 6 "" H 2350 5500 50  0001 C CNN "JLCPCB Basic"
+F 7 "NA" H 2350 5500 50  0001 C CNN "Purchase Link"
 	1    2350 5500
 	0    1    1    0   
 $EndComp
@@ -665,17 +517,17 @@ F 3 "" H 700 5550 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 Wire Wire Line
-	2300 6100 2550 6100
-Connection ~ 2550 6100
+	2350 6100 2600 6100
+Connection ~ 2600 6100
 Wire Wire Line
-	2550 6100 2550 6600
+	2600 6100 2600 6600
 Wire Wire Line
-	2000 6100 1750 6100
+	2050 6100 1800 6100
 Wire Wire Line
-	1750 6100 1750 6600
-Connection ~ 1750 6600
+	1800 6100 1800 6600
+Connection ~ 1800 6600
 Wire Wire Line
-	1750 6600 1100 6600
+	1800 6600 1150 6600
 Wire Wire Line
 	1150 5500 1100 5500
 Wire Wire Line
@@ -699,60 +551,55 @@ Wire Wire Line
 	2200 5500 2100 5500
 Wire Wire Line
 	2100 5500 2100 5550
-Text GLabel 650  6450 1    50   Input ~ 0
+Text GLabel 700  6450 1    50   Input ~ 0
 AIO3
-Wire Notes Line
-	500  7750 3450 7750
-Wire Notes Line
-	3450 7750 3450 5000
-Wire Notes Line
-	500  5000 500  7750
 Wire Wire Line
-	650  6450 650  6550
+	700  6450 700  6550
 Wire Wire Line
-	800  6950 650  6950
+	850  6950 700  6950
 Wire Wire Line
-	650  6950 650  6850
-Text GLabel 1750 6900 1    50   Input ~ 0
+	700  6950 700  6850
+Text GLabel 1800 6900 1    50   Input ~ 0
 R3AC
 Wire Wire Line
-	1850 7000 1750 7000
+	1900 7000 1800 7000
 Wire Wire Line
-	1750 7000 1750 6900
-Text GLabel 1750 7300 1    50   Input ~ 0
+	1800 7000 1800 6900
+Text GLabel 1800 7300 1    50   Input ~ 0
 R3BC
 Wire Wire Line
-	1850 7400 1750 7400
+	1900 7400 1800 7400
 Wire Wire Line
-	1750 7400 1750 7300
-Text GLabel 2550 6900 2    50   Input ~ 0
+	1800 7400 1800 7300
+Text GLabel 2600 6900 2    50   Input ~ 0
 R3ANC
 Wire Wire Line
-	2450 6900 2550 6900
-Text GLabel 2550 7100 2    50   Input ~ 0
+	2500 6900 2600 6900
+Text GLabel 2600 7100 2    50   Input ~ 0
 R3ANO
 Wire Wire Line
-	2550 7100 2450 7100
-Text GLabel 2550 7300 2    50   Input ~ 0
+	2600 7100 2500 7100
+Text GLabel 2600 7300 2    50   Input ~ 0
 R3BNC
 Wire Wire Line
-	2450 7300 2550 7300
-Text GLabel 2550 7500 2    50   Input ~ 0
+	2500 7300 2600 7300
+Text GLabel 2600 7500 2    50   Input ~ 0
 R3BNO
 Wire Wire Line
-	2550 7500 2450 7500
+	2600 7500 2500 7500
 $Comp
 L Device:R R1
 U 1 1 6166FFAE
-P 650 6700
-F 0 "R1" H 580 6654 50  0000 R CNN
-F 1 "2.2k" H 580 6745 50  0000 R CNN
-F 2 "Resistor_SMD:R_0402_1005Metric" V 580 6700 50  0001 C CNN
-F 3 "https://datasheet.lcsc.com/lcsc/1811022110_UNI-ROYAL-Uniroyal-Elec-0402WGF2201TCE_C25879.pdf" H 650 6700 50  0001 C CNN
-F 4 "" H 650 6700 50  0001 C CNN "JLCPCB Basic"
-F 5 "C25879" H 650 6700 50  0001 C CNN "JLCPCB Part"
-F 6 "0.01" H 650 6700 50  0001 C CNN "JLCPCB UP"
-	1    650  6700
+P 700 6700
+F 0 "R1" H 630 6654 50  0000 R CNN
+F 1 "2.2k" H 630 6745 50  0000 R CNN
+F 2 "Resistor_SMD:R_0402_1005Metric" V 630 6700 50  0001 C CNN
+F 3 "https://datasheet.lcsc.com/lcsc/1811022110_UNI-ROYAL-Uniroyal-Elec-0402WGF2201TCE_C25879.pdf" H 700 6700 50  0001 C CNN
+F 4 "" H 700 6700 50  0001 C CNN "JLCPCB Basic"
+F 5 "C25879" H 700 6700 50  0001 C CNN "JLCPCB Part"
+F 6 "0.01" H 700 6700 50  0001 C CNN "JLCPCB UP"
+F 7 "NA" H 700 6700 50  0001 C CNN "Purchase Link"
+	1    700  6700
 	-1   0    0    1   
 $EndComp
 Text GLabel 2250 1950 2    50   Input ~ 0
@@ -765,58 +612,40 @@ Text GLabel 3800 5600 0    50   Input ~ 0
 ASTX
 Text GLabel 7300 5600 0    50   Input ~ 0
 ASRX
-Text Notes 9400 3600 0    50   ~ 0
-TODO:\nRelay connectors\nRS-485 connector\nIO expansion connectors
-Text GLabel 9600 3900 2    50   Input ~ 0
+Text GLabel 10200 1100 3    50   Input ~ 0
 R1A
-Text GLabel 9600 4050 2    50   Input ~ 0
+Text GLabel 10100 1100 3    50   Input ~ 0
 R1B
-Text GLabel 9600 4250 2    50   Input ~ 0
+Text GLabel 10600 1100 3    50   Input ~ 0
 R2A
-Text GLabel 9600 4400 2    50   Input ~ 0
+Text GLabel 10500 1100 3    50   Input ~ 0
 R2B
-Text GLabel 9600 4600 2    50   Input ~ 0
+Text GLabel 10300 1850 3    50   Input ~ 0
 R3AC
-Text GLabel 9600 4750 2    50   Input ~ 0
+Text GLabel 10200 1850 3    50   Input ~ 0
 R3ANO
-Text GLabel 9600 4900 2    50   Input ~ 0
+Text GLabel 10100 1850 3    50   Input ~ 0
 R3ANC
-Text GLabel 9600 5100 2    50   Input ~ 0
+Text GLabel 10750 1850 3    50   Input ~ 0
 R3BC
-Text GLabel 9600 5250 2    50   Input ~ 0
+Text GLabel 10650 1850 3    50   Input ~ 0
 R3BNO
-Text GLabel 9600 5400 2    50   Input ~ 0
+Text GLabel 10550 1850 3    50   Input ~ 0
 R3BNC
-Text GLabel 10650 3900 2    50   Input ~ 0
+Text GLabel 9100 3650 3    50   Input ~ 0
 ASDA
-Text GLabel 10650 4050 2    50   Input ~ 0
+Text GLabel 9200 3650 3    50   Input ~ 0
 ASCL
-Text GLabel 10650 4250 2    50   Input ~ 0
+Text GLabel 10000 3650 3    50   Input ~ 0
 ASS
-Text GLabel 10650 4700 2    50   Input ~ 0
+Text GLabel 10100 3650 3    50   Input ~ 0
 ASCK
-Text GLabel 10650 4400 2    50   Input ~ 0
+Text GLabel 10300 3650 3    50   Input ~ 0
 AMOSI
-Text GLabel 10650 4550 2    50   Input ~ 0
+Text GLabel 10200 3650 3    50   Input ~ 0
 AMISO
 Text GLabel 6500 7050 2    50   Input ~ 0
 RS485A
-NoConn ~ 9600 5400
-NoConn ~ 9600 5250
-NoConn ~ 9600 5100
-NoConn ~ 9600 4900
-NoConn ~ 9600 4750
-NoConn ~ 9600 4600
-NoConn ~ 9600 4400
-NoConn ~ 9600 4250
-NoConn ~ 9600 4050
-NoConn ~ 9600 3900
-NoConn ~ 10650 3900
-NoConn ~ 10650 4050
-NoConn ~ 10650 4250
-NoConn ~ 10650 4400
-NoConn ~ 10650 4550
-NoConn ~ 10650 4700
 $Comp
 L IC_TI_TPS54331DR:TPS54331DR U4
 U 1 1 6138537B
@@ -826,6 +655,7 @@ F 1 "TPS54331DR" H 5850 1124 50  0000 C CNN
 F 2 "TPS54331DDAR:Texas_Instruments-TPS54331DR-Level_A" H 6150 600 50  0001 C CNN
 F 3 "https://www.ti.com/lit/ds/symlink/tps54331.pdf" H 6250 500 50  0001 C CNN
 F 4 "C9865" H 5250 950 50  0001 C CNN "JLCPCB Part"
+F 5 "NA" H 5250 950 50  0001 C CNN "Purchase Link"
 	1    5250 950 
 	1    0    0    -1  
 $EndComp
@@ -842,6 +672,7 @@ F 3 "https://datasheet.lcsc.com/lcsc/1810221112_Samsung-Electro-Mechanics-CL31A1
 F 4 "C13585" H 4200 1150 50  0001 C CNN "JLCPCB Part"
 F 5 "0.07" H 4200 1150 50  0001 C CNN "JLCPCB UP"
 F 6 "" H 4200 1150 50  0001 C CNN "JLCPCB Basic"
+F 7 "NA" H 4200 1150 50  0001 C CNN "Purchase Link"
 	1    4200 1150
 	1    0    0    -1  
 $EndComp
@@ -886,6 +717,7 @@ F 1 "8.2nF" V 4739 1350 50  0000 C CNN
 F 2 "Capacitor_SMD:C_0603_1608Metric" H 4938 1200 50  0001 C CNN
 F 3 "https://datasheet.lcsc.com/lcsc/1810262007_Samsung-Electro-Mechanics-CL10B822KB8NNNC_C27920.pdf" H 4900 1350 50  0001 C CNN
 F 4 "C27920" H 4900 1350 50  0001 C CNN "JLCPCB Part"
+F 5 "NA" H 4900 1350 50  0001 C CNN "Purchase Link"
 	1    4900 1350
 	0    1    1    0   
 $EndComp
@@ -903,6 +735,7 @@ F 1 "12k" H 5270 1755 50  0000 L CNN
 F 2 "Resistor_SMD:R_0603_1608Metric" V 5130 1800 50  0001 C CNN
 F 3 "https://datasheet.lcsc.com/lcsc/1811021221_UNI-ROYAL-Uniroyal-Elec-0603WAF1202T5E_C22790.pdf" H 5200 1800 50  0001 C CNN
 F 4 "C22790" H 5200 1800 50  0001 C CNN "JLCPCB Part"
+F 5 "NA" H 5200 1800 50  0001 C CNN "Purchase Link"
 	1    5200 1800
 	1    0    0    -1  
 $EndComp
@@ -915,6 +748,7 @@ F 1 "2.7nF" H 5315 2105 50  0000 L CNN
 F 2 "Capacitor_SMD:C_0603_1608Metric" H 5238 2000 50  0001 C CNN
 F 3 "https://datasheet.lcsc.com/lcsc/1811151136_FH-Guangdong-Fenghua-Advanced-Tech-0603B272K500NT_C1609.pdf" H 5200 2150 50  0001 C CNN
 F 4 "C1609" H 5200 2150 50  0001 C CNN "JLCPCB Part"
+F 5 "NA" H 5200 2150 50  0001 C CNN "Purchase Link"
 	1    5200 2150
 	1    0    0    -1  
 $EndComp
@@ -950,6 +784,7 @@ F 1 "27pF" H 4765 1855 50  0000 L CNN
 F 2 "Capacitor_SMD:C_0603_1608Metric" H 4688 1750 50  0001 C CNN
 F 3 "https://datasheet.lcsc.com/lcsc/1810261514_Samsung-Electro-Mechanics-CL10C270JB8NNNC_C1656.pdf" H 4650 1900 50  0001 C CNN
 F 4 "C1656" H 4650 1900 50  0001 C CNN "JLCPCB Part"
+F 5 "NA" H 4650 1900 50  0001 C CNN "Purchase Link"
 	1    4650 1900
 	1    0    0    -1  
 $EndComp
@@ -966,6 +801,7 @@ F 3 "https://datasheet.lcsc.com/lcsc/1809301912_YAGEO-CC0603KRX7R9BB104_C14663.p
 F 4 "C14663" V 6600 1150 50  0001 C CNN "JLCPCB Part"
 F 5 "0.01" H 6600 1150 50  0001 C CNN "JLCPCB UP"
 F 6 "" H 6600 1150 50  0001 C CNN "JLCPCB Basic"
+F 7 "NA" H 6600 1150 50  0001 C CNN "Purchase Link"
 	1    6600 1150
 	0    1    1    0   
 $EndComp
@@ -994,6 +830,7 @@ F 6 "" H 7000 1100 50  0001 C CNN "JCBPCB Basic"
 F 7 "" H 7000 1100 50  0001 C CNN "JLCPCB Basic"
 F 8 "C2480" H 7000 1100 50  0001 C CNN "JLCPCB Part"
 F 9 "0.05" H 7000 1100 50  0001 C CNN "JLCPCB UP"
+F 10 "NA" H 7000 1100 50  0001 C CNN "Purchase Link"
 	1    7000 1100
 	0    1    1    0   
 $EndComp
@@ -1036,6 +873,7 @@ F 3 "https://datasheet.lcsc.com/lcsc/1809301717_UNI-ROYAL-Uniroyal-Elec-0402WGF1
 F 4 "C25744" H 7900 1150 50  0001 C CNN "JLCPCB Part"
 F 5 "0.01" H 7900 1150 50  0001 C CNN "JLCPCB UP"
 F 6 "" H 7900 1150 50  0001 C CNN "JLCPCB Basic"
+F 7 "NA" H 7900 1150 50  0001 C CNN "Purchase Link"
 	1    7900 1150
 	1    0    0    -1  
 $EndComp
@@ -1061,6 +899,7 @@ F 1 "3k" H 7970 1505 50  0000 L CNN
 F 2 "Resistor_SMD:R_0603_1608Metric" V 7830 1550 50  0001 C CNN
 F 3 "https://datasheet.lcsc.com/lcsc/1811081711_UNI-ROYAL-Uniroyal-Elec-0603WAF3001T5E_C4211.pdf" H 7900 1550 50  0001 C CNN
 F 4 "C4211" H 7900 1550 50  0001 C CNN "JLCPCB Part"
+F 5 "NA" H 7900 1550 50  0001 C CNN "Purchase Link"
 	1    7900 1550
 	1    0    0    -1  
 $EndComp
@@ -1080,6 +919,7 @@ F 3 "https://datasheet.lcsc.com/lcsc/1810221112_Samsung-Electro-Mechanics-CL31A1
 F 4 "C13585" H 8250 1350 50  0001 C CNN "JLCPCB Part"
 F 5 "0.07" H 8250 1350 50  0001 C CNN "JLCPCB UP"
 F 6 "" H 8250 1350 50  0001 C CNN "JLCPCB Basic"
+F 7 "NA" H 8250 1350 50  0001 C CNN "Purchase Link"
 	1    8250 1350
 	1    0    0    -1  
 $EndComp
@@ -1132,6 +972,7 @@ F 1 "TPS54331DR" H 5850 3324 50  0000 C CNN
 F 2 "TPS54331DDAR:Texas_Instruments-TPS54331DR-Level_A" H 6150 2800 50  0001 C CNN
 F 3 "https://www.ti.com/lit/ds/symlink/tps54331.pdf" H 6250 2700 50  0001 C CNN
 F 4 "C9865" H 5250 3150 50  0001 C CNN "JLCPCB Part"
+F 5 "NA" H 5250 3150 50  0001 C CNN "Purchase Link"
 	1    5250 3150
 	1    0    0    -1  
 $EndComp
@@ -1148,6 +989,7 @@ F 3 "https://datasheet.lcsc.com/lcsc/1810221112_Samsung-Electro-Mechanics-CL31A1
 F 4 "C13585" H 4200 3350 50  0001 C CNN "JLCPCB Part"
 F 5 "0.07" H 4200 3350 50  0001 C CNN "JLCPCB UP"
 F 6 "" H 4200 3350 50  0001 C CNN "JLCPCB Basic"
+F 7 "NA" H 4200 3350 50  0001 C CNN "Purchase Link"
 	1    4200 3350
 	1    0    0    -1  
 $EndComp
@@ -1192,6 +1034,7 @@ F 1 "8.2nF" V 4739 3550 50  0000 C CNN
 F 2 "Capacitor_SMD:C_0603_1608Metric" H 4938 3400 50  0001 C CNN
 F 3 "https://datasheet.lcsc.com/lcsc/1810262007_Samsung-Electro-Mechanics-CL10B822KB8NNNC_C27920.pdf" H 4900 3550 50  0001 C CNN
 F 4 "C27920" H 4900 3550 50  0001 C CNN "JLCPCB Part"
+F 5 "NA" H 4900 3550 50  0001 C CNN "Purchase Link"
 	1    4900 3550
 	0    1    1    0   
 $EndComp
@@ -1209,6 +1052,7 @@ F 1 "20k" H 5270 3955 50  0000 L CNN
 F 2 "Resistor_SMD:R_0603_1608Metric" V 5130 4000 50  0001 C CNN
 F 3 "https://datasheet.lcsc.com/lcsc/1811132312_UNI-ROYAL-Uniroyal-Elec-0603WAF2002T5E_C4184.pdf" H 5200 4000 50  0001 C CNN
 F 4 "C4184" H 5200 4000 50  0001 C CNN "JLCPCB Part"
+F 5 "NA" H 5200 4000 50  0001 C CNN "Purchase Link"
 	1    5200 4000
 	1    0    0    -1  
 $EndComp
@@ -1221,6 +1065,7 @@ F 1 "1.5nF" H 5315 4305 50  0000 L CNN
 F 2 "Capacitor_SMD:C_0402_1005Metric" H 5238 4200 50  0001 C CNN
 F 3 "https://datasheet.lcsc.com/lcsc/1810191211_Samsung-Electro-Mechanics-CL05B152KB5NNNC_C23967.pdf" H 5200 4350 50  0001 C CNN
 F 4 "C23967" H 5200 4350 50  0001 C CNN "JLCPCB Part"
+F 5 "NA" H 5200 4350 50  0001 C CNN "Purchase Link"
 	1    5200 4350
 	1    0    0    -1  
 $EndComp
@@ -1256,6 +1101,7 @@ F 1 "15pF" H 4765 4055 50  0000 L CNN
 F 2 "Capacitor_SMD:C_0603_1608Metric" H 4688 3950 50  0001 C CNN
 F 3 "https://datasheet.lcsc.com/lcsc/1810261515_Samsung-Electro-Mechanics-CL10C150JB8NNNC_C1644.pdf" H 4650 4100 50  0001 C CNN
 F 4 "C1644" H 4650 4100 50  0001 C CNN "JLCPCB Part"
+F 5 "NA" H 4650 4100 50  0001 C CNN "Purchase Link"
 	1    4650 4100
 	1    0    0    -1  
 $EndComp
@@ -1272,6 +1118,7 @@ F 3 "https://datasheet.lcsc.com/lcsc/1809301912_YAGEO-CC0603KRX7R9BB104_C14663.p
 F 4 "C14663" V 6600 3350 50  0001 C CNN "JLCPCB Part"
 F 5 "0.01" H 6600 3350 50  0001 C CNN "JLCPCB UP"
 F 6 "" H 6600 3350 50  0001 C CNN "JLCPCB Basic"
+F 7 "NA" H 6600 3350 50  0001 C CNN "Purchase Link"
 	1    6600 3350
 	0    1    1    0   
 $EndComp
@@ -1300,6 +1147,7 @@ F 6 "" H 7000 3300 50  0001 C CNN "JCBPCB Basic"
 F 7 "" H 7000 3300 50  0001 C CNN "JLCPCB Basic"
 F 8 "C2480" H 7000 3300 50  0001 C CNN "JLCPCB Part"
 F 9 "0.05" H 7000 3300 50  0001 C CNN "JLCPCB UP"
+F 10 "NA" H 7000 3300 50  0001 C CNN "Purchase Link"
 	1    7000 3300
 	0    1    1    0   
 $EndComp
@@ -1342,6 +1190,7 @@ F 3 "https://datasheet.lcsc.com/lcsc/1809301717_UNI-ROYAL-Uniroyal-Elec-0402WGF1
 F 4 "C25744" H 7900 3350 50  0001 C CNN "JLCPCB Part"
 F 5 "0.01" H 7900 3350 50  0001 C CNN "JLCPCB UP"
 F 6 "" H 7900 3350 50  0001 C CNN "JLCPCB Basic"
+F 7 "NA" H 7900 3350 50  0001 C CNN "Purchase Link"
 	1    7900 3350
 	1    0    0    -1  
 $EndComp
@@ -1367,6 +1216,7 @@ F 1 "1.8k" H 7970 3705 50  0000 L CNN
 F 2 "Resistor_SMD:R_0603_1608Metric" V 7830 3750 50  0001 C CNN
 F 3 "https://datasheet.lcsc.com/lcsc/1811081714_UNI-ROYAL-Uniroyal-Elec-0603WAF1801T5E_C4177.pdf" H 7900 3750 50  0001 C CNN
 F 4 "C4177" H 7900 3750 50  0001 C CNN "JLCPCB Part"
+F 5 "NA" H 7900 3750 50  0001 C CNN "Purchase Link"
 	1    7900 3750
 	1    0    0    -1  
 $EndComp
@@ -1386,6 +1236,7 @@ F 3 "https://datasheet.lcsc.com/lcsc/1810221112_Samsung-Electro-Mechanics-CL31A1
 F 4 "C13585" H 8250 3550 50  0001 C CNN "JLCPCB Part"
 F 5 "0.07" H 8250 3550 50  0001 C CNN "JLCPCB UP"
 F 6 "" H 8250 3550 50  0001 C CNN "JLCPCB Basic"
+F 7 "NA" H 8250 3550 50  0001 C CNN "Purchase Link"
 	1    8250 3550
 	1    0    0    -1  
 $EndComp
@@ -1449,10 +1300,8 @@ Text GLabel 2250 2850 2    50   Input ~ 0
 AIO5
 Text GLabel 6500 6750 2    50   Input ~ 0
 RS485B
-Text GLabel 10550 5150 2    50   Input ~ 0
+Text GLabel 10500 3650 3    50   Input ~ 0
 AIO4
-Text GLabel 10550 5300 2    50   Input ~ 0
-AIO5
 Text GLabel 2250 2950 2    50   Input ~ 0
 ARSDE
 Text GLabel 2250 3050 2    50   Input ~ 0
@@ -1496,6 +1345,7 @@ F 1 "120" H 6320 6855 50  0000 L CNN
 F 2 "Resistor_SMD:R_0603_1608Metric" V 6180 6900 50  0001 C CNN
 F 3 "https://datasheet.lcsc.com/lcsc/1811021215_UNI-ROYAL-Uniroyal-Elec-0603WAF1200T5E_C22787.pdf" H 6250 6900 50  0001 C CNN
 F 4 "C22787" H 6250 6900 50  0001 C CNN "JLCPCB Part"
+F 5 "NA" H 6250 6900 50  0001 C CNN "Purchase Link"
 	1    6250 6900
 	1    0    0    -1  
 $EndComp
@@ -1518,6 +1368,7 @@ F 1 "2N7002" V 4590 5500 50  0000 C CNN
 F 2 "Package_TO_SOT_SMD:SOT-23" H 4450 5425 50  0001 L CIN
 F 3 "https://datasheet.lcsc.com/lcsc/1810151612_Changjiang-Electronics-Tech--CJ-2N7002_C8545.pdf" H 4250 5500 50  0001 L CNN
 F 4 "C8545" H 4250 5500 50  0001 C CNN "JLCPCB Part"
+F 5 "NA" H 4250 5500 50  0001 C CNN "Purchase Link"
 	1    4250 5500
 	0    1    1    0   
 $EndComp
@@ -1553,6 +1404,7 @@ F 2 "Resistor_SMD:R_0402_1005Metric" V 3780 5400 50  0001 C CNN
 F 3 "https://datasheet.lcsc.com/lcsc/1809301717_UNI-ROYAL-Uniroyal-Elec-0402WGF1002TCE_C25744.pdf" H 3850 5400 50  0001 C CNN
 F 4 "C25744" H 3850 5400 50  0001 C CNN "JLCPCB Part"
 F 5 "0.01" H 3850 5400 50  0001 C CNN "JLCPCB UP"
+F 6 "NA" H 3850 5400 50  0001 C CNN "Purchase Link"
 	1    3850 5400
 	1    0    0    -1  
 $EndComp
@@ -1579,6 +1431,7 @@ F 3 "https://datasheet.lcsc.com/lcsc/1809301717_UNI-ROYAL-Uniroyal-Elec-0402WGF1
 F 4 "C25744" H 4500 5400 50  0001 C CNN "JLCPCB Part"
 F 5 "0.01" H 4500 5400 50  0001 C CNN "JLCPCB UP"
 F 6 "" H 4500 5400 50  0001 C CNN "JLCPCB Basic"
+F 7 "NA" H 4500 5400 50  0001 C CNN "Purchase Link"
 	1    4500 5400
 	1    0    0    -1  
 $EndComp
@@ -1595,6 +1448,7 @@ F 1 "2N7002" V 5740 5500 50  0000 C CNN
 F 2 "Package_TO_SOT_SMD:SOT-23" H 5600 5425 50  0001 L CIN
 F 3 "https://datasheet.lcsc.com/lcsc/1810151612_Changjiang-Electronics-Tech--CJ-2N7002_C8545.pdf" H 5400 5500 50  0001 L CNN
 F 4 "C8545" H 5400 5500 50  0001 C CNN "JLCPCB Part"
+F 5 "NA" H 5400 5500 50  0001 C CNN "Purchase Link"
 	1    5400 5500
 	0    1    1    0   
 $EndComp
@@ -1630,6 +1484,7 @@ F 2 "Resistor_SMD:R_0402_1005Metric" V 4930 5400 50  0001 C CNN
 F 3 "https://datasheet.lcsc.com/lcsc/1809301717_UNI-ROYAL-Uniroyal-Elec-0402WGF1002TCE_C25744.pdf" H 5000 5400 50  0001 C CNN
 F 4 "C25744" H 5000 5400 50  0001 C CNN "JLCPCB Part"
 F 5 "0.01" H 5000 5400 50  0001 C CNN "JLCPCB UP"
+F 6 "NA" H 5000 5400 50  0001 C CNN "Purchase Link"
 	1    5000 5400
 	1    0    0    -1  
 $EndComp
@@ -1656,6 +1511,7 @@ F 3 "https://datasheet.lcsc.com/lcsc/1809301717_UNI-ROYAL-Uniroyal-Elec-0402WGF1
 F 4 "C25744" H 5650 5400 50  0001 C CNN "JLCPCB Part"
 F 5 "0.01" H 5650 5400 50  0001 C CNN "JLCPCB UP"
 F 6 "" H 5650 5400 50  0001 C CNN "JLCPCB Basic"
+F 7 "NA" H 5650 5400 50  0001 C CNN "Purchase Link"
 	1    5650 5400
 	1    0    0    -1  
 $EndComp
@@ -1674,6 +1530,7 @@ F 1 "2N7002" V 6940 5500 50  0000 C CNN
 F 2 "Package_TO_SOT_SMD:SOT-23" H 6800 5425 50  0001 L CIN
 F 3 "https://datasheet.lcsc.com/lcsc/1810151612_Changjiang-Electronics-Tech--CJ-2N7002_C8545.pdf" H 6600 5500 50  0001 L CNN
 F 4 "C8545" H 6600 5500 50  0001 C CNN "JLCPCB Part"
+F 5 "NA" H 6600 5500 50  0001 C CNN "Purchase Link"
 	1    6600 5500
 	0    1    1    0   
 $EndComp
@@ -1709,6 +1566,7 @@ F 2 "Resistor_SMD:R_0402_1005Metric" V 6130 5400 50  0001 C CNN
 F 3 "https://datasheet.lcsc.com/lcsc/1809301717_UNI-ROYAL-Uniroyal-Elec-0402WGF1002TCE_C25744.pdf" H 6200 5400 50  0001 C CNN
 F 4 "C25744" H 6200 5400 50  0001 C CNN "JLCPCB Part"
 F 5 "0.01" H 6200 5400 50  0001 C CNN "JLCPCB UP"
+F 6 "NA" H 6200 5400 50  0001 C CNN "Purchase Link"
 	1    6200 5400
 	1    0    0    -1  
 $EndComp
@@ -1735,6 +1593,7 @@ F 3 "https://datasheet.lcsc.com/lcsc/1809301717_UNI-ROYAL-Uniroyal-Elec-0402WGF1
 F 4 "C25744" H 6850 5400 50  0001 C CNN "JLCPCB Part"
 F 5 "0.01" H 6850 5400 50  0001 C CNN "JLCPCB UP"
 F 6 "" H 6850 5400 50  0001 C CNN "JLCPCB Basic"
+F 7 "NA" H 6850 5400 50  0001 C CNN "Purchase Link"
 	1    6850 5400
 	1    0    0    -1  
 $EndComp
@@ -1751,6 +1610,7 @@ F 1 "2N7002" V 8090 5500 50  0000 C CNN
 F 2 "Package_TO_SOT_SMD:SOT-23" H 7950 5425 50  0001 L CIN
 F 3 "https://datasheet.lcsc.com/lcsc/1810151612_Changjiang-Electronics-Tech--CJ-2N7002_C8545.pdf" H 7750 5500 50  0001 L CNN
 F 4 "C8545" H 7750 5500 50  0001 C CNN "JLCPCB Part"
+F 5 "NA" H 7750 5500 50  0001 C CNN "Purchase Link"
 	1    7750 5500
 	0    1    1    0   
 $EndComp
@@ -1786,6 +1646,7 @@ F 2 "Resistor_SMD:R_0402_1005Metric" V 7280 5400 50  0001 C CNN
 F 3 "https://datasheet.lcsc.com/lcsc/1809301717_UNI-ROYAL-Uniroyal-Elec-0402WGF1002TCE_C25744.pdf" H 7350 5400 50  0001 C CNN
 F 4 "C25744" H 7350 5400 50  0001 C CNN "JLCPCB Part"
 F 5 "0.01" H 7350 5400 50  0001 C CNN "JLCPCB UP"
+F 6 "NA" H 7350 5400 50  0001 C CNN "Purchase Link"
 	1    7350 5400
 	1    0    0    -1  
 $EndComp
@@ -1812,6 +1673,7 @@ F 3 "https://datasheet.lcsc.com/lcsc/1809301717_UNI-ROYAL-Uniroyal-Elec-0402WGF1
 F 4 "C25744" H 8000 5400 50  0001 C CNN "JLCPCB Part"
 F 5 "0.01" H 8000 5400 50  0001 C CNN "JLCPCB UP"
 F 6 "" H 8000 5400 50  0001 C CNN "JLCPCB Basic"
+F 7 "NA" H 8000 5400 50  0001 C CNN "Purchase Link"
 	1    8000 5400
 	1    0    0    -1  
 $EndComp
@@ -1875,8 +1737,347 @@ Wire Notes Line
 	3500 5000 3500 7750
 Wire Notes Line
 	3500 5000 8250 5000
-Text GLabel 10600 5500 2    50   Input ~ 0
+Text GLabel 10200 2750 3    50   Input ~ 0
 RS485B
-Text GLabel 10600 5650 2    50   Input ~ 0
+Text GLabel 10300 2750 3    50   Input ~ 0
 RS485A
+NoConn ~ 1050 2050
+NoConn ~ 1050 2150
+$Comp
+L Connector:Conn_01x02_Male J1
+U 1 1 613ABED8
+P 10200 900
+F 0 "J1" V 10035 878 50  0000 C CNN
+F 1 "RELAY_1" V 10126 878 50  0000 C CNN
+F 2 "Connector_JST:JST_XH_B2B-XH-A_1x02_P2.50mm_Vertical" H 10200 900 50  0001 C CNN
+F 3 "~" H 10200 900 50  0001 C CNN
+F 4 "https://au.mouser.com/ProductDetail/426-FIT0255" V 10200 900 50  0001 C CNN "Purchase Link"
+	1    10200 900 
+	0    1    1    0   
+$EndComp
+$Comp
+L Connector:Conn_01x02_Male J2
+U 1 1 613DF424
+P 10600 900
+F 0 "J2" V 10435 878 50  0000 C CNN
+F 1 "RELAY_2" V 10526 878 50  0000 C CNN
+F 2 "Connector_JST:JST_XH_B2B-XH-A_1x02_P2.50mm_Vertical" H 10600 900 50  0001 C CNN
+F 3 "~" H 10600 900 50  0001 C CNN
+F 4 "https://au.mouser.com/ProductDetail/426-FIT0255" V 10600 900 50  0001 C CNN "Purchase Link"
+	1    10600 900 
+	0    1    1    0   
+$EndComp
+$Comp
+L Connector:Conn_01x03_Male J6
+U 1 1 613F8F16
+P 10200 1650
+F 0 "J6" V 10035 1628 50  0000 C CNN
+F 1 "RELAY_3A" V 10126 1628 50  0000 C CNN
+F 2 "Connector_JST:JST_XH_B3B-XH-A_1x03_P2.50mm_Vertical" H 10200 1650 50  0001 C CNN
+F 3 "~" H 10200 1650 50  0001 C CNN
+F 4 "https://au.mouser.com/ProductDetail/426-FIT0255" V 10200 1650 50  0001 C CNN "Purchase Link"
+	1    10200 1650
+	0    1    1    0   
+$EndComp
+$Comp
+L Connector:Conn_01x03_Male J7
+U 1 1 6142E79F
+P 10650 1650
+F 0 "J7" V 10485 1628 50  0000 C CNN
+F 1 "RELAY_3B" V 10576 1628 50  0000 C CNN
+F 2 "Connector_JST:JST_XH_B3B-XH-A_1x03_P2.50mm_Vertical" H 10650 1650 50  0001 C CNN
+F 3 "~" H 10650 1650 50  0001 C CNN
+F 4 "https://au.mouser.com/ProductDetail/426-FIT0255" V 10650 1650 50  0001 C CNN "Purchase Link"
+	1    10650 1650
+	0    1    1    0   
+$EndComp
+Wire Wire Line
+	9500 3150 8800 3150
+Text GLabel 9100 1100 3    50   Input ~ 0
+AMOSI
+Text GLabel 9200 1100 3    50   Input ~ 0
+AMISO
+Text GLabel 9300 1100 3    50   Input ~ 0
+ASCK
+Text GLabel 9200 1950 3    50   Input ~ 0
+ARXD
+Text GLabel 9100 1950 3    50   Input ~ 0
+ATXD
+Text GLabel 9400 1100 3    50   Input ~ 0
+ARESET
+$Comp
+L power:+3.3V #PWR028
+U 1 1 61384461
+P 8800 1100
+F 0 "#PWR028" H 8800 950 50  0001 C CNN
+F 1 "+3.3V" H 8815 1273 50  0000 C CNN
+F 2 "" H 8800 1100 50  0001 C CNN
+F 3 "" H 8800 1100 50  0001 C CNN
+	1    8800 1100
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	8800 1200 9000 1200
+Wire Wire Line
+	9000 1200 9000 1100
+Wire Wire Line
+	9500 1200 9500 1100
+Text GLabel 9300 1950 3    50   Input ~ 0
+ADTR
+$Comp
+L Connector:Conn_01x06_Male J3
+U 1 1 6137F4B1
+P 9300 900
+F 0 "J3" V 9100 800 50  0000 L CNN
+F 1 "ATMEGA ICSP" V 9200 600 50  0000 L CNN
+F 2 "Connector_PinHeader_2.54mm:PinHeader_2x03_P2.54mm_Vertical" H 9300 900 50  0001 C CNN
+F 3 "~" H 9300 900 50  0001 C CNN
+	1    9300 900 
+	0    1    1    0   
+$EndComp
+Text GLabel 9400 1950 3    50   Input ~ 0
+ARESET
+$Comp
+L Connector:Conn_01x07_Male J5
+U 1 1 6138A907
+P 9300 2550
+F 0 "J5" V 9135 2528 50  0000 C CNN
+F 1 "RF Module" V 9226 2528 50  0000 C CNN
+F 2 "Connector_PinSocket_2.54mm:PinSocket_1x07_P2.54mm_Vertical" H 9300 2550 50  0001 C CNN
+F 3 "~" H 9300 2550 50  0001 C CNN
+	1    9300 2550
+	0    1    1    0   
+$EndComp
+$Comp
+L Connector:Conn_01x06_Male J4
+U 1 1 613922D9
+P 9300 1750
+F 0 "J4" V 9135 1728 50  0000 C CNN
+F 1 "ATMEGA UART" V 9226 1728 50  0000 C CNN
+F 2 "Connector_PinHeader_2.54mm:PinHeader_2x03_P2.54mm_Vertical" H 9300 1750 50  0001 C CNN
+F 3 "~" H 9300 1750 50  0001 C CNN
+	1    9300 1750
+	0    1    1    0   
+$EndComp
+Wire Wire Line
+	8800 2000 9000 2000
+Wire Wire Line
+	9000 2000 9000 1950
+$Comp
+L power:GND #PWR033
+U 1 1 61384F23
+P 9850 2950
+F 0 "#PWR033" H 9850 2700 50  0001 C CNN
+F 1 "GND" H 9855 2777 50  0000 C CNN
+F 2 "" H 9850 2950 50  0001 C CNN
+F 3 "" H 9850 2950 50  0001 C CNN
+	1    9850 2950
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	9700 1200 9500 1200
+Wire Wire Line
+	9500 1950 9700 1950
+Wire Wire Line
+	9600 2750 9600 2850
+Wire Wire Line
+	9600 2850 9850 2850
+Wire Wire Line
+	9850 2850 9850 2950
+Text GLabel 9400 2750 3    50   Input ~ 0
+RFEN
+Text GLabel 9300 2750 3    50   Input ~ 0
+ATXD
+Text GLabel 9200 2750 3    50   Input ~ 0
+ARXD
+Text GLabel 9100 2750 3    50   Input ~ 0
+RFAUX
+Wire Wire Line
+	9500 2750 9500 3150
+Text GLabel 9000 2750 3    50   Input ~ 0
+RFSET
+$Comp
+L power:GND #PWR032
+U 1 1 614A1B8E
+P 9700 2050
+F 0 "#PWR032" H 9700 1800 50  0001 C CNN
+F 1 "GND" H 9705 1877 50  0000 C CNN
+F 2 "" H 9700 2050 50  0001 C CNN
+F 3 "" H 9700 2050 50  0001 C CNN
+	1    9700 2050
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:GND #PWR031
+U 1 1 614A3FA6
+P 9700 1300
+F 0 "#PWR031" H 9700 1050 50  0001 C CNN
+F 1 "GND" H 9705 1127 50  0000 C CNN
+F 2 "" H 9700 1300 50  0001 C CNN
+F 3 "" H 9700 1300 50  0001 C CNN
+	1    9700 1300
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	9700 1200 9700 1300
+Wire Wire Line
+	9700 1950 9700 2050
+$Comp
+L power:+3.3V #PWR029
+U 1 1 614A8723
+P 8800 1900
+F 0 "#PWR029" H 8800 1750 50  0001 C CNN
+F 1 "+3.3V" H 8815 2073 50  0000 C CNN
+F 2 "" H 8800 1900 50  0001 C CNN
+F 3 "" H 8800 1900 50  0001 C CNN
+	1    8800 1900
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:+3.3V #PWR030
+U 1 1 614A9053
+P 8800 3050
+F 0 "#PWR030" H 8800 2900 50  0001 C CNN
+F 1 "+3.3V" H 8815 3223 50  0000 C CNN
+F 2 "" H 8800 3050 50  0001 C CNN
+F 3 "" H 8800 3050 50  0001 C CNN
+	1    8800 3050
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	8800 3150 8800 3050
+Wire Wire Line
+	8800 2000 8800 1900
+Wire Wire Line
+	8800 1100 8800 1200
+$Comp
+L Connector:Conn_01x03_Male J?
+U 1 1 614FE796
+P 10200 2550
+F 0 "J?" V 10035 2528 50  0000 C CNN
+F 1 "RS485" V 10126 2528 50  0000 C CNN
+F 2 "Connector_JST:JST_XH_B3B-XH-A_1x03_P2.50mm_Vertical" H 10200 2550 50  0001 C CNN
+F 3 "~" H 10200 2550 50  0001 C CNN
+F 4 "https://au.mouser.com/ProductDetail/426-FIT0255" V 10200 2550 50  0001 C CNN "Purchase Link"
+	1    10200 2550
+	0    1    1    0   
+$EndComp
+Wire Wire Line
+	10100 2750 10100 2850
+Wire Wire Line
+	10100 2850 9850 2850
+Connection ~ 9850 2850
+$Comp
+L Connector:Conn_01x04_Male J?
+U 1 1 6153C961
+P 9200 3450
+F 0 "J?" V 9035 3428 50  0000 C CNN
+F 1 "I2C" V 9126 3428 50  0000 C CNN
+F 2 "Connector_JST:JST_XH_B4B-XH-A_1x04_P2.50mm_Vertical" H 9200 3450 50  0001 C CNN
+F 3 "~" H 9200 3450 50  0001 C CNN
+F 4 "https://au.mouser.com/ProductDetail/426-FIT0255" V 9200 3450 50  0001 C CNN "Purchase Link"
+	1    9200 3450
+	0    1    1    0   
+$EndComp
+$Comp
+L power:+3.3V #PWR?
+U 1 1 6153EEDD
+P 8800 3650
+F 0 "#PWR?" H 8800 3500 50  0001 C CNN
+F 1 "+3.3V" H 8815 3823 50  0000 C CNN
+F 2 "" H 8800 3650 50  0001 C CNN
+F 3 "" H 8800 3650 50  0001 C CNN
+	1    8800 3650
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	8800 3650 8800 3750
+Wire Wire Line
+	8800 3750 9000 3750
+Wire Wire Line
+	9000 3750 9000 3650
+$Comp
+L power:GND #PWR?
+U 1 1 6154C177
+P 9350 3750
+F 0 "#PWR?" H 9350 3500 50  0001 C CNN
+F 1 "GND" H 9355 3577 50  0000 C CNN
+F 2 "" H 9350 3750 50  0001 C CNN
+F 3 "" H 9350 3750 50  0001 C CNN
+	1    9350 3750
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	9300 3650 9300 3700
+Wire Wire Line
+	9300 3700 9350 3700
+Wire Wire Line
+	9350 3700 9350 3750
+$Comp
+L power:+3.3V #PWR?
+U 1 1 6161AE6C
+P 9700 3650
+F 0 "#PWR?" H 9700 3500 50  0001 C CNN
+F 1 "+3.3V" H 9715 3823 50  0000 C CNN
+F 2 "" H 9700 3650 50  0001 C CNN
+F 3 "" H 9700 3650 50  0001 C CNN
+	1    9700 3650
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	9700 3650 9700 3750
+Wire Wire Line
+	9700 3750 9900 3750
+Wire Wire Line
+	9900 3750 9900 3650
+$Comp
+L power:GND #PWR?
+U 1 1 61629A77
+P 10650 3750
+F 0 "#PWR?" H 10650 3500 50  0001 C CNN
+F 1 "GND" H 10655 3577 50  0000 C CNN
+F 2 "" H 10650 3750 50  0001 C CNN
+F 3 "" H 10650 3750 50  0001 C CNN
+	1    10650 3750
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	10650 3750 10650 3700
+Wire Wire Line
+	10650 3700 10600 3700
+Wire Wire Line
+	10600 3700 10600 3650
+Text GLabel 10400 3650 3    50   Input ~ 0
+AIO5
+$Comp
+L Connector:Conn_01x08_Male J?
+U 1 1 61618367
+P 10300 3450
+F 0 "J?" V 10100 3350 50  0000 L CNN
+F 1 "IO" V 10200 3150 50  0000 L CNN
+F 2 "Connector_PinHeader_2.54mm:PinHeader_2x04_P2.54mm_Vertical" H 10300 3450 50  0001 C CNN
+F 3 "~" H 10300 3450 50  0001 C CNN
+	1    10300 3450
+	0    1    1    0   
+$EndComp
+$Comp
+L RF_Module:ESP32-WROOM-32 U?
+U 1 1 6165DBC5
+P 12450 5850
+F 0 "U?" H 12450 7431 50  0000 C CNN
+F 1 "ESP32-WROOM-32E" H 12450 7340 50  0000 C CNN
+F 2 "RF_Module:ESP32-WROOM-32" H 12450 4350 50  0001 C CNN
+F 3 "https://datasheet.lcsc.com/lcsc/2007301108_Espressif-Systems-ESP32-WROOM-32E-4MB_C701341.pdf" H 12150 5900 50  0001 C CNN
+F 4 "C701341 (Extended)" H 12450 5850 50  0001 C CNN "JLCPCB Part"
+	1    12450 5850
+	1    0    0    -1  
+$EndComp
+Wire Notes Line
+	500  5000 3450 5000
+Wire Notes Line
+	3450 7750 3450 5000
+Wire Notes Line
+	500  5000 500  7750
+Wire Notes Line
+	500  7750 3450 7750
 $EndSCHEMATC
