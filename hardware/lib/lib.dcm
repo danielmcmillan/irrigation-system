@@ -1,0 +1,9 @@
+EESchema-DOCLIB  Version 2.0
+#
+$CMP UA2-5NU
+D Signal Relay, 5 V, DPDT, 1 A, UA2 Series, Through Hole, Non Latching
+K signal relay double pole double throw DPDT DC coil non latching
+F https://www.farnell.com/datasheets/2302216.pdf
+$ENDCMP
+#
+#End Doc Library
