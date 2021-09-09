@@ -165,7 +165,7 @@ U 1 1 6138C16A
 P 2950 3800
 F 0 "SW1" V 2904 3898 50  0000 L CNN
 F 1 "SPST" V 2995 3898 50  0000 L CNN
-F 2 "kicad-lib-jlcpcb:SW_SPST_THT_5.0mm" H 2950 3800 50  0001 C CNN
+F 2 "lib:SW_SPST_THT_5.0mm" H 2950 3800 50  0001 C CNN
 F 3 "https://www.farnell.com/datasheets/3176355.pdf" H 2950 3800 50  0001 C CNN
 F 4 "" H 2950 3800 50  0001 C CNN "Purchase link"
 F 5 "https://au.element14.com/multicomp-pro/mc32879/switch-tactile-spst-no-50ma-though/dp/171299401" H 2950 3800 50  0001 C CNN "Purchase Link"
@@ -416,7 +416,7 @@ U 1 1 6152BDC7
 P 1900 7100
 F 0 "K1" V 1133 7100 50  0000 C CNN
 F 1 "UA2-5NU" V 1224 7100 50  0000 C CNN
-F 2 "kicad-lib-jlcpcb:Relay_DPDT_NEXEM_UA2_Pitch3.2mm" H 1900 7100 50  0001 C CNN
+F 2 "lib:Relay_DPDT_NEXEM_UA2_Pitch3.2mm" H 1900 7100 50  0001 C CNN
 F 3 "https://www.farnell.com/datasheets/2302216.pdf" H 1900 7100 50  0001 C CNN
 F 4 "https://au.element14.com/nexem/ua2-5nu/signal-relay-dpdt-1a-250vac-th/dp/2766147" H 1900 7100 50  0001 C CNN "Purchase Link"
 	1    1900 7100
@@ -623,12 +623,12 @@ AMISO
 Text GLabel 6500 7050 2    50   Input ~ 0
 RS485A
 $Comp
-L IC_TI_TPS54331DR:TPS54331DR U4
+L TPS54331DR:TPS54331DR U4
 U 1 1 6138537B
 P 5250 950
 F 0 "U4" H 5850 1215 50  0000 C CNN
 F 1 "TPS54331DR" H 5850 1124 50  0000 C CNN
-F 2 "TPS54331DDAR:Texas_Instruments-TPS54331DR-Level_A" H 6150 600 50  0001 C CNN
+F 2 "TPS54331DR:Texas_Instruments-TPS54331DR-Level_A" H 6150 600 50  0001 C CNN
 F 3 "https://www.ti.com/lit/ds/symlink/tps54331.pdf" H 6250 500 50  0001 C CNN
 F 4 "C9865" H 5250 950 50  0001 C CNN "JLCPCB Part"
 F 5 "NA" H 5250 950 50  0001 C CNN "Purchase Link"
@@ -940,12 +940,12 @@ Wire Notes Line
 Text Notes 8300 950  0    50   ~ 0
 3.47v
 $Comp
-L IC_TI_TPS54331DR:TPS54331DR U5
+L TPS54331DR:TPS54331DR U5
 U 1 1 615282A6
 P 5250 3150
 F 0 "U5" H 5850 3415 50  0000 C CNN
 F 1 "TPS54331DR" H 5850 3324 50  0000 C CNN
-F 2 "TPS54331DDAR:Texas_Instruments-TPS54331DR-Level_A" H 6150 2800 50  0001 C CNN
+F 2 "TPS54331DR:Texas_Instruments-TPS54331DR-Level_A" H 6150 2800 50  0001 C CNN
 F 3 "https://www.ti.com/lit/ds/symlink/tps54331.pdf" H 6250 2700 50  0001 C CNN
 F 4 "C9865" H 5250 3150 50  0001 C CNN "JLCPCB Part"
 F 5 "NA" H 5250 3150 50  0001 C CNN "Purchase Link"
@@ -1289,16 +1289,14 @@ Wire Wire Line
 $Comp
 L power:+5V #PWR021
 U 1 1 6162E314
-P 6000 6250
-F 0 "#PWR021" H 6000 6100 50  0001 C CNN
-F 1 "+5V" H 6015 6423 50  0000 C CNN
-F 2 "" H 6000 6250 50  0001 C CNN
-F 3 "" H 6000 6250 50  0001 C CNN
-	1    6000 6250
+P 6000 6350
+F 0 "#PWR021" H 6000 6200 50  0001 C CNN
+F 1 "+5V" H 6015 6523 50  0000 C CNN
+F 2 "" H 6000 6350 50  0001 C CNN
+F 3 "" H 6000 6350 50  0001 C CNN
+	1    6000 6350
 	1    0    0    -1  
 $EndComp
-Wire Wire Line
-	6000 6250 6000 6350
 $Comp
 L power:GND #PWR019
 U 1 1 61636142
@@ -1663,20 +1661,10 @@ Wire Wire Line
 	6000 5900 5050 5900
 Connection ~ 6000 5600
 Wire Wire Line
-	7200 5600 7200 5950
-Wire Wire Line
-	7200 5950 5800 5950
-Wire Wire Line
-	5800 5950 5800 6000
+	7200 5600 7200 6000
 Connection ~ 7200 5600
 Wire Wire Line
-	8350 5600 8350 6000
-Wire Wire Line
-	8350 6000 5900 6000
-Wire Wire Line
-	5900 6000 5900 6100
-Wire Wire Line
-	5900 6100 5250 6100
+	8350 5600 8350 6100
 Connection ~ 8350 5600
 Wire Wire Line
 	5300 7050 4950 7050
@@ -1688,8 +1676,6 @@ Wire Wire Line
 	5150 6000 5150 6850
 Wire Wire Line
 	5150 6850 5300 6850
-Wire Wire Line
-	5150 6000 5800 6000
 Wire Wire Line
 	5050 6950 5300 6950
 Wire Wire Line
@@ -2053,7 +2039,7 @@ U 1 1 615A0129
 P 4000 7100
 F 0 "K2" V 3233 7100 50  0000 C CNN
 F 1 "UA2-5NU" V 3324 7100 50  0000 C CNN
-F 2 "kicad-lib-jlcpcb:Relay_DPDT_NEXEM_UA2_Pitch3.2mm" H 4000 7100 50  0001 C CNN
+F 2 "lib:Relay_DPDT_NEXEM_UA2_Pitch3.2mm" H 4000 7100 50  0001 C CNN
 F 3 "https://www.farnell.com/datasheets/2302216.pdf" H 4000 7100 50  0001 C CNN
 F 4 "https://au.element14.com/nexem/ua2-5nu/signal-relay-dpdt-1a-250vac-th/dp/2766147" H 4000 7100 50  0001 C CNN "Purchase Link"
 	1    4000 7100
@@ -2447,4 +2433,10 @@ F 3 "~" H 7900 850 50  0001 C CNN
 $EndComp
 Wire Wire Line
 	7900 850  7900 950 
+Wire Wire Line
+	5150 6000 7200 6000
+Wire Wire Line
+	5250 6100 8350 6100
+Text Notes 6100 7200 0    50   ~ 0
+RS-485 Termination
 $EndSCHEMATC
