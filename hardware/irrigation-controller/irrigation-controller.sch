@@ -386,7 +386,7 @@ Text GLabel 1750 5300 2    50   Input ~ 0
 R1A
 Text GLabel 1750 5500 2    50   Input ~ 0
 R1B
-Text GLabel 2250 3950 2    50   Input ~ 0
+Text GLabel 2250 4050 2    50   Input ~ 0
 AIO1
 $Comp
 L Relay_SolidState:TLP222A U3
@@ -408,7 +408,7 @@ Text GLabel 3150 5300 2    50   Input ~ 0
 R2A
 Text GLabel 3150 5500 2    50   Input ~ 0
 R2B
-Text GLabel 2250 1850 2    50   Input ~ 0
+Text GLabel 2250 3950 2    50   Input ~ 0
 AIO2
 $Comp
 L lib:UA2-5NU K1
@@ -578,11 +578,11 @@ F 7 "NA" H 600 6800 50  0001 C CNN "Purchase Link"
 	1    600  6800
 	-1   0    0    1   
 $EndComp
-Text GLabel 2250 1950 2    50   Input ~ 0
+Text GLabel 2250 2850 2    50   Input ~ 0
 AIO3
-Text GLabel 2250 3850 2    50   Input ~ 0
+Text GLabel 2250 1950 2    50   Input ~ 0
 ASRX
-Text GLabel 2250 4050 2    50   Input ~ 0
+Text GLabel 2250 1850 2    50   Input ~ 0
 ASTX
 Text GLabel 4150 5600 0    50   Input ~ 0
 ASTX
@@ -1272,7 +1272,7 @@ F 4 "https://au.element14.com/maxim-integrated-products/max485cpa/ic-cmos-bus-tr
 $EndComp
 Text GLabel 2250 2750 2    50   Input ~ 0
 AIO4
-Text GLabel 2250 2850 2    50   Input ~ 0
+Text GLabel 2250 3850 2    50   Input ~ 0
 AIO5
 Text GLabel 6500 6750 2    50   Input ~ 0
 RS485B
@@ -2253,58 +2253,58 @@ F 4 "https://au.mouser.com/ProductDetail/426-FIT0255" V 10750 2550 50  0001 C CN
 	1    10750 2550
 	0    1    1    0   
 $EndComp
-Text Notes 9800 3350 0    50   ~ 0
-Note: AI04 shared with RELAY_4
-Text GLabel 10300 4750 3    50   Input ~ 0
+Text Notes 7050 7000 0    50   ~ 0
+Note on I/O pins:\nAI01, AIO2, AIO4, AIO4: output for relays.\nASS: Input for SW2.\nAIO5: Input for FLOW.\nASS, ASCK, AMOSI, AMISO support analog input.
+Text GLabel 10450 4750 3    50   Input ~ 0
 ASDA
-Text GLabel 10400 4750 3    50   Input ~ 0
+Text GLabel 10550 4750 3    50   Input ~ 0
 ASCL
 $Comp
 L Connector:Conn_01x04_Male J10
 U 1 1 618BA1F4
-P 10400 4550
-F 0 "J10" V 10235 4528 50  0000 C CNN
-F 1 "I2C_2" V 10326 4528 50  0000 C CNN
-F 2 "Connector_JST:JST_XH_B4B-XH-A_1x04_P2.50mm_Vertical" H 10400 4550 50  0001 C CNN
-F 3 "~" H 10400 4550 50  0001 C CNN
-F 4 "https://au.mouser.com/ProductDetail/426-FIT0255" V 10400 4550 50  0001 C CNN "Purchase Link"
-	1    10400 4550
+P 10550 4550
+F 0 "J10" V 10385 4528 50  0000 C CNN
+F 1 "I2C_2" V 10476 4528 50  0000 C CNN
+F 2 "Connector_JST:JST_XH_B4B-XH-A_1x04_P2.50mm_Vertical" H 10550 4550 50  0001 C CNN
+F 3 "~" H 10550 4550 50  0001 C CNN
+F 4 "https://au.mouser.com/ProductDetail/426-FIT0255" V 10550 4550 50  0001 C CNN "Purchase Link"
+	1    10550 4550
 	0    1    1    0   
 $EndComp
 $Comp
 L power:+3.3V #PWR042
 U 1 1 618BA1FE
-P 10000 4750
-F 0 "#PWR042" H 10000 4600 50  0001 C CNN
-F 1 "+3.3V" H 10015 4923 50  0000 C CNN
-F 2 "" H 10000 4750 50  0001 C CNN
-F 3 "" H 10000 4750 50  0001 C CNN
-	1    10000 4750
+P 10150 4750
+F 0 "#PWR042" H 10150 4600 50  0001 C CNN
+F 1 "+3.3V" H 10165 4923 50  0000 C CNN
+F 2 "" H 10150 4750 50  0001 C CNN
+F 3 "" H 10150 4750 50  0001 C CNN
+	1    10150 4750
 	1    0    0    -1  
 $EndComp
 Wire Wire Line
-	10000 4750 10000 4850
+	10150 4750 10150 4850
 Wire Wire Line
-	10000 4850 10200 4850
+	10150 4850 10350 4850
 Wire Wire Line
-	10200 4850 10200 4750
+	10350 4850 10350 4750
 $Comp
 L power:GND #PWR043
 U 1 1 618BA20B
-P 10550 4850
-F 0 "#PWR043" H 10550 4600 50  0001 C CNN
-F 1 "GND" H 10555 4677 50  0000 C CNN
-F 2 "" H 10550 4850 50  0001 C CNN
-F 3 "" H 10550 4850 50  0001 C CNN
-	1    10550 4850
+P 10700 4850
+F 0 "#PWR043" H 10700 4600 50  0001 C CNN
+F 1 "GND" H 10705 4677 50  0000 C CNN
+F 2 "" H 10700 4850 50  0001 C CNN
+F 3 "" H 10700 4850 50  0001 C CNN
+	1    10700 4850
 	1    0    0    -1  
 $EndComp
 Wire Wire Line
-	10500 4750 10500 4800
+	10650 4750 10650 4800
 Wire Wire Line
-	10500 4800 10550 4800
+	10650 4800 10700 4800
 Wire Wire Line
-	10550 4800 10550 4850
+	10700 4800 10700 4850
 Wire Notes Line
 	8650 6450 11150 6450
 Wire Notes Line
@@ -2314,73 +2314,73 @@ Wire Notes Line
 $Comp
 L power:PWR_FLAG #FLG04
 U 1 1 61923EF8
-P 9950 5700
-F 0 "#FLG04" H 9950 5775 50  0001 C CNN
-F 1 "PWR_FLAG" H 9950 5873 50  0000 C CNN
-F 2 "" H 9950 5700 50  0001 C CNN
-F 3 "~" H 9950 5700 50  0001 C CNN
-	1    9950 5700
+P 9550 5600
+F 0 "#FLG04" H 9550 5675 50  0001 C CNN
+F 1 "PWR_FLAG" H 9550 5773 50  0000 C CNN
+F 2 "" H 9550 5600 50  0001 C CNN
+F 3 "~" H 9550 5600 50  0001 C CNN
+	1    9550 5600
 	-1   0    0    1   
 $EndComp
 $Comp
 L power:+24V #PWR041
 U 1 1 61924F74
-P 9950 5600
-F 0 "#PWR041" H 9950 5450 50  0001 C CNN
-F 1 "+24V" H 9965 5773 50  0000 C CNN
-F 2 "" H 9950 5600 50  0001 C CNN
-F 3 "" H 9950 5600 50  0001 C CNN
-	1    9950 5600
+P 9550 5500
+F 0 "#PWR041" H 9550 5350 50  0001 C CNN
+F 1 "+24V" H 9565 5673 50  0000 C CNN
+F 2 "" H 9550 5500 50  0001 C CNN
+F 3 "" H 9550 5500 50  0001 C CNN
+	1    9550 5500
 	1    0    0    -1  
 $EndComp
 $Comp
 L Connector:Conn_01x02_Male J6
 U 1 1 61926C7F
-P 9750 5400
-F 0 "J6" V 9585 5378 50  0000 C CNN
-F 1 "PWR" V 9676 5378 50  0000 C CNN
-F 2 "Connector_JST:JST_XH_B2B-XH-A_1x02_P2.50mm_Vertical" H 9750 5400 50  0001 C CNN
-F 3 "~" H 9750 5400 50  0001 C CNN
-F 4 "https://au.mouser.com/ProductDetail/426-FIT0255" V 9750 5400 50  0001 C CNN "Purchase Link"
-	1    9750 5400
+P 9350 5300
+F 0 "J6" V 9185 5278 50  0000 C CNN
+F 1 "PWR" V 9276 5278 50  0000 C CNN
+F 2 "Connector_JST:JST_XH_B2B-XH-A_1x02_P2.50mm_Vertical" H 9350 5300 50  0001 C CNN
+F 3 "~" H 9350 5300 50  0001 C CNN
+F 4 "https://au.mouser.com/ProductDetail/426-FIT0255" V 9350 5300 50  0001 C CNN "Purchase Link"
+	1    9350 5300
 	0    1    1    0   
 $EndComp
 Wire Wire Line
-	9750 5600 9750 5700
+	9350 5500 9350 5600
 Wire Wire Line
-	9750 5700 9950 5700
+	9350 5600 9550 5600
 Wire Wire Line
-	9950 5700 9950 5600
-Connection ~ 9950 5700
+	9550 5600 9550 5500
+Connection ~ 9550 5600
 $Comp
 L power:GND #PWR035
 U 1 1 61962CBA
-P 9400 5700
-F 0 "#PWR035" H 9400 5450 50  0001 C CNN
-F 1 "GND" H 9405 5527 50  0000 C CNN
-F 2 "" H 9400 5700 50  0001 C CNN
-F 3 "" H 9400 5700 50  0001 C CNN
-	1    9400 5700
+P 9000 5600
+F 0 "#PWR035" H 9000 5350 50  0001 C CNN
+F 1 "GND" H 9005 5427 50  0000 C CNN
+F 2 "" H 9000 5600 50  0001 C CNN
+F 3 "" H 9000 5600 50  0001 C CNN
+	1    9000 5600
 	1    0    0    -1  
 $EndComp
 $Comp
 L power:PWR_FLAG #FLG03
 U 1 1 619D5328
-P 9400 5600
-F 0 "#FLG03" H 9400 5675 50  0001 C CNN
-F 1 "PWR_FLAG" H 9400 5773 50  0000 C CNN
-F 2 "" H 9400 5600 50  0001 C CNN
-F 3 "~" H 9400 5600 50  0001 C CNN
-	1    9400 5600
+P 9000 5500
+F 0 "#FLG03" H 9000 5575 50  0001 C CNN
+F 1 "PWR_FLAG" H 9000 5673 50  0000 C CNN
+F 2 "" H 9000 5500 50  0001 C CNN
+F 3 "~" H 9000 5500 50  0001 C CNN
+	1    9000 5500
 	1    0    0    -1  
 $EndComp
 Wire Wire Line
-	9400 5600 9400 5700
+	9000 5500 9000 5600
 Wire Wire Line
-	9650 5600 9650 5700
+	9250 5500 9250 5600
 Wire Wire Line
-	9650 5700 9400 5700
-Connection ~ 9400 5700
+	9250 5600 9000 5600
+Connection ~ 9000 5600
 $Comp
 L power:PWR_FLAG #FLG01
 U 1 1 619FC90F
@@ -2539,4 +2539,53 @@ Wire Wire Line
 Connection ~ 7850 3950
 Wire Wire Line
 	7850 3950 7550 3950
+Text GLabel 3550 4550 2    50   Input ~ 0
+ASS
+$Comp
+L Switch:SW_SPST SW2
+U 1 1 6141924A
+P 3250 4550
+F 0 "SW2" V 3204 4648 50  0000 L CNN
+F 1 "SPST" V 3295 4648 50  0000 L CNN
+F 2 "lib:SW_SPST_THT_5.0mm" H 3250 4550 50  0001 C CNN
+F 3 "https://www.farnell.com/datasheets/3176355.pdf" H 3250 4550 50  0001 C CNN
+F 4 "" H 3250 4550 50  0001 C CNN "Purchase link"
+F 5 "https://au.element14.com/multicomp-pro/mc32879/switch-tactile-spst-no-50ma-though/dp/171299401" H 3250 4550 50  0001 C CNN "Purchase Link"
+	1    3250 4550
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	3550 4550 3450 4550
+Wire Wire Line
+	3050 4550 2950 4550
+Connection ~ 2950 4550
+$Comp
+L Connector:Conn_01x02_Male J15
+U 1 1 614A1089
+P 10350 5300
+F 0 "J15" V 10185 5278 50  0000 C CNN
+F 1 "FLOW" V 10276 5278 50  0000 C CNN
+F 2 "Connector_JST:JST_XH_B2B-XH-A_1x02_P2.50mm_Vertical" H 10350 5300 50  0001 C CNN
+F 3 "~" H 10350 5300 50  0001 C CNN
+F 4 "https://au.mouser.com/ProductDetail/426-FIT0255" V 10350 5300 50  0001 C CNN "Purchase Link"
+	1    10350 5300
+	0    1    1    0   
+$EndComp
+Text GLabel 10250 5500 3    50   Input ~ 0
+AIO5
+$Comp
+L power:GND #PWR0101
+U 1 1 61508FEE
+P 10400 5550
+F 0 "#PWR0101" H 10400 5300 50  0001 C CNN
+F 1 "GND" H 10405 5377 50  0000 C CNN
+F 2 "" H 10400 5550 50  0001 C CNN
+F 3 "" H 10400 5550 50  0001 C CNN
+	1    10400 5550
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	10400 5550 10350 5550
+Wire Wire Line
+	10350 5550 10350 5500
 $EndSCHEMATC
