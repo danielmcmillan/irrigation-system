@@ -164,7 +164,7 @@ L Switch:SW_SPST SW1
 U 1 1 6138C16A
 P 2950 3800
 F 0 "SW1" V 2904 3898 50  0000 L CNN
-F 1 "SPST" V 2995 3898 50  0000 L CNN
+F 1 "RESET" V 2995 3898 50  0000 L CNN
 F 2 "lib:SW_SPST_THT_5.0mm" H 2950 3800 50  0001 C CNN
 F 3 "https://www.farnell.com/datasheets/3176355.pdf" H 2950 3800 50  0001 C CNN
 F 4 "" H 2950 3800 50  0001 C CNN "Purchase link"
@@ -1747,9 +1747,9 @@ F 4 "https://au.mouser.com/ProductDetail/426-FIT0255" V 10750 1750 50  0001 C CN
 $EndComp
 Wire Wire Line
 	9600 3150 8900 3150
-Text GLabel 9200 1100 3    50   Input ~ 0
-AMOSI
 Text GLabel 9300 1100 3    50   Input ~ 0
+AMOSI
+Text GLabel 9600 1100 3    50   Input ~ 0
 AMISO
 Text GLabel 9400 1100 3    50   Input ~ 0
 ASCK
@@ -1757,25 +1757,19 @@ Text GLabel 9300 1950 3    50   Input ~ 0
 ARXD
 Text GLabel 9200 1950 3    50   Input ~ 0
 ATXD
-Text GLabel 9500 1100 3    50   Input ~ 0
+Text GLabel 9200 1100 3    50   Input ~ 0
 ARESET
 $Comp
 L power:+3.3V #PWR030
 U 1 1 61384461
-P 8900 1100
-F 0 "#PWR030" H 8900 950 50  0001 C CNN
-F 1 "+3.3V" H 8915 1273 50  0000 C CNN
-F 2 "" H 8900 1100 50  0001 C CNN
-F 3 "" H 8900 1100 50  0001 C CNN
-	1    8900 1100
+P 9750 1100
+F 0 "#PWR030" H 9750 950 50  0001 C CNN
+F 1 "+3.3V" H 9765 1273 50  0000 C CNN
+F 2 "" H 9750 1100 50  0001 C CNN
+F 3 "" H 9750 1100 50  0001 C CNN
+	1    9750 1100
 	1    0    0    -1  
 $EndComp
-Wire Wire Line
-	8900 1200 9100 1200
-Wire Wire Line
-	9100 1200 9100 1100
-Wire Wire Line
-	9600 1200 9600 1100
 Text GLabel 9400 1950 3    50   Input ~ 0
 ADTR
 $Comp
@@ -1783,7 +1777,7 @@ L Connector:Conn_01x06_Male J3
 U 1 1 6137F4B1
 P 9400 900
 F 0 "J3" V 9200 800 50  0000 L CNN
-F 1 "ATMEGA ICSP" V 9300 600 50  0000 L CNN
+F 1 "ICSP" V 9300 600 50  0000 L CNN
 F 2 "Connector_PinHeader_2.54mm:PinHeader_2x03_P2.54mm_Vertical" H 9400 900 50  0001 C CNN
 F 3 "~" H 9400 900 50  0001 C CNN
 F 4 "https://au.element14.com/amphenol-icc/77313-801-20lf/conn-header-20pos-2row-2-54mm/dp/3728842" H 9400 900 50  0001 C CNN "Purchase Link"
@@ -1809,7 +1803,7 @@ L Connector:Conn_01x06_Male J4
 U 1 1 613922D9
 P 9400 1750
 F 0 "J4" V 9235 1728 50  0000 C CNN
-F 1 "ATMEGA UART" V 9326 1728 50  0000 C CNN
+F 1 "UART" V 9326 1728 50  0000 C CNN
 F 2 "Connector_PinHeader_2.54mm:PinHeader_2x03_P2.54mm_Vertical" H 9400 1750 50  0001 C CNN
 F 3 "~" H 9400 1750 50  0001 C CNN
 F 4 "https://au.element14.com/amphenol-icc/77313-801-20lf/conn-header-20pos-2row-2-54mm/dp/3728842" H 9400 1750 50  0001 C CNN "Purchase Link"
@@ -1820,8 +1814,6 @@ Wire Wire Line
 	8900 2000 9100 2000
 Wire Wire Line
 	9100 2000 9100 1950
-Wire Wire Line
-	9800 1200 9600 1200
 Wire Wire Line
 	9600 1950 9800 1950
 Wire Wire Line
@@ -1854,16 +1846,14 @@ $EndComp
 $Comp
 L power:GND #PWR037
 U 1 1 614A3FA6
-P 9800 1300
-F 0 "#PWR037" H 9800 1050 50  0001 C CNN
-F 1 "GND" H 9805 1127 50  0000 C CNN
-F 2 "" H 9800 1300 50  0001 C CNN
-F 3 "" H 9800 1300 50  0001 C CNN
-	1    9800 1300
+P 9000 1250
+F 0 "#PWR037" H 9000 1000 50  0001 C CNN
+F 1 "GND" H 9005 1077 50  0000 C CNN
+F 2 "" H 9000 1250 50  0001 C CNN
+F 3 "" H 9000 1250 50  0001 C CNN
+	1    9000 1250
 	1    0    0    -1  
 $EndComp
-Wire Wire Line
-	9800 1200 9800 1300
 Wire Wire Line
 	9800 1950 9800 2050
 $Comp
@@ -1892,8 +1882,6 @@ Wire Wire Line
 	8900 3150 8900 3050
 Wire Wire Line
 	8900 2000 8900 1900
-Wire Wire Line
-	8900 1100 8900 1200
 $Comp
 L Connector:Conn_01x03_Male J1
 U 1 1 614FE796
@@ -2254,7 +2242,7 @@ F 4 "https://au.mouser.com/ProductDetail/426-FIT0255" V 10750 2550 50  0001 C CN
 	0    1    1    0   
 $EndComp
 Text Notes 7050 7000 0    50   ~ 0
-Note on I/O pins:\nAI01, AIO2, AIO4, AIO4: output for relays.\nASS: Input for SW2.\nAIO5: Input for FLOW.\nASS, ASCK, AMOSI, AMISO support analog input.
+Note on I/O pins:\nAI01, AIO2, AIO4, AIO4: output for relays.\nASS: Input for BUTTON.\nAIO5: Input for FLOW.\nASS, ASCK, AMOSI, AMISO support analog input.
 Text GLabel 10450 4750 3    50   Input ~ 0
 ASDA
 Text GLabel 10550 4750 3    50   Input ~ 0
@@ -2338,7 +2326,7 @@ L Connector:Conn_01x02_Male J6
 U 1 1 61926C7F
 P 9350 5300
 F 0 "J6" V 9185 5278 50  0000 C CNN
-F 1 "PWR" V 9276 5278 50  0000 C CNN
+F 1 "PWR 24V" V 9276 5278 50  0000 C CNN
 F 2 "Connector_JST:JST_XH_B2B-XH-A_1x02_P2.50mm_Vertical" H 9350 5300 50  0001 C CNN
 F 3 "~" H 9350 5300 50  0001 C CNN
 F 4 "https://au.mouser.com/ProductDetail/426-FIT0255" V 9350 5300 50  0001 C CNN "Purchase Link"
@@ -2546,7 +2534,7 @@ L Switch:SW_SPST SW2
 U 1 1 6141924A
 P 3250 4550
 F 0 "SW2" V 3204 4648 50  0000 L CNN
-F 1 "SPST" V 3295 4648 50  0000 L CNN
+F 1 "BUTTON" V 3295 4648 50  0000 L CNN
 F 2 "lib:SW_SPST_THT_5.0mm" H 3250 4550 50  0001 C CNN
 F 3 "https://www.farnell.com/datasheets/3176355.pdf" H 3250 4550 50  0001 C CNN
 F 4 "" H 3250 4550 50  0001 C CNN "Purchase link"
@@ -2588,4 +2576,16 @@ Wire Wire Line
 	10400 5550 10350 5550
 Wire Wire Line
 	10350 5550 10350 5500
+Wire Wire Line
+	9500 1100 9500 1450
+Wire Wire Line
+	9500 1450 9750 1450
+Wire Wire Line
+	9750 1450 9750 1100
+Wire Wire Line
+	9000 1250 9000 1150
+Wire Wire Line
+	9000 1150 9100 1150
+Wire Wire Line
+	9100 1150 9100 1100
 $EndSCHEMATC
