@@ -415,7 +415,7 @@ L lib:UA2-5NU K1
 U 1 1 6152BDC7
 P 1900 7100
 F 0 "K1" V 1133 7100 50  0000 C CNN
-F 1 "UA2-5NU" V 1224 7100 50  0000 C CNN
+F 1 "RELAY_3" V 1224 7100 50  0000 C CNN
 F 2 "lib:Relay_DPDT_NEXEM_UA2_Pitch3.2mm" H 1900 7100 50  0001 C CNN
 F 3 "https://www.farnell.com/datasheets/2302216.pdf" H 1900 7100 50  0001 C CNN
 F 4 "https://au.element14.com/nexem/ua2-5nu/signal-relay-dpdt-1a-250vac-th/dp/2766147" H 1900 7100 50  0001 C CNN "Purchase Link"
@@ -1726,23 +1726,11 @@ L Connector:Conn_01x03_Male J8
 U 1 1 613F8F16
 P 10300 1750
 F 0 "J8" V 10135 1728 50  0000 C CNN
-F 1 "RELAY_3A" V 10226 1728 50  0000 C CNN
+F 1 "RELAY_3" V 10226 1728 50  0000 C CNN
 F 2 "Connector_JST:JST_XH_B3B-XH-A_1x03_P2.50mm_Vertical" H 10300 1750 50  0001 C CNN
 F 3 "~" H 10300 1750 50  0001 C CNN
 F 4 "https://au.mouser.com/ProductDetail/426-FIT0255" V 10300 1750 50  0001 C CNN "Purchase Link"
 	1    10300 1750
-	0    1    1    0   
-$EndComp
-$Comp
-L Connector:Conn_01x03_Male J13
-U 1 1 6142E79F
-P 10750 1750
-F 0 "J13" V 10585 1728 50  0000 C CNN
-F 1 "RELAY_3B" V 10676 1728 50  0000 C CNN
-F 2 "Connector_JST:JST_XH_B3B-XH-A_1x03_P2.50mm_Vertical" H 10750 1750 50  0001 C CNN
-F 3 "~" H 10750 1750 50  0001 C CNN
-F 4 "https://au.mouser.com/ProductDetail/426-FIT0255" V 10750 1750 50  0001 C CNN "Purchase Link"
-	1    10750 1750
 	0    1    1    0   
 $EndComp
 Wire Wire Line
@@ -1753,9 +1741,9 @@ Text GLabel 9600 1100 3    50   Input ~ 0
 AMISO
 Text GLabel 9400 1100 3    50   Input ~ 0
 ASCK
-Text GLabel 9300 1950 3    50   Input ~ 0
-ARXD
 Text GLabel 9200 1950 3    50   Input ~ 0
+ARXD
+Text GLabel 9300 1950 3    50   Input ~ 0
 ATXD
 Text GLabel 9200 1100 3    50   Input ~ 0
 ARESET
@@ -1901,7 +1889,7 @@ L Connector:Conn_01x04_Male J2
 U 1 1 6153C961
 P 9350 4550
 F 0 "J2" V 9185 4528 50  0000 C CNN
-F 1 "I2C_1" V 9276 4528 50  0000 C CNN
+F 1 "I2C" V 9276 4528 50  0000 C CNN
 F 2 "Connector_JST:JST_XH_B4B-XH-A_1x04_P2.50mm_Vertical" H 9350 4550 50  0001 C CNN
 F 3 "~" H 9350 4550 50  0001 C CNN
 F 4 "https://au.mouser.com/ProductDetail/426-FIT0255" V 9350 4550 50  0001 C CNN "Purchase Link"
@@ -2026,7 +2014,7 @@ L lib:UA2-5NU K2
 U 1 1 615A0129
 P 4000 7100
 F 0 "K2" V 3233 7100 50  0000 C CNN
-F 1 "UA2-5NU" V 3324 7100 50  0000 C CNN
+F 1 "RELAY_4" V 3324 7100 50  0000 C CNN
 F 2 "lib:Relay_DPDT_NEXEM_UA2_Pitch3.2mm" H 4000 7100 50  0001 C CNN
 F 3 "https://www.farnell.com/datasheets/2302216.pdf" H 4000 7100 50  0001 C CNN
 F 4 "https://au.element14.com/nexem/ua2-5nu/signal-relay-dpdt-1a-250vac-th/dp/2766147" H 4000 7100 50  0001 C CNN "Purchase Link"
@@ -2222,23 +2210,11 @@ L Connector:Conn_01x03_Male J9
 U 1 1 6170C91D
 P 10300 2550
 F 0 "J9" V 10135 2528 50  0000 C CNN
-F 1 "RELAY_4A" V 10226 2528 50  0000 C CNN
+F 1 "RELAY_4" V 10226 2528 50  0000 C CNN
 F 2 "Connector_JST:JST_XH_B3B-XH-A_1x03_P2.50mm_Vertical" H 10300 2550 50  0001 C CNN
 F 3 "~" H 10300 2550 50  0001 C CNN
 F 4 "https://au.mouser.com/ProductDetail/426-FIT0255" V 10300 2550 50  0001 C CNN "Purchase Link"
 	1    10300 2550
-	0    1    1    0   
-$EndComp
-$Comp
-L Connector:Conn_01x03_Male J14
-U 1 1 6170C928
-P 10750 2550
-F 0 "J14" V 10585 2528 50  0000 C CNN
-F 1 "RELAY_4B" V 10676 2528 50  0000 C CNN
-F 2 "Connector_JST:JST_XH_B3B-XH-A_1x03_P2.50mm_Vertical" H 10750 2550 50  0001 C CNN
-F 3 "~" H 10750 2550 50  0001 C CNN
-F 4 "https://au.mouser.com/ProductDetail/426-FIT0255" V 10750 2550 50  0001 C CNN "Purchase Link"
-	1    10750 2550
 	0    1    1    0   
 $EndComp
 Text Notes 7050 7000 0    50   ~ 0
@@ -2252,7 +2228,7 @@ L Connector:Conn_01x04_Male J10
 U 1 1 618BA1F4
 P 10550 4550
 F 0 "J10" V 10385 4528 50  0000 C CNN
-F 1 "I2C_2" V 10476 4528 50  0000 C CNN
+F 1 "I2C" V 10476 4528 50  0000 C CNN
 F 2 "Connector_JST:JST_XH_B4B-XH-A_1x04_P2.50mm_Vertical" H 10550 4550 50  0001 C CNN
 F 3 "~" H 10550 4550 50  0001 C CNN
 F 4 "https://au.mouser.com/ProductDetail/426-FIT0255" V 10550 4550 50  0001 C CNN "Purchase Link"
@@ -2302,23 +2278,23 @@ Wire Notes Line
 $Comp
 L power:PWR_FLAG #FLG04
 U 1 1 61923EF8
-P 9550 5600
-F 0 "#FLG04" H 9550 5675 50  0001 C CNN
-F 1 "PWR_FLAG" H 9550 5773 50  0000 C CNN
-F 2 "" H 9550 5600 50  0001 C CNN
-F 3 "~" H 9550 5600 50  0001 C CNN
-	1    9550 5600
+P 9800 5650
+F 0 "#FLG04" H 9800 5725 50  0001 C CNN
+F 1 "PWR_FLAG" H 9800 5823 50  0000 C CNN
+F 2 "" H 9800 5650 50  0001 C CNN
+F 3 "~" H 9800 5650 50  0001 C CNN
+	1    9800 5650
 	-1   0    0    1   
 $EndComp
 $Comp
 L power:+24V #PWR041
 U 1 1 61924F74
-P 9550 5500
-F 0 "#PWR041" H 9550 5350 50  0001 C CNN
-F 1 "+24V" H 9565 5673 50  0000 C CNN
-F 2 "" H 9550 5500 50  0001 C CNN
-F 3 "" H 9550 5500 50  0001 C CNN
-	1    9550 5500
+P 9800 5500
+F 0 "#PWR041" H 9800 5350 50  0001 C CNN
+F 1 "+24V" H 9815 5673 50  0000 C CNN
+F 2 "" H 9800 5500 50  0001 C CNN
+F 3 "" H 9800 5500 50  0001 C CNN
+	1    9800 5500
 	1    0    0    -1  
 $EndComp
 $Comp
@@ -2335,11 +2311,6 @@ F 4 "https://au.mouser.com/ProductDetail/426-FIT0255" V 9350 5300 50  0001 C CNN
 $EndComp
 Wire Wire Line
 	9350 5500 9350 5600
-Wire Wire Line
-	9350 5600 9550 5600
-Wire Wire Line
-	9550 5600 9550 5500
-Connection ~ 9550 5600
 $Comp
 L power:GND #PWR035
 U 1 1 61962CBA
@@ -2552,7 +2523,7 @@ L Connector:Conn_01x02_Male J15
 U 1 1 614A1089
 P 10350 5300
 F 0 "J15" V 10185 5278 50  0000 C CNN
-F 1 "FLOW" V 10276 5278 50  0000 C CNN
+F 1 "FLOW_1" V 10276 5278 50  0000 C CNN
 F 2 "Connector_JST:JST_XH_B2B-XH-A_1x02_P2.50mm_Vertical" H 10350 5300 50  0001 C CNN
 F 3 "~" H 10350 5300 50  0001 C CNN
 F 4 "https://au.mouser.com/ProductDetail/426-FIT0255" V 10350 5300 50  0001 C CNN "Purchase Link"
@@ -2588,4 +2559,94 @@ Wire Wire Line
 	9000 1150 9100 1150
 Wire Wire Line
 	9100 1150 9100 1100
+NoConn ~ 10650 1950
+NoConn ~ 10750 1950
+NoConn ~ 10850 1950
+NoConn ~ 10650 2750
+NoConn ~ 10750 2750
+NoConn ~ 10850 2750
+$Comp
+L Mechanical:MountingHole_Pad H1
+U 1 1 61A279E9
+P 9200 6000
+F 0 "H1" H 9300 6049 50  0000 L CNN
+F 1 "MountingHole_Pad" H 9300 5958 50  0000 L CNN
+F 2 "MountingHole:MountingHole_3mm_Pad" H 9200 6000 50  0001 C CNN
+F 3 "~" H 9200 6000 50  0001 C CNN
+	1    9200 6000
+	1    0    0    -1  
+$EndComp
+$Comp
+L Mechanical:MountingHole_Pad H3
+U 1 1 61A28377
+P 10100 6000
+F 0 "H3" H 10200 6049 50  0000 L CNN
+F 1 "MountingHole_Pad" H 10200 5958 50  0000 L CNN
+F 2 "MountingHole:MountingHole_3mm_Pad" H 10100 6000 50  0001 C CNN
+F 3 "~" H 10100 6000 50  0001 C CNN
+	1    10100 6000
+	1    0    0    -1  
+$EndComp
+$Comp
+L Mechanical:MountingHole_Pad H2
+U 1 1 61A289B4
+P 9200 6200
+F 0 "H2" H 9100 6157 50  0000 R CNN
+F 1 "MountingHole_Pad" H 9100 6248 50  0000 R CNN
+F 2 "MountingHole:MountingHole_3mm_Pad" H 9200 6200 50  0001 C CNN
+F 3 "~" H 9200 6200 50  0001 C CNN
+	1    9200 6200
+	-1   0    0    1   
+$EndComp
+$Comp
+L Mechanical:MountingHole_Pad H4
+U 1 1 61A292A3
+P 10100 6200
+F 0 "H4" H 10000 6157 50  0000 R CNN
+F 1 "MountingHole_Pad" H 10000 6248 50  0000 R CNN
+F 2 "MountingHole:MountingHole_3mm_Pad" H 10100 6200 50  0001 C CNN
+F 3 "~" H 10100 6200 50  0001 C CNN
+	1    10100 6200
+	-1   0    0    1   
+$EndComp
+$Comp
+L power:GND #PWR045
+U 1 1 61A29698
+P 9000 6200
+F 0 "#PWR045" H 9000 5950 50  0001 C CNN
+F 1 "GND" H 9005 6027 50  0000 C CNN
+F 2 "" H 9000 6200 50  0001 C CNN
+F 3 "" H 9000 6200 50  0001 C CNN
+	1    9000 6200
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	9000 6200 9000 6100
+Wire Wire Line
+	9000 6100 9200 6100
+Connection ~ 9200 6100
+Wire Wire Line
+	9200 6100 10100 6100
+Connection ~ 10100 6100
+$Comp
+L Device:Fuse F1
+U 1 1 61A87884
+P 9600 5600
+F 0 "F1" V 9403 5600 50  0000 C CNN
+F 1 "Fuse" V 9494 5600 50  0000 C CNN
+F 2 "Inductor_THT:L_Radial_D8.7mm_P5.00mm_Fastron_07HCP" V 9530 5600 50  0001 C CNN
+F 3 "~" H 9600 5600 50  0001 C CNN
+F 4 "https://au.mouser.com/ProductDetail/530-MRF200" H 9600 5600 50  0001 C CNN "Purchase Link"
+	1    9600 5600
+	0    1    1    0   
+$EndComp
+Wire Wire Line
+	9800 5500 9800 5600
+Wire Wire Line
+	9800 5600 9750 5600
+Wire Wire Line
+	9450 5600 9350 5600
+Wire Wire Line
+	9800 5650 9800 5600
+Connection ~ 9800 5600
 $EndSCHEMATC
