@@ -2559,12 +2559,6 @@ Wire Wire Line
 	9000 1150 9100 1150
 Wire Wire Line
 	9100 1150 9100 1100
-NoConn ~ 10650 1950
-NoConn ~ 10750 1950
-NoConn ~ 10850 1950
-NoConn ~ 10650 2750
-NoConn ~ 10750 2750
-NoConn ~ 10850 2750
 $Comp
 L Mechanical:MountingHole_Pad H1
 U 1 1 61A279E9
@@ -2649,4 +2643,28 @@ Wire Wire Line
 Wire Wire Line
 	9800 5650 9800 5600
 Connection ~ 9800 5600
+Text GLabel 10850 1900 1    50   Input ~ 0
+R3AC
+Text GLabel 10750 1900 1    50   Input ~ 0
+R3ANO
+Text GLabel 10650 1900 1    50   Input ~ 0
+R3ANC
+Text GLabel 10850 2700 1    50   Input ~ 0
+R4AC
+Text GLabel 10750 2700 1    50   Input ~ 0
+R4ANO
+Text GLabel 10650 2700 1    50   Input ~ 0
+R4ANC
+Wire Wire Line
+	10650 1900 10650 1950
+Wire Wire Line
+	10750 1900 10750 1950
+Wire Wire Line
+	10850 1900 10850 1950
+Wire Wire Line
+	10650 2700 10650 2750
+Wire Wire Line
+	10750 2700 10750 2750
+Wire Wire Line
+	10850 2700 10850 2750
 $EndSCHEMATC
