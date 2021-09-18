@@ -27,7 +27,11 @@
 5. Run script from https://github.com/matthewlai/JLCKicadTools.
 
    - Install dependencies: `pip install -r requirements.txt`
-   - This line needs adding to the "jlc_kicad_tools/cpl_rotations_db.csv" file: `"^Texas_Instruments-TPS54331DR-Level_A",270`
+   - These lines need adding to the "jlc_kicad_tools/cpl_rotations_db.csv" file:
+     ```
+     "^Texas_Instruments-TPS54331DR-Level_A",270
+     "^Texas_HTSOP-8-1EP_3.9x4.9mm_P1.27mm_EP2.95x4.9mm_Mask2.4x3.1mm_ThermalVias",270
+     ```
    - Install: `python3 setup.py install --user`
    - Run in the KiCad project directory: `jlc-kicad-tools . -o ./out`
    - _\_bom_jlc.csv and _\_cpl_jlc.csv files are written to the out folder.

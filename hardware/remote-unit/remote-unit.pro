@@ -1,4 +1,4 @@
-update=17/09/2021 10:01:52 PM
+update=18/09/2021 3:50:22 PM
 version=1
 last_client=kicad
 [general]
@@ -12,16 +12,6 @@ NetIExt=net
 version=1
 LibDir=
 [eeschema/libraries]
-[schematic_editor]
-version=1
-PageLayoutDescrFile=
-PlotDirectoryName=
-SubpartIdSeparator=0
-SubpartFirstId=65
-NetFmtName=Pcbnew
-SpiceAjustPassiveValues=0
-LabSize=50
-ERC_TestSimilarLabels=1
 [pcbnew]
 version=1
 PageLayoutDescrFile=
@@ -39,13 +29,10 @@ MinMicroViaDiameter=0.2
 MinMicroViaDrill=0.09999999999999999
 MinHoleToHole=0.5
 TrackWidth1=0.25
-TrackWidth2=0.55
+TrackWidth2=0.5
 TrackWidth3=0.65
-TrackWidth4=1.2
 ViaDiameter1=0.8
 ViaDrill1=0.4
-ViaDiameter2=1
-ViaDrill2=0.6
 dPairWidth1=0.25
 dPairGap1=0.25
 dPairViaGap1=0.25
@@ -206,7 +193,7 @@ Enabled=0
 [pcbnew/Layer.F.Adhes]
 Enabled=1
 [pcbnew/Layer.B.Paste]
-Enabled=0
+Enabled=1
 [pcbnew/Layer.F.Paste]
 Enabled=1
 [pcbnew/Layer.B.SilkS]
@@ -234,7 +221,7 @@ Enabled=1
 [pcbnew/Layer.F.CrtYd]
 Enabled=1
 [pcbnew/Layer.B.Fab]
-Enabled=0
+Enabled=1
 [pcbnew/Layer.F.Fab]
 Enabled=1
 [pcbnew/Layer.Rescue]
@@ -244,6 +231,17 @@ Enabled=0
 Name=Default
 Clearance=0.25
 TrackWidth=0.25
+ViaDiameter=0.8
+ViaDrill=0.4
+uViaDiameter=0.3
+uViaDrill=0.1
+dPairWidth=0.25
+dPairGap=0.25
+dPairViaGap=0.25
+[pcbnew/Netclasses/1]
+Name=Power
+Clearance=0.25
+TrackWidth=2
 ViaDiameter=0.8
 ViaDrill=0.4
 uViaDiameter=0.3
