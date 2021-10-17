@@ -508,9 +508,10 @@ U 1 1 6146EEBD
 P 7250 950
 F 0 "L1" V 7440 950 50  0000 C CNN
 F 1 "33uH" V 7349 950 50  0000 C CNN
-F 2 "Capacitor_THT:C_Radial_D5.0mm_H7.0mm_P2.00mm" H 7250 950 50  0001 C CNN
-F 3 "https://au.mouser.com/datasheet/2/54/rlb-777833.pdf" H 7250 950 50  0001 C CNN
-F 4 "https://au.mouser.com/ProductDetail/652-RLB0608-330KL" H 7250 950 50  0001 C CNN "Purchase Link"
+F 2 "Inductor_SMD:L_12x12mm_H8mm" H 7250 950 50  0001 C CNN
+F 3 "https://datasheet.lcsc.com/lcsc/1810261033_Sunltech-Tech-SLH1207S330MTT_C181844.pdf" H 7250 950 50  0001 C CNN
+F 4 "NA" H 7250 950 50  0001 C CNN "Purchase Link"
+F 5 "C181844" H 7250 950 50  0001 C CNN "JLCPCB Part"
 	1    7250 950 
 	0    -1   -1   0   
 $EndComp
@@ -644,7 +645,7 @@ U 1 1 6138A907
 P 9350 1750
 F 0 "J2" V 9185 1728 50  0000 C CNN
 F 1 "RF Module" V 9276 1728 50  0000 C CNN
-F 2 "Connector_PinSocket_2.54mm:PinSocket_1x07_P2.54mm_Vertical" H 9350 1750 50  0001 C CNN
+F 2 "lib:YL_800T" H 9350 1750 50  0001 C CNN
 F 3 "~" H 9350 1750 50  0001 C CNN
 F 4 "https://au.element14.com/amphenol-icc/10129378-920003blf/conn-header-20pos-1row-2-54mm/dp/3728430" H 9350 1750 50  0001 C CNN "Purchase Link"
 	1    9350 1750
