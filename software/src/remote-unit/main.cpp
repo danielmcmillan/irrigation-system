@@ -3,6 +3,7 @@
 
 // Note: add __AVR_ATmega328P__ to defined in c_cpp_properties.json
 
+#include <Arduino.h>
 #include <avr/sleep.h>
 
 // Pins
