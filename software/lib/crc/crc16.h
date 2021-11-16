@@ -16,7 +16,7 @@ namespace IrrigationSystem
          */
         uint16_t crc16Update(uint16_t crc, uint8_t data);
         /**
-         * Calculates a CRC value for a given set of data.
+         * Calculates a CRC-16/MODBUS value for a given set of data.
          */
         uint16_t crc16(const uint8_t *data, uint16_t length);
     }
