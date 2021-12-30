@@ -14,10 +14,11 @@ void refreshPropertyValues();
 
 struct Property
 {
-    uint16_t source;
-    uint32_t id;
+    uint8_t controller;
+    uint16_t id;
     /** The number of bytes for the value */
     uint8_t size;
+    bool readOnly;
     // /** Power of 10 that the value is multiplied by */
     // int8_t mul;
     // /** The format of the data */
@@ -28,8 +29,9 @@ struct Property
     uint8_t desiredValue[4];
 };
 
+char logBuffer[128] = {0};
 // Motor on property
-Property properties[] = {{.source = 0x0001, .id = 0x00000000, .size = 1, .value = {0x00}, .desiredValue = {0x00}}};
+Property properties[] = {{.controller = 0x02, .id = 0x0001, .size = 1}};
 
 void setup()
 {
@@ -42,48 +44,75 @@ void setup()
 void loop()
 {
     refreshPropertyValues();
-    delay(100);
+    delay(2000);
+}
+
+void logProperties()
+{
+    for (Property property : properties)
+    {
+        sprintf(logBuffer, "Controller 0x%02x, id 0x%04x, value 0x%02x, desired 0x%02x", property.controller, property.id, property.value[0], property.desiredValue[0]);
+        Logger::notice(logBuffer);
+    }
 }
 
 void refreshPropertyValues()
 {
-    char s[128] = {0};
+    uint8_t dataBuffer[32] = {0};
+
     unsigned long startMillis = millis();
     Logger::verbose("Starting property refresh");
 
-    // Send slave register address
-    uint32_t propertyValuesSlaveRegister = 0x12345678;
-    Wire.beginTransmission(10);
-    Wire.write(0x56);
-    Wire.write(0x34);
-    Wire.write(0x12);
-    uint8_t writeResult = Wire.endTransmission(false);
-    sprintf(s, "Write result: %d.", writeResult);
-    Logger::verbose(s);
-    uint8_t bytesRead = Wire.requestFrom(10, 7);
-    sprintf(s, "Bytes read: %d", bytesRead);
-    Logger::verbose(s);
-    uint16_t crc = IrrigationSystem::CRC::crc16Init;
-    while (Wire.available() > 0)
-    {
-        int data = Wire.read();
-        crc = IrrigationSystem::CRC::crc16Update(crc, data);
-        sprintf(s, "%02x", data);
-        // Serial.print(s);
-    }
-    // Serial.println();
-    sprintf(s, "CRC: 0x%04x", crc);
-    Logger::verbose(s);
+    const int controlProcessorI2CAddress = 10;
+    const uint8_t requestPropertiesCommand = 0x02;
+    const uint8_t ackCommand = 0x50;
 
-    if (crc != 0)
+    // Build command to request property value
+    dataBuffer[0] = requestPropertiesCommand;
+    dataBuffer[1] = properties[0].controller;
+    *((uint16_t *)&dataBuffer[2]) = properties[0].id;
+    *((uint16_t *)&dataBuffer[4]) = IrrigationSystem::CRC::crc16(dataBuffer, 5);
+
+    // Send command
+    Wire.beginTransmission(controlProcessorI2CAddress);
+    Wire.write(dataBuffer, 7);
+    uint8_t writeResult = Wire.endTransmission(false);
+    sprintf(logBuffer, "Write result: %d.", writeResult);
+    Logger::verbose(logBuffer);
+
+    // Read property value
+    size_t responseLength = 1 /*ack*/ + properties[0].size * 2 /*value + desired value*/ + 2 /*crc*/;
+    uint8_t bytesRead = Wire.requestFrom(controlProcessorI2CAddress, responseLength);
+    Wire.readBytes(dataBuffer, responseLength);
+    uint16_t responseCrc = IrrigationSystem::CRC::crc16(dataBuffer, responseLength);
+    sprintf(logBuffer, "Read: %d bytes: 0x%02x%02x%02x%02x%02x. CRC: 0x%04x", bytesRead, dataBuffer[0], dataBuffer[1], dataBuffer[2], dataBuffer[3], dataBuffer[4], responseCrc);
+    Logger::verbose(logBuffer);
+
+    if (bytesRead != responseLength)
+    {
+        Logger::error("Read wrong number of bytes");
+    }
+    else if (responseCrc != 0)
     {
         Logger::error("Got a non-zero CRC");
-        sprintf(s, "CRC: 0x%04x", crc);
-        Logger::error(s);
+    }
+    else if (dataBuffer[0] != ackCommand)
+    {
+        Logger::error("Response wasn't ACK");
+    }
+    else
+    {
+        // Copy property value to properties
+        memcpy(properties[0].value, &dataBuffer[1], properties[0].size);
+        if (!properties[0].readOnly)
+        {
+            memcpy(properties[0].desiredValue, &dataBuffer[1 + properties[0].size], properties[0].size);
+        }
     }
 
-    sprintf(s, "Finished property refresh after %lu ms", millis() - startMillis);
-    Logger::notice(s);
+    sprintf(logBuffer, "Finished property refresh after %lu ms", millis() - startMillis);
+    Logger::notice(logBuffer);
+    logProperties();
 
     // Read response, updates propertyValues
     // const uint8_t data[] = {0x01, 0x02, 0x03, 0x04, 0x05, 0x00, 0x00};

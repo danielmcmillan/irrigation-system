@@ -18,10 +18,10 @@ void onReceive(int length)
 
 void onRequest()
 {
-    uint8_t data[] = {0x01, 0x02, 0x03, 0x04, 0x05, 0x00, 0x00};
-    uint16_t crc = IrrigationSystem::CRC::crc16(data, 5);
-    *((uint16_t *)&data[5]) = crc;
-    Wire.write(data, 7);
+    uint8_t data[] = {0x50, 0x00, 0x01, 0x00, 0x00};
+    uint16_t crc = IrrigationSystem::CRC::crc16(data, 3);
+    *((uint16_t *)&data[3]) = crc;
+    Wire.write(data, 5);
 }
 
 void setup()
