@@ -1,6 +1,7 @@
-#include "vacon100-modbus.h"
+#include "vacon-100-modbus-client.h"
 #include <ArduinoModbus.h>
 #include <ArduinoRS485.h>
+#include <errno.h>
 
 // IN: Control word
 #define CONTROL_WORD_ADDRESS 2001
@@ -11,53 +12,45 @@
 // OUT: Status word
 #define STATUS_WORD_ADDRESS 2101
 
-namespace Vacon100Modbus
+namespace IrrigationSystem
 {
-    namespace StatusWordMask
-    {
-        uint16_t ready = 1;
-        uint16_t run = 1 << 1;
-        uint16_t direction = 1 << 2;
-        uint16_t fault = 1 << 3;
-        uint16_t alarm = 1 << 4;
-        uint16_t atReference = 1 << 5;
-        uint16_t zeroSpeed = 1 << 6;
-        uint16_t fluxReady = 1 << 7;
-    }
-
-    Client::Client(Stream &stream, int re, int de, int di) : slaveId(1),
-                                                             rs485(stream, di, de, re)
+    Vacon100Client::Vacon100Client(Stream &stream, int re, int de, int di) : slaveId(1),
+                                                                             rs485(stream, di, de, re)
     {
     }
 
-    void Client::setSlaveId(int slaveAddress)
+    void Vacon100Client::setSlaveId(int slaveAddress)
     {
         this->slaveId = slaveAddress;
     }
 
-    int Client::begin()
+    int Vacon100Client::begin()
     {
+        errno = 0;
         return ModbusRTUClient.begin(rs485, 0);
     }
 
-    void Client::end()
+    void Vacon100Client::end()
     {
         ModbusRTUClient.end();
     }
 
-    int Client::setStart(bool start, bool force)
+    int Vacon100Client::setStart(bool start, bool force)
     {
+        errno = 0;
         uint16_t value = (start ? CONTROL_WORD_ON : 0) | (force ? CONTROL_WORD_FORCE : 0);
         return ModbusRTUClient.holdingRegisterWrite(slaveId, CONTROL_WORD_ADDRESS, value);
     }
 
-    int Client::setSpeed(uint16_t value)
+    int Vacon100Client::setSpeed(uint16_t value)
     {
+        errno = 0;
         return ModbusRTUClient.holdingRegisterWrite(slaveId, SPEED_REF_ADDRESS, value);
     }
 
-    int Client::readInputRegisters(Data *data)
+    int Vacon100Client::readInputRegisters(Vacon100Data *data)
     {
+        errno = 0;
         int result = ModbusRTUClient.requestFrom(slaveId, INPUT_REGISTERS, STATUS_WORD_ADDRESS, 11);
         if (result != 0)
         {
@@ -76,7 +69,7 @@ namespace Vacon100Modbus
         return result;
     }
 
-    String Data::toString()
+    String Vacon100Data::toString()
     {
         char result[400] = {};
         sprintf_P(
@@ -85,14 +78,14 @@ namespace Vacon100Modbus
                  "- atReference: %d\n- zeroSpeed: %d\n- fluxReady: %d\nProcess data:\n- actualSpeed: %d * 0.01%%\n"
                  "- outputFrequency: %d * 0.01 Hz\n- motorSpeed: %d rpm\n- motorCurrent: %d * 0.1 A\n- motorTorque: %d * 0.1%%\n"
                  "- motorPower: %d * 0.1%%\n- motorVoltage: %d * 0.1 V\n- dcLinkVoltage: %d V\n- activeFaultCode: %d\n"),
-            (this->statusWord & StatusWordMask::ready) > 0,
-            (this->statusWord & StatusWordMask::run) > 0,
-            (this->statusWord & StatusWordMask::direction) > 0,
-            (this->statusWord & StatusWordMask::fault) > 0,
-            (this->statusWord & StatusWordMask::alarm) > 0,
-            (this->statusWord & StatusWordMask::atReference) > 0,
-            (this->statusWord & StatusWordMask::zeroSpeed) > 0,
-            (this->statusWord & StatusWordMask::fluxReady) > 0,
+            (this->statusWord & Vacon100StatusWordMask::ready) > 0,
+            (this->statusWord & Vacon100StatusWordMask::run) > 0,
+            (this->statusWord & Vacon100StatusWordMask::direction) > 0,
+            (this->statusWord & Vacon100StatusWordMask::fault) > 0,
+            (this->statusWord & Vacon100StatusWordMask::alarm) > 0,
+            (this->statusWord & Vacon100StatusWordMask::atReference) > 0,
+            (this->statusWord & Vacon100StatusWordMask::zeroSpeed) > 0,
+            (this->statusWord & Vacon100StatusWordMask::fluxReady) > 0,
             this->actualSpeed,
             this->outputFrequency,
             this->motorSpeed,

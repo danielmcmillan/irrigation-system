@@ -3,10 +3,10 @@
 #include <Arduino.h>
 #include <ArduinoRS485.h>
 
-namespace Vacon100Modbus
+namespace IrrigationSystem
 {
     /** Data from the Vacon100 input registers. */
-    struct Data
+    struct Vacon100Data
     {
         /** Flags indicating current status. See `Vacon100StatusWordMask`. */
         uint16_t statusWord;
@@ -33,32 +33,35 @@ namespace Vacon100Modbus
     };
 
     /** Masks for bits in the status word. */
-    namespace StatusWordMask
+    namespace Vacon100StatusWordMask
     {
-        extern uint16_t ready;
-        extern uint16_t run;
-        extern uint16_t direction;
-        extern uint16_t fault;
-        extern uint16_t alarm;
-        extern uint16_t atReference;
-        extern uint16_t zeroSpeed;
-        extern uint16_t fluxReady;
+        enum : uint16_t
+        {
+            ready = 1,
+            run = 1 << 1,
+            direction = 1 << 2,
+            fault = 1 << 3,
+            alarm = 1 << 4,
+            atReference = 1 << 5,
+            zeroSpeed = 1 << 6,
+            fluxReady = 1 << 7,
+        };
     }
 
     /**
      * Client for fieldbus control of Vacon 100 using Modbus RTU over RS485.
      */
-    class Client
+    class Vacon100Client
     {
     public:
-        Client(Stream &stream, int re, int de, int di);
+        Vacon100Client(Stream &stream, int re, int de, int di);
 
-        /** Set the slave address of the Vacon100 to something other than the default 1. */
+        /** Set the slave address of the Vacon 100 to something other than the default 1. */
         void setSlaveId(int slaveAddress);
 
         /**
          * Start the client.
-         * TODO: error. Returns 0 on failure.
+         * Returns 0 on failure and sets errno.
          */
         int begin();
 
@@ -70,22 +73,22 @@ namespace Vacon100Modbus
         /**
          * Sends a start or stop request by setting the control word register.
          * Specify force as true to force fieldbus control place.
-         * TODO: error. Returns 0 on failure.
+         * Returns 0 on failure and sets errno.
          **/
         int setStart(bool start, bool force = false);
 
         /**
          * Set the FB speed reference register.
          * Value range is 0 - 10,000, where 10,000 represents 100%
-         * TODO: error. Returns 0 on failure.
+         * Returns 0 on failure and sets errno.
          */
         int setSpeed(uint16_t value);
 
         /**
          * Read the current state from input registers into the provided Vacon100Data object.
-         * TODO: error. Returns 0 on failure.
+         * Returns 0 on failure and sets errno.
          */
-        int readInputRegisters(Data *result);
+        int readInputRegisters(Vacon100Data *result);
 
     private:
         int slaveId;
