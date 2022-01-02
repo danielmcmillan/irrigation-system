@@ -3,6 +3,13 @@
 #include <Wire.h>
 #include "crc16.h"
 #include "vacon-100-controller.h"
+#include "controller-manager.h"
+
+IrrigationSystem::Vacon100Controller vacon100Controller;
+ControllerRegistration registeredControllers[] = {
+    {0x02, &vacon100Controller}};
+
+ControllerManager controllers(registeredControllers, sizeof(registeredControllers) / sizeof(registeredControllers[0]));
 
 void onReceive(int length)
 {
@@ -32,15 +39,25 @@ void setup()
     Wire.begin(10);
     Wire.onReceive(onReceive);
     Wire.onRequest(onRequest);
+
+    vacon100Controller.reset();
+    vacon100Controller.begin();
 }
 
 void loop()
 {
     delay(3000);
-    IrrigationSystem::Vacon100Controller vc;
-    vc.reset();
-    vc.begin();
-    vc.update();
+    vacon100Controller.update();
     bool motorOn = vc.getPropertyValue(IrrigationSystem::Vacon100ControllerProperties::motorOn);
-    // TODO Enumerate and print properties of vc
+    uint16_t status = vc.getPropertyValue(IrrigationSystem::Vacon100ControllerProperties::status);
+    uint16_t motorVoltage = vc.getPropertyValue(IrrigationSystem::Vacon100ControllerProperties::motorVoltage);
+    Serial.print("Motor on: ");
+    Serial.print(motorOn);
+    Serial.println();
+    Serial.print("Status: ");
+    Serial.print(status);
+    Serial.println();
+    Serial.print("Motor voltage: ");
+    Serial.print(motorVoltage);
+    Serial.println();
 }

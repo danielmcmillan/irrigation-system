@@ -8,7 +8,7 @@ namespace IrrigationSystem
     {
     public:
         void reset();
-        void configure(uint8_t type, uint8_t *data);
+        void configure(uint8_t type, const uint8_t *data);
 
         int getPropertyLength(uint16_t id);
         bool getPropertyReadOnly(uint16_t id);

@@ -23,7 +23,7 @@ namespace IrrigationSystem
         definition.reset();
     }
 
-    void Vacon100Controller::configure(uint8_t type, uint8_t *data)
+    void Vacon100Controller::configure(uint8_t type, const uint8_t *data)
     {
         definition.configure(type, data);
     }
@@ -34,7 +34,7 @@ namespace IrrigationSystem
         vacon.begin(); // TODO handle error
     }
 
-    IrrigationSystem::ControllerDefinition &Vacon100Controller::getDefinition()
+    const IrrigationSystem::ControllerDefinition &Vacon100Controller::getDefinition()
     {
         return definition;
     }

@@ -17,10 +17,10 @@ namespace IrrigationSystem
     public:
         Vacon100Controller();
         void reset();
-        void configure(uint8_t type, uint8_t *data);
+        void configure(uint8_t type, const uint8_t *data);
         void begin();
 
-        IrrigationSystem::ControllerDefinition &getDefinition();
+        const IrrigationSystem::ControllerDefinition &getDefinition();
 
         uint32_t getPropertyValue(uint16_t id);
         uint32_t getPropertyDesiredValue(uint16_t id);

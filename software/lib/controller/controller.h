@@ -8,12 +8,12 @@ namespace IrrigationSystem
     {
     public:
         /** Get the underlying controller definition. */
-        virtual ControllerDefinition &getDefinition() = 0;
+        virtual const ControllerDefinition &getDefinition() = 0;
 
         /** End communication and reset configuration. The underlying definition is also reset. */
         virtual void reset() = 0;
         /** Add a configuration. The underlying definition is also configured. */
-        virtual void configure(uint8_t type, uint8_t *data) = 0;
+        virtual void configure(uint8_t type, const uint8_t *data) = 0;
         /** Initialise after being configured */
         virtual void begin() = 0;
 

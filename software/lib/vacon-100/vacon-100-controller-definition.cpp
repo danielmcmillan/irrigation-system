@@ -7,7 +7,7 @@ namespace IrrigationSystem
     {
     }
 
-    void Vacon100ControllerDefinition::configure(uint8_t type, uint8_t *data) {}
+    void Vacon100ControllerDefinition::configure(uint8_t type, const uint8_t *data) {}
 
     int Vacon100ControllerDefinition::getPropertyLength(uint16_t id)
     {
