@@ -13,9 +13,11 @@ class ControllerManager
 public:
     ControllerManager(ControllerRegistration *controllers, unsigned int num);
     IrrigationSystem::Controller *getController(uint8_t controllerId);
+    void resetControllers();
+    void beginControllers();
 
 private:
     ControllerRegistration *controllers;
-    size_t numControllers;
+    unsigned int numControllers;
 };
 #endif

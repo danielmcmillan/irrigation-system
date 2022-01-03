@@ -10,8 +10,8 @@ namespace IrrigationSystem
         void reset();
         void configure(uint8_t type, const uint8_t *data);
 
-        int getPropertyLength(uint16_t id);
-        bool getPropertyReadOnly(uint16_t id);
+        unsigned int getPropertyLength(uint16_t id) const;
+        bool getPropertyReadOnly(uint16_t id) const;
     };
 
     namespace Vacon100ControllerProperties

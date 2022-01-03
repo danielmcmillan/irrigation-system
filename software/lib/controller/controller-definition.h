@@ -11,8 +11,8 @@ namespace IrrigationSystem
         virtual void reset() = 0;
         virtual void configure(uint8_t type, const uint8_t *data) = 0;
         // TODO iterator over property ids
-        virtual int getPropertyLength(uint16_t id) = 0;
-        virtual bool getPropertyReadOnly(uint16_t id) = 0;
+        virtual unsigned int getPropertyLength(uint16_t id) const = 0;
+        virtual bool getPropertyReadOnly(uint16_t id) const = 0;
     };
 }
 #endif

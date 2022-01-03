@@ -20,11 +20,11 @@ namespace IrrigationSystem
         void configure(uint8_t type, const uint8_t *data);
         void begin();
 
-        const IrrigationSystem::ControllerDefinition &getDefinition();
+        const IrrigationSystem::ControllerDefinition &getDefinition() const;
 
-        uint32_t getPropertyValue(uint16_t id);
-        uint32_t getPropertyDesiredValue(uint16_t id);
-        void setDesiredPropertyValue(uint16_t id, uint32_t value);
+        uint32_t getPropertyValue(uint16_t id) const;
+        uint32_t getPropertyDesiredValue(uint16_t id) const;
+        void setPropertyDesiredValue(uint16_t id, uint32_t value);
 
         void applyPropertyValues();
         void update();

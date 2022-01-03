@@ -34,12 +34,12 @@ namespace IrrigationSystem
         vacon.begin(); // TODO handle error
     }
 
-    const IrrigationSystem::ControllerDefinition &Vacon100Controller::getDefinition()
+    const IrrigationSystem::ControllerDefinition &Vacon100Controller::getDefinition() const
     {
         return definition;
     }
 
-    uint32_t Vacon100Controller::getPropertyValue(uint16_t id)
+    uint32_t Vacon100Controller::getPropertyValue(uint16_t id) const
     {
         switch (id)
         {
@@ -72,7 +72,7 @@ namespace IrrigationSystem
         }
     }
 
-    uint32_t Vacon100Controller::getPropertyDesiredValue(uint16_t id)
+    uint32_t Vacon100Controller::getPropertyDesiredValue(uint16_t id) const
     {
         switch (id)
         {
@@ -83,7 +83,7 @@ namespace IrrigationSystem
         }
     }
 
-    void Vacon100Controller::setDesiredPropertyValue(uint16_t id, uint32_t value)
+    void Vacon100Controller::setPropertyDesiredValue(uint16_t id, uint32_t value)
     {
         switch (id)
         {

@@ -9,7 +9,7 @@ namespace IrrigationSystem
 
     void Vacon100ControllerDefinition::configure(uint8_t type, const uint8_t *data) {}
 
-    int Vacon100ControllerDefinition::getPropertyLength(uint16_t id)
+    unsigned int Vacon100ControllerDefinition::getPropertyLength(uint16_t id) const
     {
         switch (id)
         {
@@ -32,7 +32,7 @@ namespace IrrigationSystem
         }
     }
 
-    bool Vacon100ControllerDefinition::getPropertyReadOnly(uint16_t id)
+    bool Vacon100ControllerDefinition::getPropertyReadOnly(uint16_t id) const
     {
         switch (id)
         {

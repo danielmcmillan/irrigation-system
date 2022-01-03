@@ -7,7 +7,7 @@ ControllerManager::ControllerManager(ControllerRegistration *controllers, unsign
 
 IrrigationSystem::Controller *ControllerManager::getController(uint8_t controllerId)
 {
-    for (int i = 0; i < numControllers; ++i)
+    for (unsigned int i = 0; i < numControllers; ++i)
     {
         if (controllers[i].controllerId == controllerId)
         {
@@ -15,4 +15,20 @@ IrrigationSystem::Controller *ControllerManager::getController(uint8_t controlle
         }
     }
     return nullptr;
+}
+
+void ControllerManager::resetControllers()
+{
+    for (unsigned int i = 0; i < numControllers; ++i)
+    {
+        controllers[i].controller->reset();
+    }
+}
+
+void ControllerManager::beginControllers()
+{
+    for (unsigned int i = 0; i < numControllers; ++i)
+    {
+        controllers[i].controller->begin();
+    }
 }
