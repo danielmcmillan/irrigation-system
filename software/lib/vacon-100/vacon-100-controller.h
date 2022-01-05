@@ -35,6 +35,7 @@ namespace IrrigationSystem
         Vacon100Client vacon;
         Vacon100Data values;
         bool desiredMotorOn;
+        bool available;
     };
 }
 

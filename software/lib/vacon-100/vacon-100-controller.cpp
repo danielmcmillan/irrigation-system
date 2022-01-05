@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include "vacon-100-controller.h"
+#include "logging.h"
 
 #define MAX485_RE A3
 #define MAX485_DE A2
@@ -12,7 +13,8 @@ namespace IrrigationSystem
                                                serial(MAX485_RO, MAX485_DI),
                                                vacon(serial, MAX485_RE, MAX485_DE, MAX485_DI),
                                                values(),
-                                               desiredMotorOn(false)
+                                               desiredMotorOn(false),
+                                               available(false)
     {
     }
 
@@ -44,7 +46,7 @@ namespace IrrigationSystem
         switch (id)
         {
         case Vacon100ControllerProperties::available:
-            return 1; // TODO track availability
+            return available;
         case Vacon100ControllerProperties::motorOn:
             return (values.statusWord & Vacon100StatusWordMask::run) > 0;
         case Vacon100ControllerProperties::status:
@@ -68,6 +70,7 @@ namespace IrrigationSystem
         case Vacon100ControllerProperties::activeFaultCode:
             return values.activeFaultCode;
         default:
+            LOG_ERROR("getPropertyValue with unknown Vacon 100 property");
             return 0;
         }
     }
@@ -79,6 +82,7 @@ namespace IrrigationSystem
         case Vacon100ControllerProperties::motorOn:
             return desiredMotorOn;
         default:
+            LOG_ERROR("getPropertyDesiredValue with unknown Vacon 100 property");
             return 0;
         }
     }
@@ -89,6 +93,10 @@ namespace IrrigationSystem
         {
         case Vacon100ControllerProperties::motorOn:
             desiredMotorOn = value > 0;
+            break;
+        default:
+            LOG_ERROR("setPropertyDesiredValue with unknown Vacon 100 property");
+            break;
         }
     }
 
@@ -96,15 +104,23 @@ namespace IrrigationSystem
     {
         if (getPropertyValue(Vacon100ControllerProperties::motorOn) != desiredMotorOn)
         {
-            vacon.setStart(desiredMotorOn);
+            if (!vacon.setStart(desiredMotorOn))
+            {
+                // TODO handle error
+                available = false;
+            }
         }
     }
 
     void Vacon100Controller::update()
     {
-        if (!vacon.readInputRegisters(&values))
+        if (vacon.readInputRegisters(&values))
         {
-            // TODO handle error
+            available = true;
+        }
+        else
+        {
+            available = false;
         }
     }
 

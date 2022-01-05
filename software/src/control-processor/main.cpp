@@ -1,14 +1,11 @@
 #include <Arduino.h>
-#include <Logger.h>
+#include "logging.h"
 #include <Wire.h>
 #include "crc16.h"
 #include "vacon-100-controller.h"
 #include "controller-manager.h"
 
 #define I2C_SLAVE_ADDRESS 10
-
-#define LOG_INFO(msg) Serial.println(F("INFO " msg))
-#define LOG_ERROR(msg) Serial.println(F("ERROR " msg))
 
 IrrigationSystem::Vacon100Controller vacon100Controller;
 ControllerRegistration registeredControllers[] = {
@@ -47,14 +44,14 @@ void onRequest()
         IrrigationSystem::Controller *controller = controllers.getController(buffer[1]);
         const IrrigationSystem::ControllerDefinition &definition = controller->getDefinition();
         uint16_t propertyId = (uint16_t)buffer[2] | ((uint16_t)buffer[3] << 8);
-        int valueLength = definition.getPropertyLength(propertyId);
+        unsigned int valueLength = definition.getPropertyLength(propertyId);
         bool readOnly = definition.getPropertyReadOnly(propertyId);
 
         buffer[0] = 0x61; // ACK
         length = 1 + (readOnly ? valueLength : (valueLength * 2)) + 2;
 
         uint32_t value = controller->getPropertyValue(propertyId);
-        for (int i = 0; i < valueLength; ++i)
+        for (unsigned int i = 0; i < valueLength; ++i)
         {
             buffer[1 + i] = value; // LSB
             value >>= 8;
@@ -63,7 +60,7 @@ void onRequest()
         if (!readOnly)
         {
             value = controller->getPropertyDesiredValue(propertyId);
-            for (int i = 0; i < valueLength; ++i)
+            for (unsigned int i = 0; i < valueLength; ++i)
             {
                 buffer[1 + valueLength + i] = value; // LSB
                 value >>= 8;
@@ -80,7 +77,7 @@ void onRequest()
         IrrigationSystem::Controller *controller = controllers.getController(buffer[1]);
         const IrrigationSystem::ControllerDefinition &definition = controller->getDefinition();
         uint16_t propertyId = (uint16_t)buffer[2] | ((uint16_t)buffer[3] << 8);
-        int valueLength = definition.getPropertyLength(propertyId);
+        unsigned int valueLength = definition.getPropertyLength(propertyId);
         bool readOnly = definition.getPropertyReadOnly(propertyId);
 
         if (readOnly)
@@ -95,7 +92,7 @@ void onRequest()
         }
 
         uint32_t value = 0;
-        for (int i = 0; i < valueLength; ++i)
+        for (unsigned int i = 0; i < valueLength; ++i)
         {
             value |= buffer[4 + i] << i * 8;
         }
