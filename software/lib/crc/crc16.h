@@ -1,3 +1,5 @@
+#ifndef _CRC16_H
+#define _CRC16_H
 #include <Arduino.h>
 
 namespace IrrigationSystem
@@ -21,3 +23,5 @@ namespace IrrigationSystem
         uint16_t crc16(const uint8_t *data, uint16_t length);
     }
 }
+
+#endif

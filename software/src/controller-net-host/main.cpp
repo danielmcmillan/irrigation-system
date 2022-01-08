@@ -1,12 +1,26 @@
 #include <Arduino.h>
 #include "crc16.h"
 #include <Wire.h>
+#include "ControlI2CHost.h"
+#include "logging.h"
+#include "vacon-100-controller-definition.h"
+#include "controller-definition-manager.h"
 
-#define LOG_INFO(msg) Serial.println(F("INFO " msg))
-#define LOG_ERROR(msg) Serial.println(F("ERROR " msg))
+#include "AsyncTCP.h"
+#include "ESPAsyncWebServer.h"
+AsyncWebServer server(80);
+ControlI2CHost cih;
 
-void refreshPropertyValues();
-void setMotorOn(bool on);
+const char *ssid = "*";
+const char *password = "*";
+const char *http_username = "admin";
+const char *http_password = "admin";
+
+IrrigationSystem::Vacon100ControllerDefinition vacon100Definition;
+ControllerDefinitionRegistration registeredDefinitions[] = {
+    {0x02, &vacon100Definition}};
+
+ControllerDefinitionManager controllers(registeredDefinitions, sizeof(registeredDefinitions) / sizeof(registeredDefinitions[0]));
 
 // enum class PropertyFormat
 // {
@@ -32,27 +46,8 @@ struct Property
     uint8_t desiredValue[4];
 };
 
-char logBuffer[128] = {0};
 // Motor on property
 Property properties[] = {{.controller = 0x02, .id = 0x0002, .size = 1, .readOnly = false}};
-
-void setup()
-{
-    Serial.begin(9600);
-
-    if (!Wire.begin())
-    {
-        Serial.println("Failed to begin I2C");
-    }
-}
-
-void loop()
-{
-    delay(2000);
-    refreshPropertyValues();
-    delay(2000);
-    setMotorOn(properties[0].desiredValue[0] == 0);
-}
 
 void logProperties()
 {
@@ -63,116 +58,105 @@ void logProperties()
     }
 }
 
-void refreshPropertyValues()
+void onRequest(AsyncWebServerRequest *request)
 {
-    uint8_t dataBuffer[32] = {0};
-
-    unsigned long startMillis = millis();
-    LOG_INFO("\nStarting property refresh");
-
-    const int controlProcessorI2CAddress = 10;
-    const uint8_t getPropertyMessageType = 0x20;
-    const uint8_t ackMessageType = 0x61;
-
-    // Build command to request property value
-    dataBuffer[0] = getPropertyMessageType;
-    dataBuffer[1] = properties[0].controller;
-    dataBuffer[2] = properties[0].id;      // LSB
-    dataBuffer[3] = properties[0].id >> 8; // MSB
-    uint16_t crc = IrrigationSystem::CRC::crc16(dataBuffer, 4);
-    dataBuffer[4] = crc;      // LSB
-    dataBuffer[5] = crc >> 8; // MSB
-
-    // Send command
-    Wire.beginTransmission(controlProcessorI2CAddress);
-    Wire.write(dataBuffer, 6);
-    uint8_t writeResult = Wire.endTransmission(false);
-    sprintf(logBuffer, "Write get message result: %d.", writeResult);
-    Serial.println(logBuffer);
-
-    // Read property value
-    size_t responseLength = 1 /*ack*/ + properties[0].size * 2 /*value + desired value*/ + 2 /*crc*/;
-    uint8_t bytesRead = Wire.requestFrom(controlProcessorI2CAddress, responseLength);
-    Wire.readBytes(dataBuffer, responseLength);
-    uint16_t responseCrc = IrrigationSystem::CRC::crc16(dataBuffer, responseLength);
-    sprintf(logBuffer, "Get property response: %d bytes: 0x%02x%02x%02x%02x%02x. CRC: 0x%04x", bytesRead, dataBuffer[0], dataBuffer[1], dataBuffer[2], dataBuffer[3], dataBuffer[4], responseCrc);
-    Serial.println(logBuffer);
-
-    if (bytesRead != responseLength)
-    {
-        LOG_ERROR("Read wrong number of bytes");
-    }
-    else if (responseCrc != 0)
-    {
-        LOG_ERROR("Got a non-zero CRC");
-    }
-    else if (dataBuffer[0] != ackMessageType)
-    {
-        LOG_ERROR("Response wasn't ACK");
-    }
-    else
-    {
-        // Copy property value to properties
-        memcpy(properties[0].value, &dataBuffer[1], properties[0].size);
-        if (!properties[0].readOnly)
-        {
-            memcpy(properties[0].desiredValue, &dataBuffer[1 + properties[0].size], properties[0].size);
-        }
-    }
-
-    sprintf(logBuffer, "Finished property refresh after %lu ms", millis() - startMillis);
-    Serial.println(logBuffer);
-    logProperties();
+    //Handle Unknown Request
+    request->send(404);
 }
 
-void setMotorOn(bool on)
+void onBody(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
 {
-    uint8_t dataBuffer[32] = {0};
-    LOG_INFO("\nStarting set motorOn");
-    Serial.printf("Setting motorOn to %d\n", on);
+    //Handle body
+}
 
-    const int controlProcessorI2CAddress = 10;
-    const uint8_t setPropertyMessageType = 0x21;
-    const uint8_t ackMessageType = 0x61;
+void setup()
+{
+    Serial.begin(9600);
+    cih.begin();
 
-    // Build command to set property value
-    dataBuffer[0] = setPropertyMessageType;
-    dataBuffer[1] = properties[0].controller;
-    dataBuffer[2] = properties[0].id;      // LSB
-    dataBuffer[3] = properties[0].id >> 8; // MSB
-    dataBuffer[4] = on;
-    uint16_t crc = IrrigationSystem::CRC::crc16(dataBuffer, 5);
-    dataBuffer[5] = crc;      // LSB
-    dataBuffer[6] = crc >> 8; // MSB
-
-    // Send command
-    Wire.beginTransmission(controlProcessorI2CAddress);
-    Wire.write(dataBuffer, 7);
-    uint8_t writeResult = Wire.endTransmission(false);
-    sprintf(logBuffer, "Write set message result: %d.", writeResult);
-    Serial.println(logBuffer);
-
-    // Read result
-    size_t responseLength = 1 /*ack*/ + 2 /*crc*/;
-    uint8_t bytesRead = Wire.requestFrom(controlProcessorI2CAddress, responseLength);
-    Wire.readBytes(dataBuffer, responseLength);
-    uint16_t responseCrc = IrrigationSystem::CRC::crc16(dataBuffer, responseLength);
-    sprintf(logBuffer, "Set property response: %d bytes: 0x%02x%02x%02x. CRC: 0x%04x", bytesRead, dataBuffer[0], dataBuffer[1], dataBuffer[2], responseCrc);
-    Serial.println(logBuffer);
-
-    if (bytesRead != responseLength)
+    // WiFi
+    WiFi.mode(WIFI_STA);
+    WiFi.begin(ssid, password);
+    if (WiFi.waitForConnectResult() != WL_CONNECTED)
     {
-        LOG_ERROR("Read wrong number of bytes");
+        Serial.printf("\nWiFi Failed!\n");
+        return;
     }
-    else if (responseCrc != 0)
-    {
-        LOG_ERROR("Got a non-zero CRC");
-    }
-    else if (dataBuffer[0] != ackMessageType)
-    {
-        LOG_ERROR("Response wasn't ACK");
-    }
+    Serial.printf("\nWiFi Connected: %s\n", WiFi.localIP().toString().c_str());
 
-    Serial.println("Finished set property");
+    server.on("/heap", HTTP_GET, [](AsyncWebServerRequest *request)
+              { request->send(200, "text/plain", String(ESP.getFreeHeap())); });
+
+    server.on("/properties", HTTP_GET, [](AsyncWebServerRequest *request)
+              {
+                  char response[1024] = {0};
+                  sprintf(response,
+                          "<html><body><ul>\n"
+                          "<li><b>motorOn</b>: %d (%d <input type='button' id='button-motor-on' value='On'/><input type='button' id='button-motor-off' value='Off'/>)</li>\n"
+                          "</ul>\n"
+                          "<script>\n"
+                          "[['button-motor-on', true], ['button-motor-off', false]].forEach(([elId, on]) => {\n"
+                          "  const button = document.getElementById(elId);\n"
+                          "  button.addEventListener('click', async _ => {\n"
+                          "    try {\n"
+                          "      const response = await fetch('/api/setProperty?controller=2&id=2&value=' + (on ? '1' : '0'), {method: 'POST'});\n"
+                          "      console.log('setProperty complete', response);\n"
+                          "    } catch(err) {\n"
+                          "      console.error(`setProperty failed: ${err}`);\n"
+                          "    }\n"
+                          "  });\n"
+                          "});\n"
+                          "</script>\n"
+                          "</body></html>",
+                          properties[0].value[0],
+                          properties[0].desiredValue[0]);
+                  request->send(200, "text/html", response);
+              });
+
+    server.on("/api/getProperty", HTTP_POST, [](AsyncWebServerRequest *request)
+              {
+                  String controllerParam = request->getParam("controller")->value();
+                  String idParam = request->getParam("id")->value();
+                  uint8_t controllerId = strtoul(controllerParam.c_str(), NULL, 16);
+                  uint16_t propertyId = strtoul(idParam.c_str(), NULL, 16);
+                  IrrigationSystem::ControllerDefinition *definition = controllers.getControllerDefinition(controllerId);
+                  uint32_t value = 0;
+                  uint8_t *valueParts = (uint8_t *)&value; // assumes little endian (value is array of bytes with LSB first)
+                  uint32_t desiredValue = 0;
+                  uint8_t *desiredValueParts = (uint8_t *)&desiredValue; // assumes little endian (value is array of bytes with LSB first)
+                  cih.getPropertyValue(
+                      controllerId,
+                      propertyId,
+                      definition->getPropertyLength(propertyId),
+                      definition->getPropertyReadOnly(propertyId),
+                      valueParts,
+                      desiredValueParts); // TODO send i2c request asynchronously
+
+                  request->send(200, "text/plain", String(value));
+              });
+
+    server.on("/api/setProperty", HTTP_POST, [](AsyncWebServerRequest *request)
+              {
+                  String controllerParam = request->getParam("controller")->value();
+                  String idParam = request->getParam("id")->value();
+                  String valueParam = request->getParam("value")->value();
+                  uint8_t controllerId = strtoul(controllerParam.c_str(), NULL, 16);
+                  uint16_t propertyId = strtoul(idParam.c_str(), NULL, 16);
+                  uint32_t value = strtoul(valueParam.c_str(), NULL, 16);
+                  uint8_t valueLength = controllers.getControllerDefinition(controllerId)->getPropertyLength(propertyId);
+                  uint8_t *valueParts = (uint8_t *)&value;                                        // assumes little endian (value is array of bytes with LSB first)
+                  cih.setPropertyDesiredValue(controllerId, propertyId, valueLength, valueParts); // TODO send i2c request asynchronously
+                  request->send(200, "text/plain", String(value));
+              });
+
+    server.onNotFound(onRequest);
+    server.onRequestBody(onBody);
+    server.begin();
+}
+
+void loop()
+{
+    cih.getPropertyValue(properties[0].controller, properties[0].id, properties[0].size, properties[0].readOnly, properties[0].value, properties[0].desiredValue);
     logProperties();
+    delay(2000);
 }
