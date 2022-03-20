@@ -1,0 +1,3 @@
+[submodule "software/lib/yl-800t"]
+	path = software/lib/yl-800t
+	url = git@github.com:danielmcmillan/yl-800t.git
