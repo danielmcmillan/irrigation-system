@@ -1,3 +1,4 @@
+#include <string.h>
 #include "remote-unit-packet.h"
 #include "crc16.h"
 
@@ -21,6 +22,8 @@ namespace IrrigationSystem
 {
     namespace RemoteUnitPacket
     {
+        const uint8_t commandDataSizeInvalid = 0xff;
+
         enum class RemoteUnitCommand : uint8_t
         {
             Invalid = 0x00,

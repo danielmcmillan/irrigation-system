@@ -1,11 +1,12 @@
 #include <stddef.h>
 #include <inttypes.h>
-#define REMOTE_UNIT_MAX_PACKET_SIZE 64
 
 namespace IrrigationSystem
 {
     namespace RemoteUnitPacket
     {
+        extern const uint8_t commandDataSizeInvalid;
+
         /** Identifier of each command. */
         enum class RemoteUnitCommand : uint8_t;
 

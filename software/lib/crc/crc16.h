@@ -1,6 +1,6 @@
 #ifndef _CRC16_H
 #define _CRC16_H
-#include <Arduino.h>
+#include <inttypes.h>
 
 namespace IrrigationSystem
 {
