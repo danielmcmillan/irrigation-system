@@ -123,7 +123,7 @@ void loop()
     }
 
     // Todo: increase timeout when in sleep mode since we are expecting data
-    RemoteUnitSerialInterface::Result result = remoteUnitSerial.receivePacket(500);
+    RemoteUnitSerialInterface::Result result = remoteUnitSerial.receivePacket(10000);
 
     // Flash to show error
     if (result != RemoteUnitSerialInterface::Result::success && result != RemoteUnitSerialInterface::Result::noData)
@@ -153,11 +153,10 @@ void loop()
 
     delay(500); // TODO why?
 
-    // TODO persistent config
     // TODO temporarily apply RF config change until successful communication
 
     if (battery.shouldSleep())
     {
-        // sleep();
+        sleep();
     }
 }

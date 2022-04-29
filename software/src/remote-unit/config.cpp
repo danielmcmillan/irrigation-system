@@ -1,6 +1,8 @@
 #include "config.h"
 #include <string.h>
 #include "yl-800t.h"
+#include <EEPROM.h>
+#include "crc16.h"
 
 const uint8_t *RemoteUnitConfig::getRaw() const
 {
@@ -13,14 +15,22 @@ const uint8_t *RemoteUnitConfig::setRaw(const uint8_t *newConfig)
   return this->config;
 }
 
-void RemoteUnitConfig::loadFromEeprom()
+int RemoteUnitConfig::loadFromEeprom()
 {
-  // TODO load data from eeprom. Handle case of missing config in eeprom.
+  for (uint8_t i = 0; i < REMOTE_UNIT_EEPROM_SIZE; ++i)
+  {
+    this->config[i] = EEPROM.read(i);
+  }
+  if (IrrigationSystem::CRC::crc16(this->config, REMOTE_UNIT_EEPROM_SIZE) == 0)
+  {
+    // EEPROM data looks good
+    return 0;
+  }
 
-  // Default values
-  uint32_t rfFreq = 434l * 1l << 14;
-  this->config[0] = 122;                      // battery multiplier * 2^13
-  this->config[1] = 20;                       // solenoid timeout seconds / 16
+  // EEPROM data is not valid, load default values
+  uint32_t rfFreq = 434l * 1l << 14;          // 434 MHz
+  this->config[0] = 122;                      // battery multiplier 0.0149
+  this->config[1] = 20;                       // solenoid timeout 320 seconds
   this->config[2] = rfFreq >> 16;             // Rf freq
   this->config[3] = rfFreq >> 8;              // Rf freq
   this->config[4] = rfFreq;                   // Rf freq
@@ -30,16 +40,25 @@ void RemoteUnitConfig::loadFromEeprom()
   this->config[8] = 138;                      // Upper battery voltage threshold
   this->config[9] = 135;                      // Lower battery voltage threshold
   this->config[10] = 132;                     // Sleep battery voltage threshold
-  this->config[11] = 4;                       // Inverse of half battery check frequency (1/2Hz)
+  this->config[11] = 4;                       // Battery check frequency 0.5 Hz
   this->config[12] = 105;                     // Minimum voltage for solenoid operation
-  this->config[13] = 50;                      // Solenoid A on pulse width / 500 seconds
-  this->config[14] = 50;                      // Solenoid A off pulse width / 500 seconds
-  this->config[15] = 50;                      // Solenoid B on pulse width / 500 seconds
-  this->config[16] = 50;                      // Solenoid B off pulse width / 500 seconds
+  this->config[13] = 50;                      // Solenoid A on pulse width 100 ms
+  this->config[14] = 50;                      // Solenoid A off pulse width 100 ms
+  this->config[15] = 50;                      // Solenoid B on pulse width 100 ms
+  this->config[16] = 50;                      // Solenoid B off pulse width 100 ms
+
+  return 1;
 }
 
 int RemoteUnitConfig::saveToEeprom()
 {
+  uint16_t crc = IrrigationSystem::CRC::crc16(this->config, REMOTE_UNIT_CONFIG_SIZE);
+  for (uint8_t i = 0; i < REMOTE_UNIT_CONFIG_SIZE; ++i)
+  {
+    EEPROM.update(i, this->config[i]);
+  }
+  EEPROM.update(REMOTE_UNIT_CONFIG_SIZE, crc >> 8);
+  EEPROM.update(REMOTE_UNIT_CONFIG_SIZE + 1, crc);
   return 0;
 }
 

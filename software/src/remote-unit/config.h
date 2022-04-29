@@ -3,10 +3,11 @@
 #include <inttypes.h>
 
 #define REMOTE_UNIT_CONFIG_SIZE 17
+#define REMOTE_UNIT_EEPROM_SIZE REMOTE_UNIT_CONFIG_SIZE + 2
 
 class RemoteUnitConfig
 {
-  uint8_t config[REMOTE_UNIT_CONFIG_SIZE] = {0};
+  uint8_t config[REMOTE_UNIT_EEPROM_SIZE] = {0};
 
 public:
   const uint8_t *getRaw() const;
@@ -14,8 +15,10 @@ public:
 
   /**
    * Load the previously persisted config.
+   *
+   * Loads defaults and returns non-zero on error.
    */
-  void loadFromEeprom();
+  int loadFromEeprom();
 
   /**
    * Persist the current config.
