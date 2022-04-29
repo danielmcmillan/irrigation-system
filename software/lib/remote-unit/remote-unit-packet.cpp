@@ -5,7 +5,7 @@
 #define PACKET_HEADER_SIZE 2
 #define PACKET_FOOTER_SIZE 3
 #define END_COMMAND_BYTE 0x03
-#define END_RESPONSE_BYTE 0x80 | 0x03
+#define END_RESPONSE_BYTE responseFlag | 0x03
 
 uint16_t read16LE(const uint8_t *data)
 {
@@ -23,33 +23,6 @@ namespace IrrigationSystem
     namespace RemoteUnitPacket
     {
         const uint8_t commandDataSizeInvalid = 0xff;
-
-        enum class RemoteUnitCommand : uint8_t
-        {
-            Invalid = 0x00,
-            // Read operations
-            GetSolenoidState = 0x10,
-            GetBatteryVoltage = 0x11,
-            GetFaults = 0x12,
-            GetBatteryRaw = 0x13,
-            GetSignalStrength = 0x14,
-            GetConfig = 0x15,
-            // Write operations
-            SetSolenoidState = 0x20,
-            ClearFaults = 0x22,
-            SetConfig = 0x25,
-            // Corresponding responses
-            GetSolenoidStateResponse = 0x80 | 0x10,
-            GetBatteryVoltageResponse = 0x80 | 0x11,
-            GetFaultsResponse = 0x80 | 0x12,
-            GetBatteryRawResponse = 0x80 | 0x13,
-            GetSignalStrengthResponse = 0x80 | 0x14,
-            GetConfigResponse = 0x80 | 0x15,
-            SetSolenoidStateResponse = 0x80 | 0x20,
-            ClearFaultsResponse = 0x80 | 0x22,
-            SetConfigResponse = 0x80 | 0x25
-
-        };
 
         int validatePacket(const uint8_t *packet, size_t packetSize, bool isResponse)
         {
@@ -125,6 +98,8 @@ namespace IrrigationSystem
                 return 13;
             case RemoteUnitCommand::SetConfigResponse:
                 return 13;
+            case RemoteUnitCommand::ErrorResponse:
+                return 0;
             default:
                 return 0xff;
             }
@@ -132,7 +107,12 @@ namespace IrrigationSystem
 
         bool commandIsResponse(uint8_t commandByte)
         {
-            return commandByte & 0x80 > 0;
+            return (commandByte & responseFlag) != 0;
+        }
+
+        RemoteUnitCommand getResponseForCommand(RemoteUnitCommand command)
+        {
+            return (RemoteUnitCommand)((uint8_t)command | responseFlag);
         }
 
         uint16_t getNodeId(const uint8_t *packet)
@@ -168,7 +148,7 @@ namespace IrrigationSystem
             return PACKET_HEADER_SIZE;
         }
 
-        size_t addCommandToPacket(uint8_t *packetBuffer, size_t bufferSize, size_t intermediatePacketSize, RemoteUnitCommand command, const uint8_t *data)
+        size_t addCommandToPacket(uint8_t *packetBuffer, size_t bufferSize, size_t intermediatePacketSize, RemoteUnitCommand command, uint8_t **dataPtr)
         {
             uint8_t dataSize = getCommandDataSize(command);
             size_t newSize = intermediatePacketSize + 1 + dataSize;
@@ -178,8 +158,11 @@ namespace IrrigationSystem
             }
             // Command
             packetBuffer[intermediatePacketSize] = (uint8_t)command;
-            // Command data
-            memcpy(packetBuffer + intermediatePacketSize + 1, data, dataSize);
+            // Pointer to command data
+            if (dataPtr != nullptr)
+            {
+                *dataPtr = packetBuffer + intermediatePacketSize + 1;
+            }
             return newSize;
         }
 

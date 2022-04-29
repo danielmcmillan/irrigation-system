@@ -26,6 +26,7 @@ int serialOpen(const char *device)
     tty.c_cflag &= ~PARENB;                                                      // No parity
     tty.c_cflag &= ~CSTOPB;                                                      // 1 stop bit
     tty.c_cflag |= CS8;                                                          // 8 bits per data frame
+    tty.c_cflag &= ~HUPCL;                                                       // Disable drop DTR on close
     tty.c_cflag &= ~CRTSCTS;                                                     // No hardware flow control
     tty.c_cflag |= CLOCAL;                                                       // Ignore modem control lines
     tty.c_cflag |= CREAD;                                                        // Enable read
@@ -33,6 +34,7 @@ int serialOpen(const char *device)
     tty.c_iflag &= ~(IXON | IXOFF | IXANY);                                      // Disable software flow control
     tty.c_iflag &= ~(IGNBRK | BRKINT | PARMRK | ISTRIP | INLCR | IGNCR | ICRNL); // Disable special handling of received bytes
     tty.c_oflag &= ~(OPOST | ONLCR);                                             // Disable special handling of sent bytes
+
     // Set timeout
     tty.c_cc[VTIME] = 150; // Timeout in deciseconds
     tty.c_cc[VMIN] = 0;    // Read as many bytes as are available

@@ -5,6 +5,13 @@
 #include "remote-unit-packet.h"
 #include "serial.h"
 
+#define PACKET_BUFFER_SIZE 64
+
+// TODO:
+// serial header file
+// support multiple commands
+// handle packet creation error
+
 void commands()
 {
     std::cerr << "Available commands: remote-command-raw\n";
@@ -39,6 +46,7 @@ void remoteCommandRaw(int argc, char **argv)
                                {"node", 1, nullptr, 'n'},
                                {"command", 1, nullptr, 'c'},
                                {"data", 1, nullptr, 'b'},
+                               {"no-node-prefix", 1, nullptr, 'x'},
                                {0, 0, 0, 0}};
 
     // Get the arguments
@@ -46,9 +54,10 @@ void remoteCommandRaw(int argc, char **argv)
     const char *nodeStr = nullptr;
     const char *commandStr = nullptr;
     const char *dataStr = nullptr;
+    bool noNodePrefix = false;
     while (true)
     {
-        int option = getopt_long(argc, argv, "t:n:c:d:", options, 0);
+        int option = getopt_long(argc, argv, "t:n:c:d:x", options, 0);
         if (option == -1)
         {
             break;
@@ -66,6 +75,9 @@ void remoteCommandRaw(int argc, char **argv)
             break;
         case 'b':
             dataStr = optarg;
+            break;
+        case 'x':
+            noNodePrefix = true;
             break;
         default /* '?' */:
             remoteCommandRawUsage(argv[0]);
@@ -133,11 +145,25 @@ void remoteCommandRaw(int argc, char **argv)
     std::cout << "\n";
 
     // Build the packet
-    uint8_t buffer[66];
+    uint8_t buffer[PACKET_BUFFER_SIZE + 2];
     uint8_t *packetBuffer = buffer + 2;
-    size_t packetSize = IrrigationSystem::RemoteUnitPacket::createPacket(packetBuffer, 64, nodeId);
-    packetSize = IrrigationSystem::RemoteUnitPacket::addCommandToPacket(packetBuffer, 64, packetSize, command, data);
-    packetSize = IrrigationSystem::RemoteUnitPacket::finalisePacket(packetBuffer, 64, packetSize, false);
+
+    if (noNodePrefix)
+    {
+        packetBuffer = buffer;
+    }
+    else
+    {
+        // Add node ID to initial bytes for LoRa module
+        buffer[0] = nodeId;
+        buffer[1] = nodeId >> 8;
+    }
+
+    uint8_t *commandData;
+    size_t packetSize = IrrigationSystem::RemoteUnitPacket::createPacket(packetBuffer, PACKET_BUFFER_SIZE, nodeId);
+    packetSize = IrrigationSystem::RemoteUnitPacket::addCommandToPacket(packetBuffer, PACKET_BUFFER_SIZE, packetSize, command, &commandData);
+    memcpy(commandData, data, dataSize);
+    packetSize = IrrigationSystem::RemoteUnitPacket::finalisePacket(packetBuffer, PACKET_BUFFER_SIZE, packetSize, false);
 
     // Debug output
     std::cout << "Packet: 0x";
@@ -155,9 +181,6 @@ void remoteCommandRaw(int argc, char **argv)
         std::cerr << "Failed to open serial device '" << deviceStr << "'\n";
         exit(EXIT_FAILURE);
     }
-    // Add node ID to initial bytes for LoRa module
-    buffer[0] = nodeId;
-    buffer[1] = nodeId >> 8;
     ssize_t result = serialWrite(serialPort, buffer, packetSize);
     if (result != packetSize)
     {
@@ -166,7 +189,7 @@ void remoteCommandRaw(int argc, char **argv)
     }
 
     // Receive response
-    result = serialRead(serialPort, packetBuffer, 64);
+    result = serialRead(serialPort, packetBuffer, PACKET_BUFFER_SIZE);
     if (result == -1)
     {
         std::cerr << "Failed to read from serial device '" << deviceStr << "'\n";
@@ -200,7 +223,7 @@ void remoteCommandRaw(int argc, char **argv)
         }
         exit(EXIT_FAILURE);
     }
-    std::cout << "Received response from node ";
+    std::cout << "Received response from node 0x";
     std::cout << std::hex << std::setfill('0') << std::setw(4) << IrrigationSystem::RemoteUnitPacket::getNodeId(packetBuffer) << "\n";
     for (int i = 0; i < numCommands; ++i)
     {
@@ -210,10 +233,13 @@ void remoteCommandRaw(int argc, char **argv)
         unsigned responseDataSize = IrrigationSystem::RemoteUnitPacket::getCommandDataSize(responseCommand);
         std::cout << "Command: 0x" << std::hex << std::setfill('0') << std::setw(2) << static_cast<unsigned>(responseCommand);
         std::cout << std::dec << ", dataSize: " << responseDataSize;
-        std::cout << ", data: 0x";
-        for (unsigned i = 0; i < responseDataSize; ++i)
+        if (responseDataSize > 0)
         {
-            std::cout << std::hex << std::setfill('0') << std::setw(2) << static_cast<unsigned>(responseData[i]);
+            std::cout << ", data: 0x";
+            for (unsigned i = 0; i < responseDataSize; ++i)
+            {
+                std::cout << std::hex << std::setfill('0') << std::setw(2) << static_cast<unsigned>(responseData[i]);
+            }
         }
         std::cout << "\n";
     }

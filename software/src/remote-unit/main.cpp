@@ -1,10 +1,13 @@
-// Turns off modules and puts the processor to sleep until RF is received
-// Based on tips from https://www.gammon.com.au/forum/?id=11497
-
-// Note: add __AVR_ATmega328P__ to defined in c_cpp_properties.json
-
 #include <Arduino.h>
 #include <avr/sleep.h>
+#include "yl-800t.h"
+#include "serial-interface.h"
+
+/**
+ * Unique 16 bit identifier for a remote unit.
+ * Each remote unit should have a unique value.
+ */
+#define NODE_ID 0x00ff
 
 // Pins
 #define RF_EN 4
@@ -14,8 +17,42 @@
 #define DRV_B2 6
 #define LED_1 8
 #define LED_2 A1
+// Pulled low to enable solar charge
+#define SOLAR A4
 
 int intCount = 0;
+
+// msg to check battery
+// 0x00 0x01 0x42 0x41 0x54 0x0A
+// msg to enable charge
+// 0x00 0x01 0x43 0x4F 0x4E 0x0A
+// msg to disable charge
+// 0x00 0x01 0x43 0x4F 0x46 0x46 0x0A
+
+void configure()
+{
+    // Wake up the RF module
+    digitalWrite(RF_EN, LOW);
+    Serial.begin(9600);
+    YL800TReadWriteAllParameters params = {
+        .serialBaudRate = YL_800T_BAUD_RATE_9600,
+        .serialParity = YL_800T_PARITY_NONE,
+        .rfFrequency = 434l * 1l << 14,
+        .rfSpreadingFactor = YL_800T_RF_SPREADING_FACTOR_2048,
+        .mode = YL_800T_RF_MODE_NODE,
+        .rfBandwidth = YL_800T_RF_BANDWIDTH_125K,
+        .nodeId = NODE_ID,
+        .netId = 0,
+        .rfTransmitPower = 5,
+        .breathCycle = YL_800T_BREATH_CYCLE_2S,
+        .breathTime = YL_800T_BREATH_TIME_32MS,
+    };
+    uint8_t message[25] = {0};
+    uint8_t length = yl800tSendWriteAllParameters(&params, message);
+    delay(100);
+    Serial.write(message, length);
+    Serial.end();
+}
 
 void wake()
 {
@@ -29,6 +66,9 @@ void wake()
 
 void sleep()
 {
+    // Turns off modules and puts the processor to sleep until RF is received
+    // Based on tips from https://www.gammon.com.au/forum/?id=11497
+
     // Put RF module to sleep
     digitalWrite(RF_EN, HIGH);
     // Put motor drivers to sleep
@@ -77,16 +117,26 @@ void setup()
     pinMode(DRV_B2, OUTPUT);
     pinMode(LED_1, OUTPUT);
     pinMode(LED_2, OUTPUT);
+    pinMode(SOLAR, OUTPUT);
 
     analogReference(INTERNAL);
 
     // Enable pull-up on interrupt pin
     pinMode(2, INPUT_PULLUP);
 
+    digitalWrite(LED_1, LOW);
+    digitalWrite(LED_2, HIGH);
+    digitalWrite(SOLAR, LOW);
+
     digitalWrite(DRV_A1, LOW);
     digitalWrite(DRV_A2, LOW);
     digitalWrite(DRV_B1, LOW);
     digitalWrite(DRV_B2, LOW);
+
+    // Write configuration to LoRa module
+    configure();
+
+    digitalWrite(LED_2, LOW);
 }
 
 char inputBuffer[256] = {0};
@@ -94,101 +144,101 @@ char *inputPointer = inputBuffer;
 
 void loop()
 {
-    digitalWrite(LED_2, HIGH);
+    // digitalWrite(LED_2, HIGH);
 
     // Wake up the RF module
     digitalWrite(RF_EN, LOW);
 
-    // Read incoming data from RF module
-    Serial.begin(9600);
-    unsigned long lastReadTime = millis();
-    inputPointer = inputBuffer;
-    // TODO proper serial read, work out timing
-    while (Serial.available() || millis() < lastReadTime + 500)
+    int result = receivePacket(NODE_ID);
+
+    // Flash to show error
+    if (result < 0)
     {
-        int b = Serial.read();
-        if (b >= 0)
+        for (int i = 0; i < -result; ++i)
         {
-            *inputPointer = b;
-            ++inputPointer;
-            lastReadTime = millis();
+            digitalWrite(LED_1, HIGH);
+            delay(500);
+            digitalWrite(LED_1, LOW);
+            delay(500);
         }
     }
 
-    if (inputPointer > inputBuffer)
-    {
-        char *token = inputBuffer;
-        for (char *i = inputBuffer; i < inputPointer; ++i)
-        {
-            if (*i == '\n')
-            {
-                if (strncmp(token, "LON", i - token) == 0)
-                {
-                    digitalWrite(LED_1, HIGH);
-                    Serial.println("OK LON");
-                }
-                else if (strncmp(token, "LOFF", i - token) == 0)
-                {
-                    digitalWrite(LED_1, LOW);
-                    Serial.println("OK LOFF");
-                }
-                else if (strncmp(token, "BAT", i - token) == 0)
-                {
-                    analogRead(0);
-                    float av = analogRead(0);
-                    Serial.print("OK BAT ");
-                    Serial.print(av);
-                    Serial.print(" (");
-                    Serial.print(av * 0.015);
-                    Serial.println("V)");
-                }
-                else if (strncmp(token, "SOLON", i - token) == 0)
-                {
-                    digitalWrite(DRV_A1, HIGH);
-                    delay(100);
-                    digitalWrite(DRV_A1, LOW);
-                    Serial.println("OK SOLON");
-                }
-                else if (strncmp(token, "SOLOFF", i - token) == 0)
-                {
-                    digitalWrite(DRV_A2, HIGH);
-                    delay(100);
-                    digitalWrite(DRV_A2, LOW);
-                    Serial.println("OK SOLOFF");
-                }
-                else
-                {
-                    Serial.println("ERR");
-                }
-                token = i + 1;
-            }
-        }
-    }
-
-    // analogRead(0);
-    // float av = analogRead(0);
-    // delay(50);
-    // Serial.print("Interrupt count: ");
-    // Serial.println(intCount);
-    // Serial.print("Analog value: ");
-    // Serial.println(av);
-    // Check for data to read from RF module
-    // unsigned long startTime = millis();
-    // while (Serial.available() || millis() < startTime + 2000)
-    // {
-    //   digitalWrite(LED_2, HIGH);
-    //   String s = Serial.readString();
-    //   if (s.length() > 0)
-    //   {
-    //     Serial.print("ECHO: ");
-    //     Serial.println(s);
-    //   }
-    // }
-    // digitalWrite(LED_2, LOW);
-
-    Serial.end();
-    delay(500);
-
+    delay(500); // TODO why?
     digitalWrite(LED_2, LOW);
-    sleep();
+    // sleep();
+
+    // TODO charge control
+    // TODO auto turn off solenoids
+    // if (strncmp(token, "COFF", i - token) == 0)
+    // {
+    //     // Stop pulling solar pin low - charging will stop
+    //     digitalWrite(SOLAR, HIGH);
+    //     pinMode(SOLAR, INPUT);
+    //     // Led 1 on
+    //     digitalWrite(LED_1, HIGH);
+    //     Serial.println("OK COFF");
+    // }
+    // else if (strncmp(token, "CON", i - token) == 0)
+    // {
+    //     // Pull solar pin low - charging will start
+    //     pinMode(SOLAR, OUTPUT);
+    //     digitalWrite(SOLAR, LOW);
+    //     // Led 1 off
+    //     digitalWrite(LED_1, LOW);
+    //     Serial.println("OK CON");
+    // }
+    // else if (strncmp(token, "BAT", i - token) == 0)
+    // {
+    //     analogRead(0);
+    //     float av = analogRead(0);
+    //     float v = av * 0.015;
+
+    //     Serial.print("OK BAT ");
+    //     Serial.print(av);
+    //     Serial.print(" (");
+    //     Serial.print(v);
+    //     Serial.print("V)");
+
+    //     // Update solar charge state
+    //     if (v < 13.6)
+    //     {
+    //         // Pull solar pin low - charging will start
+    //         pinMode(SOLAR, OUTPUT);
+    //         digitalWrite(SOLAR, LOW);
+    //         // Led 1 off
+    //         digitalWrite(LED_1, LOW);
+    //         Serial.println(" CON");
+    //     }
+    //     else if (v > 13.8)
+    //     {
+    //         // Stop pulling solar pin low - charging will stop
+    //         digitalWrite(SOLAR, HIGH);
+    //         pinMode(SOLAR, INPUT);
+    //         // Led 1 on
+    //         digitalWrite(LED_1, HIGH);
+    //         Serial.println(" COFF");
+    //     }
+    //     else
+    //     {
+    //         Serial.println();
+    //     }
+    // }
+    // else if (strncmp(token, "SOLON", i - token) == 0)
+    // {
+    //     digitalWrite(DRV_A1, HIGH);
+    //     delay(100);
+    //     digitalWrite(DRV_A1, LOW);
+    //     Serial.println("OK SOLON");
+    // }
+    // else if (strncmp(token, "SOLOFF", i - token) == 0)
+    // {
+    //     digitalWrite(DRV_A2, HIGH);
+    //     delay(100);
+    //     digitalWrite(DRV_A2, LOW);
+    //     Serial.println("OK SOLOFF");
+    // }
+    // else
+    // {
+    //     Serial.println("ERR");
+    // }
 }
