@@ -36,8 +36,8 @@ int serialOpen(const char *device)
     tty.c_oflag &= ~(OPOST | ONLCR);                                             // Disable special handling of sent bytes
 
     // Set timeout
-    tty.c_cc[VTIME] = 150; // Timeout in deciseconds
-    tty.c_cc[VMIN] = 0;    // Read as many bytes as are available
+    tty.c_cc[VTIME] = 1;   // Inter-character timeout in deciseconds
+    tty.c_cc[VMIN] = 0xff; // Read until timeout is met
     // Set baud rate
     cfsetspeed(&tty, B9600);
     // Set attributes
