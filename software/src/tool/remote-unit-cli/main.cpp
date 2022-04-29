@@ -148,22 +148,20 @@ void remoteCommandRaw(int argc, char **argv)
     uint8_t buffer[PACKET_BUFFER_SIZE + 2];
     uint8_t *packetBuffer = buffer + 2;
 
-    if (noNodePrefix)
-    {
-        packetBuffer = buffer;
-    }
-    else
-    {
-        // Add node ID to initial bytes for LoRa module
-        buffer[0] = nodeId;
-        buffer[1] = nodeId >> 8;
-    }
-
     uint8_t *commandData;
     size_t packetSize = IrrigationSystem::RemoteUnitPacket::createPacket(packetBuffer, PACKET_BUFFER_SIZE, nodeId);
     packetSize = IrrigationSystem::RemoteUnitPacket::addCommandToPacket(packetBuffer, PACKET_BUFFER_SIZE, packetSize, command, &commandData);
     memcpy(commandData, data, dataSize);
     packetSize = IrrigationSystem::RemoteUnitPacket::finalisePacket(packetBuffer, PACKET_BUFFER_SIZE, packetSize, false);
+
+    if (!noNodePrefix)
+    {
+        // Add node ID to initial bytes for LoRa module
+        buffer[0] = nodeId >> 8;
+        buffer[1] = nodeId;
+        packetBuffer = buffer;
+        packetSize += 2;
+    }
 
     // Debug output
     std::cout << "Packet: 0x";
@@ -181,7 +179,7 @@ void remoteCommandRaw(int argc, char **argv)
         std::cerr << "Failed to open serial device '" << deviceStr << "'\n";
         exit(EXIT_FAILURE);
     }
-    ssize_t result = serialWrite(serialPort, buffer, packetSize);
+    ssize_t result = serialWrite(serialPort, packetBuffer, packetSize);
     if (result != packetSize)
     {
         std::cerr << "Failed to write to serial device '" << deviceStr << "'\n";

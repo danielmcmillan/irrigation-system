@@ -93,11 +93,11 @@ namespace IrrigationSystem
             case RemoteUnitCommand::GetConfig:
                 return 0;
             case RemoteUnitCommand::GetConfigResponse:
-                return 13;
+                return 17;
             case RemoteUnitCommand::SetConfig:
-                return 13;
+                return 17;
             case RemoteUnitCommand::SetConfigResponse:
-                return 13;
+                return 17;
             case RemoteUnitCommand::ErrorResponse:
                 return 0;
             default:

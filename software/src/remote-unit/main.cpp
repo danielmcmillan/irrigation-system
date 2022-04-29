@@ -93,8 +93,11 @@ void sleep()
 
 void setup()
 {
+    Serial.begin(9600, SERIAL_8N1);
     pinMode(LED_1, OUTPUT);
     pinMode(LED_2, OUTPUT);
+    // Enable pull-up on interrupt pin
+    pinMode(2, INPUT_PULLUP);
 
     if (config.loadFromEeprom())
     {
@@ -105,15 +108,14 @@ void setup()
     battery.setup();
     rfModule.applyConfig();
 
-    // Enable pull-up on interrupt pin
-    pinMode(2, INPUT_PULLUP);
-
     digitalWrite(LED_1, LOW);
     digitalWrite(LED_2, LOW);
 }
 
 void loop()
 {
+    digitalWrite(LED_2, HIGH);
+
     Serial.begin(9600, SERIAL_8N1);
     unsigned long now = millis();
     rfModule.wake();
@@ -122,8 +124,10 @@ void loop()
         faults.setFault(RemoteUnitFault::BatteryVoltageError);
     }
 
-    // Todo: increase timeout when in sleep mode since we are expecting data
-    RemoteUnitSerialInterface::Result result = remoteUnitSerial.receivePacket(10000);
+    // Read a packet from Serial and perform any encoded commands.
+    // Increase timeout when in sleep mode since we are expecting data on wake that should be read before sleeping again.
+    RemoteUnitSerialInterface::Result result = remoteUnitSerial.receivePacket(
+        battery.shouldSleep() ? 10000 : 500);
 
     // Flash to show error
     if (result != RemoteUnitSerialInterface::Result::success && result != RemoteUnitSerialInterface::Result::noData)
@@ -154,9 +158,11 @@ void loop()
     delay(500); // TODO why?
 
     // TODO temporarily apply RF config change until successful communication
+    // TODO LED indicators
 
     if (battery.shouldSleep())
     {
+        digitalWrite(LED_2, LOW);
         sleep();
     }
 }

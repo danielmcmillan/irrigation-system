@@ -12,11 +12,11 @@ class RemoteUnitRfModule
 public:
   RemoteUnitRfModule(uint16_t nodeId, const RemoteUnitConfig &config, uint8_t rfEnablePin);
 
-  void setup();
+  void setup() const;
 
-  void sleep();
+  void sleep() const;
 
-  void wake();
+  void wake() const;
 
   /**
    * Writes the current configuration values to the RF module.

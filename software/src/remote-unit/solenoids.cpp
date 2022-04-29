@@ -16,7 +16,6 @@ void Solenoids::setup()
     digitalWrite(definition.positivePin, LOW);
     digitalWrite(definition.negativePin, LOW);
   }
-  state = 0;
 }
 
 void Solenoids::sleep()
@@ -27,7 +26,6 @@ void Solenoids::sleep()
     digitalWrite(definition.positivePin, LOW);
     digitalWrite(definition.negativePin, LOW);
   }
-  state = 0;
 }
 
 void Solenoids::solenoidOn(uint8_t index)
@@ -38,7 +36,7 @@ void Solenoids::solenoidOn(uint8_t index)
   digitalWrite(definition.negativePin, LOW);
   delay(pulseWidth * 2);
   digitalWrite(definition.positivePin, LOW);
-  state |= 1 << index;
+  this->state |= 1 << index;
 }
 
 void Solenoids::solenoidOff(uint8_t index)
@@ -49,7 +47,7 @@ void Solenoids::solenoidOff(uint8_t index)
   digitalWrite(definition.negativePin, HIGH);
   delay(pulseWidth * 2);
   digitalWrite(definition.negativePin, LOW);
-  state &= ~(1 << index);
+  this->state &= ~(1 << index);
 }
 
 uint8_t Solenoids::getState() const
@@ -74,6 +72,5 @@ uint8_t Solenoids::setState(uint8_t state)
     }
   }
 
-  this->state = state;
-  return state;
+  return this->state;
 }

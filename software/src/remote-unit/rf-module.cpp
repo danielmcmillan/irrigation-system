@@ -9,25 +9,24 @@ RemoteUnitRfModule::RemoteUnitRfModule(uint16_t nodeId, const RemoteUnitConfig &
 {
 }
 
-void RemoteUnitRfModule::setup()
+void RemoteUnitRfModule::setup() const
 {
   pinMode(this->rfEnablePin, OUTPUT);
 }
 
-void RemoteUnitRfModule::sleep()
+void RemoteUnitRfModule::sleep() const
 {
   digitalWrite(this->rfEnablePin, HIGH);
 }
 
-void RemoteUnitRfModule::wake()
+void RemoteUnitRfModule::wake() const
 {
   digitalWrite(this->rfEnablePin, LOW);
 }
 
 int RemoteUnitRfModule::applyConfig() const
 {
-  // Wake up the RF module
-  digitalWrite(this->rfEnablePin, LOW);
+  this->wake();
   Serial.setTimeout(RF_MODULE_RESPONSE_TIMEOUT);
   const uint8_t *rfConfig = config.getRfConfig();
   YL800TReadWriteAllParameters params = {
@@ -46,7 +45,9 @@ int RemoteUnitRfModule::applyConfig() const
   uint8_t length = yl800tSendWriteAllParameters(&params, message);
   delay(100); // TODO why?
   Serial.write(message, length);
-  // TODO wait for response?
+  Serial.flush();
+  Serial.readBytes(message, 25);
+  // TODO check response?
   return 0;
 }
 
