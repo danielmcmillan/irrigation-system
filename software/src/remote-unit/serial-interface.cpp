@@ -1,47 +1,43 @@
 #include <Arduino.h>
-#include "remote-unit-packet.h"
 #include "serial-interface.h"
-#include "commands.h"
 
 #define PACKET_BUFFER_SIZE 64
 #define READ_TIMEOUT 10000
 
-using namespace IrrigationSystem;
-
-void handleCommand(RemoteUnitPacket::RemoteUnitCommand command, const uint8_t *data, uint8_t *responseData)
+void RemoteUnitSerialInterface::handleCommand(RemoteUnitPacket::RemoteUnitCommand command, const uint8_t *data, uint8_t *responseData) const
 {
     int result = 0;
     switch (command)
     {
     case RemoteUnitPacket::RemoteUnitCommand::GetSolenoidState:
-        result = getSolenoidState(responseData);
+        result = this->commands.getSolenoidState(responseData);
         break;
     case RemoteUnitPacket::RemoteUnitCommand::SetSolenoidState:
-        result = setSolenoidState(*data, responseData);
+        result = this->commands.setSolenoidState(*data, responseData);
         break;
     case RemoteUnitPacket::RemoteUnitCommand::GetBatteryVoltage:
-        result = getBatteryVoltage(responseData);
+        result = this->commands.getBatteryVoltage(responseData);
         break;
     case RemoteUnitPacket::RemoteUnitCommand::GetBatteryRaw:
         uint16_t batteryRaw;
-        result = getBatteryRaw(&batteryRaw);
+        result = this->commands.getBatteryRaw(&batteryRaw);
         responseData[0] = batteryRaw;
         responseData[1] = batteryRaw >> 8;
         break;
     case RemoteUnitPacket::RemoteUnitCommand::GetFaults:
-        result = getFaults(responseData);
+        result = this->commands.getFaults(responseData);
         break;
     case RemoteUnitPacket::RemoteUnitCommand::ClearFaults:
-        result = clearFaults(responseData);
+        result = this->commands.clearFaults(responseData);
         break;
     case RemoteUnitPacket::RemoteUnitCommand::GetSignalStrength:
-        result = getSignalStrength(responseData);
+        result = this->commands.getSignalStrength(responseData);
         break;
     case RemoteUnitPacket::RemoteUnitCommand::GetConfig:
-        result = getConfig(responseData);
+        result = this->commands.getConfig(responseData);
         break;
     case RemoteUnitPacket::RemoteUnitCommand::SetConfig:
-        result = setConfig(data, responseData);
+        result = this->commands.setConfig(data, responseData);
         break;
     default:
         result = -1;
@@ -54,17 +50,17 @@ void handleCommand(RemoteUnitPacket::RemoteUnitCommand command, const uint8_t *d
     }
 }
 
-int handlePacket(uint16_t nodeId, const uint8_t *packet, size_t size)
+RemoteUnitSerialInterface::Result RemoteUnitSerialInterface::handlePacket(const uint8_t *packet, size_t size) const
 {
     // Don't do anything if NODE_ID doesn't match
-    if (size < 2 || nodeId != RemoteUnitPacket::getNodeId(packet))
+    if (size < 2 || this->nodeId != RemoteUnitPacket::getNodeId(packet))
     {
-        return REMOTE_UNIT_INVALID_NODE_ID;
+        return Result::invalidNodeId;
     }
 
     uint8_t response[PACKET_BUFFER_SIZE];
-    size_t responseSize = RemoteUnitPacket::createPacket(response, PACKET_BUFFER_SIZE, nodeId);
-    int result = 0;
+    size_t responseSize = RemoteUnitPacket::createPacket(response, PACKET_BUFFER_SIZE, this->nodeId);
+    Result result = Result::success;
 
     int commandCount = RemoteUnitPacket::validatePacket(packet, size, false);
     if (commandCount > 0)
@@ -80,7 +76,7 @@ int handlePacket(uint16_t nodeId, const uint8_t *packet, size_t size)
             if (responseSize == 0)
             {
                 // Buffer too small
-                return REMOTE_UNIT_INVALID_PACKET_RESPONSE_TOO_LARGE;
+                return Result::invalidPacketResponseTooLarge;
             }
 
             handleCommand(command, commandData, responseData);
@@ -92,11 +88,11 @@ int handlePacket(uint16_t nodeId, const uint8_t *packet, size_t size)
         responseSize = RemoteUnitPacket::addCommandToPacket(response, PACKET_BUFFER_SIZE, responseSize, RemoteUnitPacket::RemoteUnitCommand::ErrorResponse, nullptr);
         if (commandCount == -2)
         {
-            result = REMOTE_UNIT_INVALID_PACKET_CRC;
+            result = Result::invalidPacketCrc;
         }
         else
         {
-            result = REMOTE_UNIT_INVALID_PACKET_COMMAND;
+            result = Result::invalidPacketCommand;
         }
     }
 
@@ -104,16 +100,21 @@ int handlePacket(uint16_t nodeId, const uint8_t *packet, size_t size)
     if (responseSize == 0)
     {
         // Buffer too small
-        return REMOTE_UNIT_INVALID_PACKET_RESPONSE_TOO_LARGE;
+        return Result::invalidPacketResponseTooLarge;
     }
 
     // Send the response
     size_t written = Serial.write(response, responseSize);
     if (written != responseSize)
     {
-        result = REMOTE_UNIT_WRITE_FAILURE;
+        result = Result::writeFailure;
     }
     return result;
+}
+
+RemoteUnitSerialInterface::RemoteUnitSerialInterface(uint16_t nodeId, const RemoteUnitCommandHandler &commands)
+    : nodeId(nodeId), commands(commands)
+{
 }
 
 /**
@@ -121,7 +122,7 @@ int handlePacket(uint16_t nodeId, const uint8_t *packet, size_t size)
  *
  * Returns a value less than 0 on failure.
  */
-int receivePacket(uint16_t nodeId)
+RemoteUnitSerialInterface::Result RemoteUnitSerialInterface::receivePacket() const
 {
     Serial.begin(9600, SERIAL_8N1);
     uint8_t buffer[PACKET_BUFFER_SIZE];
@@ -131,12 +132,12 @@ int receivePacket(uint16_t nodeId)
     size_t read = Serial.readBytes(buffer, 1);
     if (read == 0)
     {
-        return REMOTE_UNIT_NO_DATA;
+        return Result::noData;
     }
     Serial.setTimeout(100);
     read = Serial.readBytes(buffer + 1, PACKET_BUFFER_SIZE - 1);
 
-    int result = handlePacket(nodeId, buffer, read + 1);
+    Result result = this->handlePacket(buffer, read + 1);
     Serial.end();
     return result;
 }

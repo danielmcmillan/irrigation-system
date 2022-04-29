@@ -36,6 +36,8 @@ SolenoidDefinition solenoidDefinitions[] = {
     {DRV_A1, DRV_A2},
     {DRV_B1, DRV_B2}};
 Solenoids solenoids(config, solenoidDefinitions);
+RemoteUnitCommandHandler commandHandler(solenoids);
+RemoteUnitSerialInterface remoteUnitSerial(NODE_ID, commandHandler);
 
 void configure()
 {
@@ -148,12 +150,12 @@ void loop()
     // Wake up the RF module
     digitalWrite(RF_EN, LOW);
 
-    int result = receivePacket(NODE_ID);
+    RemoteUnitSerialInterface::Result result = remoteUnitSerial.receivePacket();
 
     // Flash to show error
-    if (result < 0)
+    if (result != RemoteUnitSerialInterface::Result::success)
     {
-        for (int i = 0; i < -result; ++i)
+        for (int i = 0; i < (uint8_t)result; ++i)
         {
             digitalWrite(LED_1, HIGH);
             delay(500);

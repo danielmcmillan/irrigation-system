@@ -1,16 +1,39 @@
 #ifndef _REMOTE_UNIT_SERIAL_INTERFACE_H
 #define _REMOTE_UNIT_SERIAL_INTERFACE_H
-#define REMOTE_UNIT_NO_DATA -1
-#define REMOTE_UNIT_INVALID_PACKET_CRC -2
-#define REMOTE_UNIT_INVALID_PACKET_COMMAND -3
-#define REMOTE_UNIT_INVALID_NODE_ID -4
-#define REMOTE_UNIT_INVALID_PACKET_RESPONSE_TOO_LARGE -5
-#define REMOTE_UNIT_WRITE_FAILURE -6
 
-/**
- * Receive a packet over the Serial interface and handle the encoded commands.
- *
- * Returns a value less than 0 on failure.
- */
-int receivePacket(uint16_t nodeId);
+#include "command-handler.h"
+#include "remote-unit-packet.h"
+
+using namespace IrrigationSystem;
+
+class RemoteUnitSerialInterface
+{
+  const uint16_t nodeId;
+  const RemoteUnitCommandHandler &commands;
+
+public:
+  enum class Result : uint8_t
+  {
+    success = 0,
+    noData,
+    invalidPacketCrc,
+    invalidPacketCommand,
+    invalidNodeId,
+    invalidPacketResponseTooLarge,
+    writeFailure
+  };
+
+  RemoteUnitSerialInterface(uint16_t nodeId, const RemoteUnitCommandHandler &commands);
+  /**
+   * Receive a packet over the Serial interface and handle the encoded commands.
+   *
+   * Returns a non-zero value on failure.
+   */
+  Result receivePacket() const;
+
+private:
+  void handleCommand(RemoteUnitPacket::RemoteUnitCommand command, const uint8_t *data, uint8_t *responseData) const;
+
+  RemoteUnitSerialInterface::Result handlePacket(const uint8_t *packet, size_t size) const;
+};
 #endif
