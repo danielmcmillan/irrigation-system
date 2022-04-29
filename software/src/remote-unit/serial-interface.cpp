@@ -8,12 +8,6 @@
 
 using namespace IrrigationSystem;
 
-void serialInit()
-{
-    Serial.setTimeout(READ_TIMEOUT);
-    Serial.begin(9600, SERIAL_8N1);
-}
-
 void handleCommand(RemoteUnitPacket::RemoteUnitCommand command, const uint8_t *data, uint8_t *responseData)
 {
     int result = 0;
@@ -129,15 +123,20 @@ int handlePacket(uint16_t nodeId, const uint8_t *packet, size_t size)
  */
 int receivePacket(uint16_t nodeId)
 {
+    Serial.begin(9600, SERIAL_8N1);
     uint8_t buffer[PACKET_BUFFER_SIZE];
-    serialInit();
-    size_t read = Serial.readBytes(buffer, PACKET_BUFFER_SIZE);
 
+    // All of the data should arrive at once, so apply timeout only to first byte
+    Serial.setTimeout(READ_TIMEOUT);
+    size_t read = Serial.readBytes(buffer, 1);
     if (read == 0)
     {
         return REMOTE_UNIT_NO_DATA;
     }
-    int result = handlePacket(nodeId, buffer, read);
+    Serial.setTimeout(100);
+    read = Serial.readBytes(buffer + 1, PACKET_BUFFER_SIZE - 1);
+
+    int result = handlePacket(nodeId, buffer, read + 1);
     Serial.end();
     return result;
 }

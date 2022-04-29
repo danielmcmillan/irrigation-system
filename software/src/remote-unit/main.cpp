@@ -2,6 +2,7 @@
 #include <avr/sleep.h>
 #include "yl-800t.h"
 #include "serial-interface.h"
+#include "remote-unit-config.h"
 
 /**
  * Unique 16 bit identifier for a remote unit.
@@ -11,12 +12,12 @@
 
 // Pins
 #define RF_EN 4
+#define LED_1 8
+#define LED_2 A1
 #define DRV_A1 9
 #define DRV_A2 10
 #define DRV_B1 5
 #define DRV_B2 6
-#define LED_1 8
-#define LED_2 A1
 // Pulled low to enable solar charge
 #define SOLAR A4
 
@@ -28,6 +29,8 @@ int intCount = 0;
 // 0x00 0x01 0x43 0x4F 0x4E 0x0A
 // msg to disable charge
 // 0x00 0x01 0x43 0x4F 0x46 0x46 0x0A
+
+RemoteUnitConfig config;
 
 void configure()
 {
