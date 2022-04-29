@@ -4,6 +4,7 @@
 #include "serial-interface.h"
 #include "remote-unit-config.h"
 #include "solenoids.h"
+#include "battery.h"
 
 /**
  * Unique 16 bit identifier for a remote unit.
@@ -15,28 +16,25 @@
 #define RF_EN 4
 #define LED_1 8
 #define LED_2 A1
+
+// Solenoid driver pins
 #define DRV_A1 9
 #define DRV_A2 10
 #define DRV_B1 5
 #define DRV_B2 6
+
 // Pulled low to enable solar charge
-#define SOLAR A4
+#define DISABLE_CHARGE A4
 
 int intCount = 0;
-
-// msg to check battery
-// 0x00 0x01 0x42 0x41 0x54 0x0A
-// msg to enable charge
-// 0x00 0x01 0x43 0x4F 0x4E 0x0A
-// msg to disable charge
-// 0x00 0x01 0x43 0x4F 0x46 0x46 0x0A
 
 RemoteUnitConfig config;
 SolenoidDefinition solenoidDefinitions[] = {
     {DRV_A1, DRV_A2},
     {DRV_B1, DRV_B2}};
 Solenoids solenoids(config, solenoidDefinitions);
-RemoteUnitCommandHandler commandHandler(solenoids);
+RemoteUnitBattery battery(config, 0, DISABLE_CHARGE);
+RemoteUnitCommandHandler commandHandler(config, solenoids, battery);
 RemoteUnitSerialInterface remoteUnitSerial(NODE_ID, commandHandler);
 
 void configure()
@@ -121,20 +119,16 @@ void setup()
 
     pinMode(LED_1, OUTPUT);
     pinMode(LED_2, OUTPUT);
-    pinMode(SOLAR, OUTPUT);
 
     config.loadFromEeprom();
-
     solenoids.setup();
-
-    analogReference(INTERNAL);
+    battery.setup();
 
     // Enable pull-up on interrupt pin
     pinMode(2, INPUT_PULLUP);
 
     digitalWrite(LED_1, LOW);
     digitalWrite(LED_2, HIGH);
-    digitalWrite(SOLAR, LOW);
 
     // Write configuration to LoRa module
     configure();
@@ -142,20 +136,18 @@ void setup()
     digitalWrite(LED_2, LOW);
 }
 
-char inputBuffer[256] = {0};
-char *inputPointer = inputBuffer;
-
 void loop()
 {
-    // digitalWrite(LED_2, HIGH);
+    unsigned long now = millis();
 
     // Wake up the RF module
     digitalWrite(RF_EN, LOW);
 
-    RemoteUnitSerialInterface::Result result = remoteUnitSerial.receivePacket();
+    // Todo: increase timeout when in sleep mode
+    RemoteUnitSerialInterface::Result result = remoteUnitSerial.receivePacket(500);
 
     // Flash to show error
-    if (result != RemoteUnitSerialInterface::Result::success)
+    if (result != RemoteUnitSerialInterface::Result::success && result != RemoteUnitSerialInterface::Result::noData)
     {
         for (int i = 0; i < (uint8_t)result; ++i)
         {
@@ -166,12 +158,19 @@ void loop()
         }
     }
 
-    delay(500); // TODO why?
-    digitalWrite(LED_2, LOW);
-    // sleep();
+    battery.update(now);
 
-    // TODO charge control
+    delay(500); // TODO why?
+
+    // TODO support all commands
     // TODO auto turn off solenoids
+    // TODO setting faults
+
+    if (battery.shouldSleep())
+    {
+        // sleep();
+    }
+
     // if (strncmp(token, "COFF", i - token) == 0)
     // {
     //     // Stop pulling solar pin low - charging will stop
@@ -225,23 +224,5 @@ void loop()
     //     {
     //         Serial.println();
     //     }
-    // }
-    // else if (strncmp(token, "SOLON", i - token) == 0)
-    // {
-    //     digitalWrite(DRV_A1, HIGH);
-    //     delay(100);
-    //     digitalWrite(DRV_A1, LOW);
-    //     Serial.println("OK SOLON");
-    // }
-    // else if (strncmp(token, "SOLOFF", i - token) == 0)
-    // {
-    //     digitalWrite(DRV_A2, HIGH);
-    //     delay(100);
-    //     digitalWrite(DRV_A2, LOW);
-    //     Serial.println("OK SOLOFF");
-    // }
-    // else
-    // {
-    //     Serial.println("ERR");
     // }
 }

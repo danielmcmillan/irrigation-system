@@ -1,14 +1,18 @@
 #ifndef _REMOTE_UNIT_COMMANDS_H
 #define _REMOTE_UNIT_COMMANDS_H
 #include <inttypes.h>
+#include "remote-unit-config.h"
 #include "solenoids.h"
+#include "battery.h"
 
 class RemoteUnitCommandHandler
 {
+  RemoteUnitConfig &config;
   Solenoids &solenoids;
+  RemoteUnitBattery &battery;
 
 public:
-  RemoteUnitCommandHandler(Solenoids &solenoids);
+  RemoteUnitCommandHandler(RemoteUnitConfig &config, Solenoids &solenoids, RemoteUnitBattery &battery);
 
   /**
    * Gets the state for all solenoids.

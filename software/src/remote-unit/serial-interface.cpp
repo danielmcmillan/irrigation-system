@@ -2,7 +2,6 @@
 #include "serial-interface.h"
 
 #define PACKET_BUFFER_SIZE 64
-#define READ_TIMEOUT 10000
 
 void RemoteUnitSerialInterface::handleCommand(RemoteUnitPacket::RemoteUnitCommand command, const uint8_t *data, uint8_t *responseData) const
 {
@@ -122,13 +121,13 @@ RemoteUnitSerialInterface::RemoteUnitSerialInterface(uint16_t nodeId, const Remo
  *
  * Returns a value less than 0 on failure.
  */
-RemoteUnitSerialInterface::Result RemoteUnitSerialInterface::receivePacket() const
+RemoteUnitSerialInterface::Result RemoteUnitSerialInterface::receivePacket(unsigned long timeout) const
 {
     Serial.begin(9600, SERIAL_8N1);
     uint8_t buffer[PACKET_BUFFER_SIZE];
 
     // All of the data should arrive at once, so apply timeout only to first byte
-    Serial.setTimeout(READ_TIMEOUT);
+    Serial.setTimeout(timeout);
     size_t read = Serial.readBytes(buffer, 1);
     if (read == 0)
     {

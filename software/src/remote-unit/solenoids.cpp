@@ -64,11 +64,11 @@ uint8_t Solenoids::setState(uint8_t state)
 
   for (uint8_t i = 0; i < 8; ++i)
   {
-    if (toTurnOn & (1 << i) != 0)
+    if ((toTurnOn & (1 << i)) != 0)
     {
       this->solenoidOn(i);
     }
-    if (toTurnOff & (1 << i) != 0)
+    if ((toTurnOff & (1 << i)) != 0)
     {
       this->solenoidOff(i);
     }

@@ -17,7 +17,7 @@ void RemoteUnitConfig::loadFromEeprom()
   // TODO load data from eeprom. Handle case of missing config in eeprom.
 
   // Default values
-  this->config[0] = 123; // battery multiplier * 2^13
+  this->config[0] = 122; // battery multiplier * 2^13
   this->config[1] = 20;  // solenoid timeout seconds / 16
   this->config[2] = 0;   // Rf
   this->config[3] = 0;

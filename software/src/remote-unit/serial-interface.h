@@ -29,7 +29,7 @@ public:
    *
    * Returns a non-zero value on failure.
    */
-  Result receivePacket() const;
+  Result receivePacket(unsigned long timeout) const;
 
 private:
   void handleCommand(RemoteUnitPacket::RemoteUnitCommand command, const uint8_t *data, uint8_t *responseData) const;

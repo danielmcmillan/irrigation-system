@@ -1,8 +1,9 @@
 #include "command-handler.h"
+#include <Arduino.h>
 #include <string.h>
 
-RemoteUnitCommandHandler::RemoteUnitCommandHandler(Solenoids &solenoids)
-    : solenoids(solenoids)
+RemoteUnitCommandHandler::RemoteUnitCommandHandler(RemoteUnitConfig &config, Solenoids &solenoids, RemoteUnitBattery &battery)
+    : config(config), solenoids(solenoids), battery(battery)
 {
 }
 
@@ -14,22 +15,30 @@ int RemoteUnitCommandHandler::getSolenoidState(uint8_t *solenoidStateOut) const
 
 int RemoteUnitCommandHandler::setSolenoidState(uint8_t state, uint8_t *newSolenoidStateOut) const
 {
+    if (battery.shouldDisable())
+    {
+        state = 0;
+    }
     *newSolenoidStateOut = solenoids.setState(state);
     return 0;
 }
 
 int RemoteUnitCommandHandler::getBatteryVoltage(uint8_t *voltageOut) const
 {
-    return 0;
+    battery.update(millis());
+    *voltageOut = battery.getVoltage();
+    return *voltageOut == 0;
 }
 
 int RemoteUnitCommandHandler::getBatteryRaw(uint16_t *batteryRawOut) const
 {
-    return 0;
+    *batteryRawOut = battery.readRawVoltage();
+    return *batteryRawOut == 0;
 }
 
 int RemoteUnitCommandHandler::getFaults(uint8_t *faultsOut) const
 {
+    *faultsOut = 0x00;
     return 0;
 }
 
@@ -41,6 +50,7 @@ int RemoteUnitCommandHandler::clearFaults(uint8_t *faultsOut) const
 
 int RemoteUnitCommandHandler::getSignalStrength(uint8_t *signalStrengthOut) const
 {
+    *signalStrengthOut = 0x00;
     return 0;
 }
 
