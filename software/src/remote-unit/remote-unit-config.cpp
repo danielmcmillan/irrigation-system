@@ -36,8 +36,9 @@ void RemoteUnitConfig::loadFromEeprom()
   this->config[16] = 50;  // Solenoid B off pulse width / 500 seconds
 }
 
-void RemoteUnitConfig::saveToEeprom()
+int RemoteUnitConfig::saveToEeprom()
 {
+  return 0;
 }
 
 uint8_t RemoteUnitConfig::getBatteryCalibration() const

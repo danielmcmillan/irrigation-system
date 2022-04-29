@@ -56,11 +56,13 @@ int RemoteUnitCommandHandler::getSignalStrength(uint8_t *signalStrengthOut) cons
 
 int RemoteUnitCommandHandler::getConfig(uint8_t *configDataOut) const
 {
+    memcpy(configDataOut, this->config.getRaw(), REMOTE_UNIT_CONFIG_SIZE);
     return 0;
 }
 
 int RemoteUnitCommandHandler::setConfig(const uint8_t *configData, uint8_t *configDataOut) const
 {
-    memcpy(configDataOut, configData, 13);
-    return 0;
+    this->config.setRaw(configData);
+    memcpy(configDataOut, this->config.getRaw(), REMOTE_UNIT_CONFIG_SIZE);
+    return this->config.saveToEeprom();
 }

@@ -12,8 +12,17 @@ public:
   const uint8_t *getRaw() const;
   const uint8_t *setRaw(const uint8_t *newConfig);
 
+  /**
+   * Load the previously persisted config.
+   */
   void loadFromEeprom();
-  void saveToEeprom();
+
+  /**
+   * Persist the current config.
+   *
+   * Returns non-zero on failure.
+   */
+  int saveToEeprom();
 
   uint8_t getBatteryCalibration() const;
   uint8_t getSolenoidTimeout() const;
