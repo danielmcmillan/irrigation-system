@@ -27,7 +27,7 @@
 // Pulled low to enable solar charge
 #define DISABLE_CHARGE A4
 
-int intCount = 0;
+unsigned long lastSuccessfulCommunication = 0;
 
 RemoteUnitConfig config;
 SolenoidDefinition solenoidDefinitions[] = {
@@ -45,7 +45,6 @@ void wake()
     sleep_disable();
     // precautionary while we do other stuff
     detachInterrupt(0);
-    ++intCount;
     rfModule.wake(); // warning maybe concurrency issue if writing something different in loop
 }
 
@@ -131,10 +130,19 @@ void loop()
 
     battery.update(now);
 
+    if (result == RemoteUnitSerialInterface::Result::success)
+    {
+        lastSuccessfulCommunication = now;
+    }
+    else if (now - lastSuccessfulCommunication > config.getSolenoidTimeout() << 4)
+    {
+        // No successful communication received for the configured timeout, ensure valves are shut off
+        solenoids.setState(0);
+    }
+
     delay(500); // TODO why?
 
     // TODO faults
-    // TODO auto turn off solenoids
     // TODO temporarily apply RF config change until successful communication
 
     if (battery.shouldSleep())
