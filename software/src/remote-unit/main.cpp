@@ -6,6 +6,7 @@
 #include "rf-module.h"
 #include "solenoids.h"
 #include "battery.h"
+#include "faults.h"
 
 /**
  * Unique 16 bit identifier for a remote unit.
@@ -36,7 +37,8 @@ SolenoidDefinition solenoidDefinitions[] = {
 RemoteUnitRfModule rfModule(NODE_ID, config, RF_EN);
 Solenoids solenoids(config, solenoidDefinitions);
 RemoteUnitBattery battery(config, 0, DISABLE_CHARGE);
-RemoteUnitCommandHandler commandHandler(config, rfModule, solenoids, battery);
+RemoteUnitFaults faults;
+RemoteUnitCommandHandler commandHandler(config, rfModule, solenoids, battery, faults);
 RemoteUnitSerialInterface remoteUnitSerial(NODE_ID, commandHandler);
 
 void wake()
@@ -94,7 +96,10 @@ void setup()
     pinMode(LED_1, OUTPUT);
     pinMode(LED_2, OUTPUT);
 
-    config.loadFromEeprom();
+    if (config.loadFromEeprom())
+    {
+        faults.setFault(RemoteUnitFault::ConfigReadFailed);
+    }
     rfModule.setup();
     solenoids.setup();
     battery.setup();
@@ -112,6 +117,10 @@ void loop()
     Serial.begin(9600, SERIAL_8N1);
     unsigned long now = millis();
     rfModule.wake();
+    if (battery.update(now))
+    {
+        faults.setFault(RemoteUnitFault::BatteryVoltageError);
+    }
 
     // Todo: increase timeout when in sleep mode since we are expecting data
     RemoteUnitSerialInterface::Result result = remoteUnitSerial.receivePacket(500);
@@ -128,21 +137,23 @@ void loop()
         }
     }
 
-    battery.update(now);
-
     if (result == RemoteUnitSerialInterface::Result::success)
     {
         lastSuccessfulCommunication = now;
     }
-    else if (now - lastSuccessfulCommunication > config.getSolenoidTimeout() << 4)
+    else if (now - lastSuccessfulCommunication > ((unsigned long)(config.getSolenoidTimeout()) << 4))
     {
         // No successful communication received for the configured timeout, ensure valves are shut off
-        solenoids.setState(0);
+        if (solenoids.getState() != 0)
+        {
+            faults.setFault(RemoteUnitFault::SolenoidTimeoutOccurred);
+            solenoids.setState(0);
+        }
     }
 
     delay(500); // TODO why?
 
-    // TODO faults
+    // TODO persistent config
     // TODO temporarily apply RF config change until successful communication
 
     if (battery.shouldSleep())

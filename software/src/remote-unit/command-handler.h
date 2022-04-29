@@ -5,6 +5,7 @@
 #include "rf-module.h"
 #include "solenoids.h"
 #include "battery.h"
+#include "faults.h"
 
 class RemoteUnitCommandHandler
 {
@@ -12,9 +13,10 @@ class RemoteUnitCommandHandler
   RemoteUnitRfModule &rfModule;
   Solenoids &solenoids;
   RemoteUnitBattery &battery;
+  RemoteUnitFaults &faults;
 
 public:
-  RemoteUnitCommandHandler(RemoteUnitConfig &config, RemoteUnitRfModule &rfModule, Solenoids &solenoids, RemoteUnitBattery &battery);
+  RemoteUnitCommandHandler(RemoteUnitConfig &config, RemoteUnitRfModule &rfModule, Solenoids &solenoids, RemoteUnitBattery &battery, RemoteUnitFaults &faults);
 
   /**
    * Gets the state for all solenoids.

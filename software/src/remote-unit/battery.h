@@ -20,8 +20,10 @@ public:
 
   /**
    * Read battery voltage and update charge state.
+   *
+   * Returns non-zero if there's an issue.
    */
-  void update(unsigned long now);
+  int update(unsigned long now);
 
   /**
    * Get the latest battery voltage reading in tenths of a volt.

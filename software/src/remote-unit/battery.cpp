@@ -3,6 +3,8 @@
 #include <stdlib.h>
 
 #define VOLTAGE_READING_COUNT 15
+#define MIN_EXPECTED_VOLTAGE 90
+#define MAX_EXPECTED_VOLTAGE 150
 
 int vCompare(const void *elem1, const void *elem2)
 {
@@ -26,7 +28,7 @@ void RemoteUnitBattery::setup()
   digitalWrite(this->chargeDisablePin, LOW);
 }
 
-void RemoteUnitBattery::update(unsigned long now)
+int RemoteUnitBattery::update(unsigned long now)
 {
   if (this->lastUpdateMillis == 0 || (now - this->lastUpdateMillis) > this->config.getBatteryVoltageCheckFrequency() * 500)
   {
@@ -44,6 +46,8 @@ void RemoteUnitBattery::update(unsigned long now)
       digitalWrite(this->chargeDisablePin, HIGH);
     }
   }
+  // Return non-zero when voltage is outside expected range
+  return this->lastVoltage < MIN_EXPECTED_VOLTAGE || this->lastVoltage > MAX_EXPECTED_VOLTAGE;
 }
 
 uint16_t RemoteUnitBattery::readRawVoltage() const
