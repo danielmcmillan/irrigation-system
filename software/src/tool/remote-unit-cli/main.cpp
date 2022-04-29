@@ -1,4 +1,6 @@
 #include <iostream>
+#include <vector>
+#include <string>
 #include <getopt.h>
 #include <string.h>
 #include <iomanip>
@@ -36,45 +38,40 @@ void invalid(const char *argv0, const char *param, const char *value)
 
 void remoteCommandRawUsage(const char *argv0)
 {
-    std::cerr << "usage: " << argv0 << " remote-command-raw --device <device> --node <nodeId> --command <command> [--data <data>]\n";
+    std::cerr << "usage: " << argv0 << " remote-command-raw --device <device> --node <nodeId> --command <command>[:<data>]\n";
     exit(EXIT_FAILURE);
 }
 
 void remoteCommandRaw(int argc, char **argv)
 {
-    struct option options[] = {{"device", 1, nullptr, 't'},
+    struct option options[] = {{"device", 1, nullptr, 'd'},
                                {"node", 1, nullptr, 'n'},
                                {"command", 1, nullptr, 'c'},
-                               {"data", 1, nullptr, 'b'},
                                {"no-node-prefix", 1, nullptr, 'x'},
                                {0, 0, 0, 0}};
 
     // Get the arguments
     const char *deviceStr = nullptr;
     const char *nodeStr = nullptr;
-    const char *commandStr = nullptr;
-    const char *dataStr = nullptr;
+    std::vector<std::string> commandStrings;
     bool noNodePrefix = false;
     while (true)
     {
-        int option = getopt_long(argc, argv, "t:n:c:d:x", options, 0);
+        int option = getopt_long(argc, argv, "d:n:c:x", options, 0);
         if (option == -1)
         {
             break;
         }
         switch (option)
         {
-        case 't':
+        case 'd':
             deviceStr = optarg;
             break;
         case 'n':
             nodeStr = optarg;
             break;
         case 'c':
-            commandStr = optarg;
-            break;
-        case 'b':
-            dataStr = optarg;
+            commandStrings.push_back(optarg);
             break;
         case 'x':
             noNodePrefix = true;
@@ -93,70 +90,90 @@ void remoteCommandRaw(int argc, char **argv)
         required(argv[0], "node");
         remoteCommandRawUsage(argv[0]);
     }
-    if (!commandStr)
+    if (commandStrings.empty())
     {
         required(argv[0], "command");
         remoteCommandRawUsage(argv[0]);
     }
 
-    // Parse and validate the arguments
     unsigned nodeId = std::stoul(nodeStr, nullptr, 0);
-    unsigned commandId = std::stoul(commandStr, nullptr, 0);
-    IrrigationSystem::RemoteUnitPacket::RemoteUnitCommand command =
-        static_cast<IrrigationSystem::RemoteUnitPacket::RemoteUnitCommand>(commandId);
-    uint8_t data[16] = {0};
-
-    unsigned dataSize = IrrigationSystem::RemoteUnitPacket::getCommandDataSize(command);
-
     if (nodeId > 0xffff)
     {
         invalid(argv[0], "node", nodeStr);
     }
-    if (dataSize == IrrigationSystem::RemoteUnitPacket::commandDataSizeInvalid)
-    {
-        invalid(argv[0], "command", commandStr);
-    }
-    if (dataSize > 0)
-    {
-        if (!dataStr)
-        {
-            required(argv[0], "data");
-            remoteCommandRawUsage(argv[0]);
-        }
-        if (strncasecmp(dataStr, "0x", 2) != 0 || strlen(dataStr) != 2 + 2 * dataSize)
-        {
-            invalid(argv[0], "data", dataStr);
-        }
-        for (unsigned i = 0; i < dataSize; ++i)
-        {
-            data[i] = std::stoul(std::string(dataStr, 2 + 2 * i, 2), nullptr, 16);
-        }
-    }
 
     // Debug output
-    std::cout << "Command: 0x" << std::hex << std::setfill('0') << std::setw(2) << commandId;
-    std::cout << ", node: 0x" << std::hex << std::setfill('0') << std::setw(4) << nodeId;
-    std::cout << std::dec << ", dataSize: " << dataSize;
-    std::cout << ", data: 0x";
-    for (unsigned i = 0; i < dataSize; ++i)
-    {
-        std::cout << std::hex << std::setfill('0') << std::setw(2) << static_cast<unsigned>(data[i]);
-    }
-    std::cout << "\n";
+    std::cout << "Node: 0x" << std::hex << std::setfill('0') << std::setw(4) << nodeId << "\n";
 
-    // Build the packet
+    // Initialise the packet
     uint8_t buffer[PACKET_BUFFER_SIZE + 2];
     uint8_t *packetBuffer = buffer + 2;
-
-    uint8_t *commandData;
     size_t packetSize = IrrigationSystem::RemoteUnitPacket::createPacket(packetBuffer, PACKET_BUFFER_SIZE, nodeId);
-    packetSize = IrrigationSystem::RemoteUnitPacket::addCommandToPacket(packetBuffer, PACKET_BUFFER_SIZE, packetSize, command, &commandData);
-    memcpy(commandData, data, dataSize);
+
+    for (std::string commandString : commandStrings)
+    {
+        // Parse and validate the command argument
+        std::string commandPart = commandString;
+        std::string dataPart;
+        size_t separatorIndex = commandString.find(':');
+        if (separatorIndex != std::string::npos)
+        {
+            commandPart = commandString.substr(0, separatorIndex);
+            dataPart = commandString.substr(separatorIndex + 1);
+        }
+
+        unsigned commandId = std::stoul(commandPart, nullptr, 0);
+        IrrigationSystem::RemoteUnitPacket::RemoteUnitCommand command =
+            static_cast<IrrigationSystem::RemoteUnitPacket::RemoteUnitCommand>(commandId);
+        uint8_t data[16] = {0};
+
+        unsigned dataSize = IrrigationSystem::RemoteUnitPacket::getCommandDataSize(command);
+
+        if (dataSize == IrrigationSystem::RemoteUnitPacket::commandDataSizeInvalid)
+        {
+            invalid(argv[0], "command", commandString.c_str());
+        }
+        if (dataSize > 0)
+        {
+            if (dataPart.empty())
+            {
+                invalid(argv[0], "command", commandString.c_str());
+                remoteCommandRawUsage(argv[0]);
+            }
+            if (dataPart.substr(0, 2).compare("0x") != 0 || dataPart.size() != 2 + 2 * dataSize)
+            {
+                invalid(argv[0], "data", commandString.c_str());
+            }
+            for (unsigned i = 0; i < dataSize; ++i)
+            {
+                data[i] = std::stoul(dataPart.substr(2 + 2 * i, 2), nullptr, 16);
+            }
+        }
+
+        // Debug output
+        std::cout << "Command: 0x" << std::hex << std::setfill('0') << std::setw(2) << commandId;
+        std::cout << std::dec << ", dataSize: " << dataSize;
+        if (dataSize > 0)
+        {
+            std::cout << ", data: 0x";
+            for (unsigned i = 0; i < dataSize; ++i)
+            {
+                std::cout << std::hex << std::setfill('0') << std::setw(2) << static_cast<unsigned>(data[i]);
+            }
+        }
+        std::cout << "\n";
+
+        // Add command to packet
+        uint8_t *commandData;
+        packetSize = IrrigationSystem::RemoteUnitPacket::addCommandToPacket(packetBuffer, PACKET_BUFFER_SIZE, packetSize, command, &commandData);
+        memcpy(commandData, data, dataSize);
+    }
+
     packetSize = IrrigationSystem::RemoteUnitPacket::finalisePacket(packetBuffer, PACKET_BUFFER_SIZE, packetSize, false);
 
     if (!noNodePrefix)
     {
-        // Add node ID to initial bytes for LoRa module
+        // Add big-endian node ID to initial bytes for LoRa module
         buffer[0] = nodeId >> 8;
         buffer[1] = nodeId;
         packetBuffer = buffer;
@@ -238,6 +255,14 @@ void remoteCommandRaw(int argc, char **argv)
             {
                 std::cout << std::hex << std::setfill('0') << std::setw(2) << static_cast<unsigned>(responseData[i]);
             }
+        }
+        if (responseDataSize == 1)
+        {
+            std::cout << " (" << std::dec << static_cast<unsigned>(*responseData) << ")";
+        }
+        if (responseDataSize == 2)
+        {
+            std::cout << " (" << std::dec << (static_cast<unsigned>(responseData[1]) << 8 | responseData[0]) << ")";
         }
         std::cout << "\n";
     }
