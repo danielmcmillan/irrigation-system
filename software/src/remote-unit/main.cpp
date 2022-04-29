@@ -123,6 +123,8 @@ void setup()
     pinMode(LED_2, OUTPUT);
     pinMode(SOLAR, OUTPUT);
 
+    config.loadFromEeprom();
+
     solenoids.setup();
 
     analogReference(INTERNAL);

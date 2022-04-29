@@ -14,6 +14,7 @@ class Solenoids
 {
   const RemoteUnitConfig &config;
   const SolenoidDefinition (&definitions)[SOLENOID_COUNT];
+  uint8_t state;
 
 public:
   Solenoids(const RemoteUnitConfig &config, const SolenoidDefinition (&definitions)[SOLENOID_COUNT]);
@@ -21,5 +22,7 @@ public:
   void sleep();
   void solenoidOn(uint8_t index);
   void solenoidOff(uint8_t index);
+  uint8_t getState() const;
+  uint8_t setState(uint8_t state);
 };
 #endif

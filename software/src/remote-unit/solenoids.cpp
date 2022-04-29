@@ -2,7 +2,7 @@
 #include "solenoids.h"
 
 Solenoids::Solenoids(const RemoteUnitConfig &config, const SolenoidDefinition (&definitions)[SOLENOID_COUNT])
-    : config(config), definitions(definitions)
+    : config(config), definitions(definitions), state(0)
 {
 }
 
@@ -16,6 +16,7 @@ void Solenoids::setup()
     digitalWrite(definition.positivePin, LOW);
     digitalWrite(definition.negativePin, LOW);
   }
+  state = 0;
 }
 
 void Solenoids::sleep()
@@ -26,6 +27,7 @@ void Solenoids::sleep()
     digitalWrite(definition.positivePin, LOW);
     digitalWrite(definition.negativePin, LOW);
   }
+  state = 0;
 }
 
 void Solenoids::solenoidOn(uint8_t index)
@@ -36,6 +38,7 @@ void Solenoids::solenoidOn(uint8_t index)
   digitalWrite(definition.negativePin, LOW);
   delay(pulseWidth * 2);
   digitalWrite(definition.positivePin, LOW);
+  state |= 1 << index;
 }
 
 void Solenoids::solenoidOff(uint8_t index)
@@ -46,4 +49,31 @@ void Solenoids::solenoidOff(uint8_t index)
   digitalWrite(definition.negativePin, HIGH);
   delay(pulseWidth * 2);
   digitalWrite(definition.negativePin, LOW);
+  state &= ~(1 << index);
+}
+
+uint8_t Solenoids::getState() const
+{
+  return this->state;
+}
+
+uint8_t Solenoids::setState(uint8_t state)
+{
+  uint8_t toTurnOn = state & ~this->state;
+  uint8_t toTurnOff = this->state & ~state;
+
+  for (uint8_t i = 0; i < 8; ++i)
+  {
+    if (toTurnOn & (1 << i) != 0)
+    {
+      this->solenoidOn(i);
+    }
+    if (toTurnOff & (1 << i) != 0)
+    {
+      this->solenoidOff(i);
+    }
+  }
+
+  this->state = state;
+  return state;
 }

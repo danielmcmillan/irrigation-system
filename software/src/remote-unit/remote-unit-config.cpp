@@ -30,8 +30,10 @@ void RemoteUnitConfig::loadFromEeprom()
   this->config[10] = 132; // Sleep battery voltage threshold
   this->config[11] = 4;   // Inverse of half battery check frequency (1/2Hz)
   this->config[12] = 105; // Minimum voltage for solenoid operation
-  this->config[13] = 10;  // Solenoid off pulse width / 100 seconds
-  this->config[14] = 10;  // Solenoid off pulse width / 100 seconds
+  this->config[13] = 50;  // Solenoid A on pulse width / 500 seconds
+  this->config[14] = 50;  // Solenoid A off pulse width / 500 seconds
+  this->config[15] = 50;  // Solenoid B on pulse width / 500 seconds
+  this->config[16] = 50;  // Solenoid B off pulse width / 500 seconds
 }
 
 void RemoteUnitConfig::saveToEeprom()

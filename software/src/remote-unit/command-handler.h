@@ -5,10 +5,10 @@
 
 class RemoteUnitCommandHandler
 {
-  const Solenoids &solenoids;
+  Solenoids &solenoids;
 
 public:
-  RemoteUnitCommandHandler(const Solenoids &solenoids);
+  RemoteUnitCommandHandler(Solenoids &solenoids);
 
   /**
    * Gets the state for all solenoids.

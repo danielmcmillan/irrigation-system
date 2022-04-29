@@ -1,20 +1,20 @@
 #include "command-handler.h"
 #include <string.h>
 
-RemoteUnitCommandHandler::RemoteUnitCommandHandler(const Solenoids &solenoids)
+RemoteUnitCommandHandler::RemoteUnitCommandHandler(Solenoids &solenoids)
     : solenoids(solenoids)
 {
 }
 
 int RemoteUnitCommandHandler::getSolenoidState(uint8_t *solenoidStateOut) const
 {
-    *solenoidStateOut = 0x01;
+    *solenoidStateOut = solenoids.getState();
     return 0;
 }
 
 int RemoteUnitCommandHandler::setSolenoidState(uint8_t state, uint8_t *newSolenoidStateOut) const
 {
-    *newSolenoidStateOut = state;
+    *newSolenoidStateOut = solenoids.setState(state);
     return 0;
 }
 
