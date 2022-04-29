@@ -123,7 +123,6 @@ RemoteUnitSerialInterface::RemoteUnitSerialInterface(uint16_t nodeId, const Remo
  */
 RemoteUnitSerialInterface::Result RemoteUnitSerialInterface::receivePacket(unsigned long timeout) const
 {
-    Serial.begin(9600, SERIAL_8N1);
     uint8_t buffer[PACKET_BUFFER_SIZE];
 
     // All of the data should arrive at once, so apply timeout only to first byte
@@ -137,6 +136,5 @@ RemoteUnitSerialInterface::Result RemoteUnitSerialInterface::receivePacket(unsig
     read = Serial.readBytes(buffer + 1, PACKET_BUFFER_SIZE - 1);
 
     Result result = this->handlePacket(buffer, read + 1);
-    Serial.end();
     return result;
 }

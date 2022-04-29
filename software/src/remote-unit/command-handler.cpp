@@ -2,8 +2,8 @@
 #include <Arduino.h>
 #include <string.h>
 
-RemoteUnitCommandHandler::RemoteUnitCommandHandler(RemoteUnitConfig &config, Solenoids &solenoids, RemoteUnitBattery &battery)
-    : config(config), solenoids(solenoids), battery(battery)
+RemoteUnitCommandHandler::RemoteUnitCommandHandler(RemoteUnitConfig &config, RemoteUnitRfModule &rfModule, Solenoids &solenoids, RemoteUnitBattery &battery)
+    : config(config), rfModule(rfModule), solenoids(solenoids), battery(battery)
 {
 }
 
@@ -50,8 +50,7 @@ int RemoteUnitCommandHandler::clearFaults(uint8_t *faultsOut) const
 
 int RemoteUnitCommandHandler::getSignalStrength(uint8_t *signalStrengthOut) const
 {
-    *signalStrengthOut = 0x00;
-    return 0;
+    return this->rfModule.readSignalStrength(signalStrengthOut);
 }
 
 int RemoteUnitCommandHandler::getConfig(uint8_t *configDataOut) const
