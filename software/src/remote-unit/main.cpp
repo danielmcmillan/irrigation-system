@@ -3,6 +3,7 @@
 #include "yl-800t.h"
 #include "serial-interface.h"
 #include "remote-unit-config.h"
+#include "solenoids.h"
 
 /**
  * Unique 16 bit identifier for a remote unit.
@@ -31,6 +32,10 @@ int intCount = 0;
 // 0x00 0x01 0x43 0x4F 0x46 0x46 0x0A
 
 RemoteUnitConfig config;
+SolenoidDefinition solenoidDefinitions[] = {
+    {DRV_A1, DRV_A2},
+    {DRV_B1, DRV_B2}};
+Solenoids solenoids(config, solenoidDefinitions);
 
 void configure()
 {
@@ -75,10 +80,7 @@ void sleep()
     // Put RF module to sleep
     digitalWrite(RF_EN, HIGH);
     // Put motor drivers to sleep
-    digitalWrite(DRV_A1, LOW);
-    digitalWrite(DRV_A2, LOW);
-    digitalWrite(DRV_B1, LOW);
-    digitalWrite(DRV_B2, LOW);
+    solenoids.sleep();
 
     // disable ADC
     //  ADCSRA = 0;
@@ -114,13 +116,12 @@ void sleep()
 void setup()
 {
     pinMode(RF_EN, OUTPUT);
-    pinMode(DRV_A1, OUTPUT);
-    pinMode(DRV_A2, OUTPUT);
-    pinMode(DRV_B1, OUTPUT);
-    pinMode(DRV_B2, OUTPUT);
+
     pinMode(LED_1, OUTPUT);
     pinMode(LED_2, OUTPUT);
     pinMode(SOLAR, OUTPUT);
+
+    solenoids.setup();
 
     analogReference(INTERNAL);
 
@@ -130,11 +131,6 @@ void setup()
     digitalWrite(LED_1, LOW);
     digitalWrite(LED_2, HIGH);
     digitalWrite(SOLAR, LOW);
-
-    digitalWrite(DRV_A1, LOW);
-    digitalWrite(DRV_A2, LOW);
-    digitalWrite(DRV_B1, LOW);
-    digitalWrite(DRV_B2, LOW);
 
     // Write configuration to LoRa module
     configure();

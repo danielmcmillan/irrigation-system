@@ -78,12 +78,22 @@ uint8_t RemoteUnitConfig::getBatteryVoltageCheckFrequency() const
   return this->config[11];
 }
 
-uint8_t RemoteUnitConfig::getSolenoidOnPulseWidth() const
+uint8_t RemoteUnitConfig::getSolenoidAOnPulseWidth() const
 {
   return this->config[13];
 }
 
-uint8_t RemoteUnitConfig::getSolenoidOffPulseWidth() const
+uint8_t RemoteUnitConfig::getSolenoidAOffPulseWidth() const
 {
   return this->config[14];
+}
+
+uint8_t RemoteUnitConfig::getSolenoidBOnPulseWidth() const
+{
+  return this->config[15];
+}
+
+uint8_t RemoteUnitConfig::getSolenoidBOffPulseWidth() const
+{
+  return this->config[16];
 }

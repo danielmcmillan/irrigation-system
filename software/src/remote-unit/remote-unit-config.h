@@ -1,6 +1,8 @@
+#ifndef _REMOTE_UNIT_CONFIG_H
+#define _REMOTE_UNIT_CONFIG_H
 #include <inttypes.h>
 
-#define REMOTE_UNIT_CONFIG_SIZE 15
+#define REMOTE_UNIT_CONFIG_SIZE 17
 
 class RemoteUnitConfig
 {
@@ -21,6 +23,9 @@ public:
   uint8_t getBatteryVoltageThresholdSleep() const;
   uint8_t getBatteryVoltageThresholdDisable() const;
   uint8_t getBatteryVoltageCheckFrequency() const;
-  uint8_t getSolenoidOnPulseWidth() const;
-  uint8_t getSolenoidOffPulseWidth() const;
+  uint8_t getSolenoidAOnPulseWidth() const;
+  uint8_t getSolenoidAOffPulseWidth() const;
+  uint8_t getSolenoidBOnPulseWidth() const;
+  uint8_t getSolenoidBOffPulseWidth() const;
 };
+#endif
