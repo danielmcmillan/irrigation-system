@@ -2,7 +2,7 @@
 #include <avr/sleep.h>
 #include "yl-800t.h"
 #include "serial-interface.h"
-#include "remote-unit-config.h"
+#include "config.h"
 #include "solenoids.h"
 #include "battery.h"
 
@@ -37,27 +37,32 @@ RemoteUnitBattery battery(config, 0, DISABLE_CHARGE);
 RemoteUnitCommandHandler commandHandler(config, solenoids, battery);
 RemoteUnitSerialInterface remoteUnitSerial(NODE_ID, commandHandler);
 
-void configure()
+void configureLora()
 {
     // Wake up the RF module
     digitalWrite(RF_EN, LOW);
     Serial.begin(9600);
+    const uint8_t *rfConfig = config.getRfConfig();
     YL800TReadWriteAllParameters params = {
         .serialBaudRate = YL_800T_BAUD_RATE_9600,
         .serialParity = YL_800T_PARITY_NONE,
-        .rfFrequency = 434l * 1l << 14,
+        .rfFrequency = (uint32_t)rfConfig[0] << 16 | (uint32_t)rfConfig[1] << 8 | rfConfig[2],
         .rfSpreadingFactor = YL_800T_RF_SPREADING_FACTOR_2048,
         .mode = YL_800T_RF_MODE_NODE,
         .rfBandwidth = YL_800T_RF_BANDWIDTH_125K,
         .nodeId = NODE_ID,
         .netId = 0,
-        .rfTransmitPower = 5,
-        .breathCycle = YL_800T_BREATH_CYCLE_2S,
-        .breathTime = YL_800T_BREATH_TIME_32MS,
+        .rfTransmitPower = rfConfig[3],
+        .breathCycle = rfConfig[4],
+        .breathTime = rfConfig[5],
+        // .rfFrequency = 434l * 1l << 14,
+        // .rfTransmitPower = 5,
+        // .breathCycle = YL_800T_BREATH_CYCLE_2S,
+        // .breathTime = YL_800T_BREATH_TIME_32MS,
     };
     uint8_t message[25] = {0};
     uint8_t length = yl800tSendWriteAllParameters(&params, message);
-    delay(100);
+    delay(100); // TODO why?
     Serial.write(message, length);
     Serial.end();
 }
@@ -123,16 +128,13 @@ void setup()
     config.loadFromEeprom();
     solenoids.setup();
     battery.setup();
+    // Write configuration to LoRa module
+    configureLora();
 
     // Enable pull-up on interrupt pin
     pinMode(2, INPUT_PULLUP);
 
     digitalWrite(LED_1, LOW);
-    digitalWrite(LED_2, HIGH);
-
-    // Write configuration to LoRa module
-    configure();
-
     digitalWrite(LED_2, LOW);
 }
 
@@ -162,67 +164,14 @@ void loop()
 
     delay(500); // TODO why?
 
-    // TODO support all commands
+    // TODO applying config to lora module
+    // TODO reception strength
+    // TODO faults
     // TODO auto turn off solenoids
-    // TODO setting faults
+    // TODO temporarily apply RF config change until successful communication
 
     if (battery.shouldSleep())
     {
         // sleep();
     }
-
-    // if (strncmp(token, "COFF", i - token) == 0)
-    // {
-    //     // Stop pulling solar pin low - charging will stop
-    //     digitalWrite(SOLAR, HIGH);
-    //     pinMode(SOLAR, INPUT);
-    //     // Led 1 on
-    //     digitalWrite(LED_1, HIGH);
-    //     Serial.println("OK COFF");
-    // }
-    // else if (strncmp(token, "CON", i - token) == 0)
-    // {
-    //     // Pull solar pin low - charging will start
-    //     pinMode(SOLAR, OUTPUT);
-    //     digitalWrite(SOLAR, LOW);
-    //     // Led 1 off
-    //     digitalWrite(LED_1, LOW);
-    //     Serial.println("OK CON");
-    // }
-    // else if (strncmp(token, "BAT", i - token) == 0)
-    // {
-    //     analogRead(0);
-    //     float av = analogRead(0);
-    //     float v = av * 0.015;
-
-    //     Serial.print("OK BAT ");
-    //     Serial.print(av);
-    //     Serial.print(" (");
-    //     Serial.print(v);
-    //     Serial.print("V)");
-
-    //     // Update solar charge state
-    //     if (v < 13.6)
-    //     {
-    //         // Pull solar pin low - charging will start
-    //         pinMode(SOLAR, OUTPUT);
-    //         digitalWrite(SOLAR, LOW);
-    //         // Led 1 off
-    //         digitalWrite(LED_1, LOW);
-    //         Serial.println(" CON");
-    //     }
-    //     else if (v > 13.8)
-    //     {
-    //         // Stop pulling solar pin low - charging will stop
-    //         digitalWrite(SOLAR, HIGH);
-    //         pinMode(SOLAR, INPUT);
-    //         // Led 1 on
-    //         digitalWrite(LED_1, HIGH);
-    //         Serial.println(" COFF");
-    //     }
-    //     else
-    //     {
-    //         Serial.println();
-    //     }
-    // }
 }

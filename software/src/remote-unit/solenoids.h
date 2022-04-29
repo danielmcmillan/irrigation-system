@@ -1,6 +1,6 @@
 #ifndef _REMOTE_UNIT_SOLENOIDS_H
 #define _REMOTE_UNIT_SOLENOIDS_H
-#include "remote-unit-config.h"
+#include "config.h"
 
 #define SOLENOID_COUNT 2
 

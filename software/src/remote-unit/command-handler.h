@@ -1,7 +1,7 @@
 #ifndef _REMOTE_UNIT_COMMANDS_H
 #define _REMOTE_UNIT_COMMANDS_H
 #include <inttypes.h>
-#include "remote-unit-config.h"
+#include "config.h"
 #include "solenoids.h"
 #include "battery.h"
 

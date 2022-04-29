@@ -2,7 +2,7 @@
 #define _REMOTE_UNIT_BATTERY_H
 
 #include <stdint.h>
-#include "remote-unit-config.h"
+#include "config.h"
 
 class RemoteUnitBattery
 {

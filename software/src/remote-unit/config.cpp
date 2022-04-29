@@ -1,5 +1,6 @@
-#include "remote-unit-config.h"
+#include "config.h"
 #include <string.h>
+#include "yl-800t.h"
 
 const uint8_t *RemoteUnitConfig::getRaw() const
 {
@@ -17,23 +18,24 @@ void RemoteUnitConfig::loadFromEeprom()
   // TODO load data from eeprom. Handle case of missing config in eeprom.
 
   // Default values
-  this->config[0] = 122; // battery multiplier * 2^13
-  this->config[1] = 20;  // solenoid timeout seconds / 16
-  this->config[2] = 0;   // Rf
-  this->config[3] = 0;
-  this->config[4] = 0;
-  this->config[5] = 0;
-  this->config[6] = 0;
-  this->config[7] = 0;
-  this->config[8] = 138;  // Upper battery voltage threshold
-  this->config[9] = 135;  // Lower battery voltage threshold
-  this->config[10] = 132; // Sleep battery voltage threshold
-  this->config[11] = 4;   // Inverse of half battery check frequency (1/2Hz)
-  this->config[12] = 105; // Minimum voltage for solenoid operation
-  this->config[13] = 50;  // Solenoid A on pulse width / 500 seconds
-  this->config[14] = 50;  // Solenoid A off pulse width / 500 seconds
-  this->config[15] = 50;  // Solenoid B on pulse width / 500 seconds
-  this->config[16] = 50;  // Solenoid B off pulse width / 500 seconds
+  uint32_t rfFreq = 434l * 1l << 14;
+  this->config[0] = 122;                      // battery multiplier * 2^13
+  this->config[1] = 20;                       // solenoid timeout seconds / 16
+  this->config[2] = rfFreq >> 16;             // Rf freq
+  this->config[3] = rfFreq >> 8;              // Rf freq
+  this->config[4] = rfFreq;                   // Rf freq
+  this->config[5] = 5;                        // Rf power
+  this->config[6] = YL_800T_BREATH_CYCLE_2S;  // Rf breath cycle
+  this->config[7] = YL_800T_BREATH_TIME_32MS; // Rf breath time
+  this->config[8] = 138;                      // Upper battery voltage threshold
+  this->config[9] = 135;                      // Lower battery voltage threshold
+  this->config[10] = 132;                     // Sleep battery voltage threshold
+  this->config[11] = 4;                       // Inverse of half battery check frequency (1/2Hz)
+  this->config[12] = 105;                     // Minimum voltage for solenoid operation
+  this->config[13] = 50;                      // Solenoid A on pulse width / 500 seconds
+  this->config[14] = 50;                      // Solenoid A off pulse width / 500 seconds
+  this->config[15] = 50;                      // Solenoid B on pulse width / 500 seconds
+  this->config[16] = 50;                      // Solenoid B off pulse width / 500 seconds
 }
 
 int RemoteUnitConfig::saveToEeprom()
