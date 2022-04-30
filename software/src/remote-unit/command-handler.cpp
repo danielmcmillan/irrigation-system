@@ -3,8 +3,8 @@
 #include <string.h>
 
 RemoteUnitCommandHandler::RemoteUnitCommandHandler(
-    RemoteUnitConfig &config, RemoteUnitRfModule &rfModule, Solenoids &solenoids, RemoteUnitBattery &battery, RemoteUnitFaults &faults)
-    : config(config), rfModule(rfModule), solenoids(solenoids), battery(battery), faults(faults)
+    RemoteUnitConfig &config, RemoteUnitRfModule &rfModule, Solenoids &solenoids, RemoteUnitBattery &battery, RemoteUnitFaults &faults, volatile unsigned long &counts)
+    : config(config), rfModule(rfModule), solenoids(solenoids), battery(battery), faults(faults), counts(counts)
 {
 }
 
@@ -78,4 +78,10 @@ int RemoteUnitCommandHandler::applyRfConfig(uint8_t *configDataOut) const
 {
     memcpy(configDataOut, this->config.getRaw(), REMOTE_UNIT_CONFIG_SIZE);
     return this->rfModule.applyConfig();
+}
+
+int RemoteUnitCommandHandler::getTimer(uint32_t *timerOut) const
+{
+    *timerOut = this->counts;
+    return 0;
 }

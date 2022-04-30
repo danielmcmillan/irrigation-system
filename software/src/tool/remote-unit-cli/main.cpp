@@ -266,6 +266,10 @@ void remoteCommandRaw(int argc, char **argv)
         {
             std::cout << " (" << std::dec << (static_cast<unsigned>(responseData[1]) << 8 | responseData[0]) << ")";
         }
+        if (responseDataSize == 4)
+        {
+            std::cout << " (" << std::dec << (static_cast<unsigned>(responseData[3] << 24) | (responseData[2] << 16) | (responseData[1] << 8) | responseData[0]) << ")";
+        }
         std::cout << "\n";
     }
 }

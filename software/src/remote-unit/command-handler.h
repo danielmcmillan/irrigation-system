@@ -14,9 +14,10 @@ class RemoteUnitCommandHandler
   Solenoids &solenoids;
   RemoteUnitBattery &battery;
   RemoteUnitFaults &faults;
+  volatile unsigned long &counts;
 
 public:
-  RemoteUnitCommandHandler(RemoteUnitConfig &config, RemoteUnitRfModule &rfModule, Solenoids &solenoids, RemoteUnitBattery &battery, RemoteUnitFaults &faults);
+  RemoteUnitCommandHandler(RemoteUnitConfig &config, RemoteUnitRfModule &rfModule, Solenoids &solenoids, RemoteUnitBattery &battery, RemoteUnitFaults &faults, volatile unsigned long &counts);
 
   /**
    * Gets the state for all solenoids.
@@ -88,5 +89,10 @@ public:
    * Applies the current config to the RF module.
    */
   int applyRfConfig(uint8_t *configDataOut) const;
+
+  /**
+   * Gets the approximate uptime in multiples of 8 seconds.
+   */
+  int getTimer(uint32_t *timerOut) const;
 };
 #endif

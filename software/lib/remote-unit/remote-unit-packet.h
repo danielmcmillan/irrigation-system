@@ -21,6 +21,7 @@ namespace IrrigationSystem
             GetBatteryRaw = 0x13,
             GetSignalStrength = 0x14,
             GetConfig = 0x15,
+            GetTimer = 0x16,
             // Write operations
             SetSolenoidState = 0x20,
             ClearFaults = 0x22,
@@ -35,6 +36,7 @@ namespace IrrigationSystem
             GetBatteryRawResponse = responseFlag | 0x13,
             GetSignalStrengthResponse = responseFlag | 0x14,
             GetConfigResponse = responseFlag | 0x15,
+            GetTimerResponse = responseFlag | 0x16,
             SetSolenoidStateResponse = responseFlag | 0x20,
             ClearFaultsResponse = responseFlag | 0x22,
             SetConfigResponse = responseFlag | 0x25,

@@ -2,7 +2,7 @@
 #define _REMOTE_UNIT_CONFIG_H
 #include <inttypes.h>
 
-#define REMOTE_UNIT_CONFIG_SIZE 17
+#define REMOTE_UNIT_CONFIG_SIZE 16
 #define REMOTE_UNIT_EEPROM_SIZE REMOTE_UNIT_CONFIG_SIZE + 2
 #define REMOTE_UNIT_RF_CONFIG_SIZE 6
 
@@ -38,7 +38,6 @@ public:
   uint8_t getBatteryVoltageThresholdLower() const;
   uint8_t getBatteryVoltageThresholdMaintain() const;
   uint8_t getBatteryVoltageThresholdDisable() const;
-  uint8_t getBatteryVoltageCheckFrequency() const;
   uint8_t getSolenoidAOnPulseWidth() const;
   uint8_t getSolenoidAOffPulseWidth() const;
   uint8_t getSolenoidBOnPulseWidth() const;

@@ -5,7 +5,7 @@
 #define VOLTAGE_READING_COUNT 15
 #define MIN_EXPECTED_VOLTAGE 90
 #define MAX_EXPECTED_VOLTAGE 150
-#define NON_MAINTAIN_CHECK_PERIOD 300000 // 5 minutes
+#define NON_MAINTAIN_CHECK_COUNTS 38 // ~5 minutes
 
 int vCompare(const void *elem1, const void *elem2)
 {
@@ -16,7 +16,7 @@ int vCompare(const void *elem1, const void *elem2)
 
 RemoteUnitBattery::RemoteUnitBattery(const RemoteUnitConfig &config, uint8_t analogVoltageSensePin, uint8_t chargeDisablePin)
     : config(config), analogVoltageSensePin(analogVoltageSensePin), chargeDisablePin(chargeDisablePin),
-      lastVoltage(0), lastUpdateMillis(0)
+      lastVoltage(0), lastUpdateCounts(0)
 {
 }
 
@@ -29,13 +29,12 @@ void RemoteUnitBattery::setup()
   digitalWrite(this->chargeDisablePin, LOW);
 }
 
-int RemoteUnitBattery::update(unsigned long now)
+int RemoteUnitBattery::update(unsigned long counts)
 {
-  // Update at configured frequency when maintaining, otherwise NON_MAINTAIN_CHECK_FREQUENCY
-  unsigned long checkMillis = this->shouldMaintain() ? (500 * this->config.getBatteryVoltageCheckFrequency()) : NON_MAINTAIN_CHECK_PERIOD;
-  if (this->lastUpdateMillis == 0 || (now - this->lastUpdateMillis) > checkMillis)
+  // Update at each update when maintaining, otherwise after NON_MAINTAIN_CHECK_COUNTS counts
+  if (this->shouldMaintain() || this->lastUpdateCounts == 0 || (counts - this->lastUpdateCounts) > NON_MAINTAIN_CHECK_COUNTS)
   {
-    this->lastUpdateMillis = now;
+    this->lastUpdateCounts = counts;
     uint16_t raw = this->readRawVoltage();
     this->lastVoltage = ((uint32_t)raw * (uint32_t)this->config.getBatteryCalibration() * 10) >> 13;
 

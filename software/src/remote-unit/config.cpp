@@ -44,12 +44,11 @@ int RemoteUnitConfig::load()
     this->config[8] = 138;                      // Upper battery voltage threshold
     this->config[9] = 135;                      // Lower battery voltage threshold
     this->config[10] = 132;                     // Sleep battery voltage threshold
-    this->config[11] = 4;                       // Battery check frequency 0.5 Hz
-    this->config[12] = 105;                     // Minimum voltage for solenoid operation
-    this->config[13] = 50;                      // Solenoid A on pulse width 100 ms
-    this->config[14] = 50;                      // Solenoid A off pulse width 100 ms
-    this->config[15] = 50;                      // Solenoid B on pulse width 100 ms
-    this->config[16] = 50;                      // Solenoid B off pulse width 100 ms
+    this->config[11] = 105;                     // Minimum voltage for solenoid operation
+    this->config[12] = 50;                      // Solenoid A on pulse width 100 ms
+    this->config[13] = 50;                      // Solenoid A off pulse width 100 ms
+    this->config[14] = 50;                      // Solenoid B on pulse width 100 ms
+    this->config[15] = 50;                      // Solenoid B off pulse width 100 ms
 
     return 1;
   }
@@ -104,30 +103,25 @@ uint8_t RemoteUnitConfig::getBatteryVoltageThresholdMaintain() const
 
 uint8_t RemoteUnitConfig::getBatteryVoltageThresholdDisable() const
 {
-  return this->config[12];
-}
-
-uint8_t RemoteUnitConfig::getBatteryVoltageCheckFrequency() const
-{
   return this->config[11];
 }
 
 uint8_t RemoteUnitConfig::getSolenoidAOnPulseWidth() const
 {
-  return this->config[13];
+  return this->config[12];
 }
 
 uint8_t RemoteUnitConfig::getSolenoidAOffPulseWidth() const
 {
-  return this->config[14];
+  return this->config[13];
 }
 
 uint8_t RemoteUnitConfig::getSolenoidBOnPulseWidth() const
 {
-  return this->config[15];
+  return this->config[14];
 }
 
 uint8_t RemoteUnitConfig::getSolenoidBOffPulseWidth() const
 {
-  return this->config[16];
+  return this->config[15];
 }

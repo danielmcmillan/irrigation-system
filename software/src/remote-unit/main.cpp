@@ -8,6 +8,8 @@
 #include "battery.h"
 #include "faults.h"
 
+#define SERIAL_BEGIN Serial.begin(9600, SERIAL_8N1)
+
 /**
  * Unique 16 bit identifier for a remote unit.
  * Each remote unit should have a unique value.
@@ -30,7 +32,10 @@
 // Pulled low to enable solar charge
 #define DISABLE_CHARGE A4
 
-unsigned long lastSuccessfulCommunication = 0;
+unsigned long lastSuccessfulCommunicationCounts = 0;
+volatile bool dataPending = false;
+// Approximation of time elapsed, multiples of 8 seconds
+volatile unsigned long counts = 0;
 
 RemoteUnitConfig config;
 SolenoidDefinition solenoidDefinitions[] = {
@@ -40,22 +45,12 @@ RemoteUnitRfModule rfModule(NODE_ID, config, RF_EN);
 Solenoids solenoids(config, solenoidDefinitions);
 RemoteUnitBattery battery(config, 0, DISABLE_CHARGE);
 RemoteUnitFaults faults;
-RemoteUnitCommandHandler commandHandler(config, rfModule, solenoids, battery, faults);
+RemoteUnitCommandHandler commandHandler(config, rfModule, solenoids, battery, faults, counts);
 RemoteUnitSerialInterface remoteUnitSerial(NODE_ID, commandHandler);
-
-volatile bool dataPending = false;
-volatile unsigned long millisApprox = 0;
-volatile unsigned long lastCountMillis = 0;
 
 void handleRfModuleInterrupt()
 {
     dataPending = true;
-
-    // cancel sleep as a precaution
-    // sleep_disable();
-
-    // precautionary while we do other stuff
-    // detachInterrupt(0); // TODO remove
 
     // We need to wake up the RF module as quickly as possible.
     // Warning - maybe concurrency issue if writing something different in loop.
@@ -65,8 +60,7 @@ void handleRfModuleInterrupt()
 // Watchdog timer interrupt handler
 ISR(WDT_vect)
 {
-    millisApprox += 8000;
-    lastCountMillis = millis();
+    ++counts;
 }
 
 void enableTimerInterrupt()
@@ -124,9 +118,11 @@ void sleep()
 
 void setup()
 {
-    Serial.begin(9600, SERIAL_8N1);
+    SERIAL_BEGIN;
     pinMode(LED_1, OUTPUT);
     pinMode(LED_2, OUTPUT);
+    digitalWrite(LED_1, LOW);
+    digitalWrite(LED_2, LOW);
 
     if (config.load())
     {
@@ -137,9 +133,6 @@ void setup()
     battery.setup();
     rfModule.applyConfig();
 
-    digitalWrite(LED_1, LOW);
-    digitalWrite(LED_2, LOW);
-
     noInterrupts();
     enableRfModuleInterrupt();
     enableTimerInterrupt();
@@ -149,15 +142,13 @@ void setup()
 void loop()
 {
     bool handleSerialData = dataPending;
+    digitalWrite(LED_1, HIGH);
     if (handleSerialData)
     {
         rfModule.wake();
-        Serial.begin(9600, SERIAL_8N1);
+        SERIAL_BEGIN;
     }
-    // Approximation of the time elapsed
-    unsigned long now = millisApprox + (millis() - lastCountMillis);
-    digitalWrite(LED_1, HIGH);
-    if (battery.update(now))
+    if (battery.update(counts))
     {
         faults.setFault(RemoteUnitFault::BatteryVoltageError);
     }
@@ -183,11 +174,11 @@ void loop()
         }
         if (result == RemoteUnitSerialInterface::Result::success)
         {
-            lastSuccessfulCommunication = now;
+            lastSuccessfulCommunicationCounts = counts;
         }
     }
 
-    if (now - lastSuccessfulCommunication > ((unsigned long)(config.getCommunicationTimeout()) << 14))
+    if (counts - lastSuccessfulCommunicationCounts > ((unsigned long)(config.getCommunicationTimeout())))
     {
         // No successful communication received for the configured timeout
         // Revert non-persisted config
@@ -210,11 +201,7 @@ void loop()
     if (!dataPending)
     {
         Serial.end();
-        if (!battery.shouldMaintain())
-        {
-            digitalWrite(LED_1, LOW);
-            millisApprox = millisApprox + (millis() - lastCountMillis);
-            sleep();
-        }
+        digitalWrite(LED_1, LOW);
+        sleep();
     }
 }

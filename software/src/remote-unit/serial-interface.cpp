@@ -44,6 +44,14 @@ void RemoteUnitSerialInterface::handleCommand(RemoteUnitPacket::RemoteUnitComman
     case RemoteUnitPacket::RemoteUnitCommand::ApplyRfConfig:
         result = this->commands.applyRfConfig(responseData);
         break;
+    case RemoteUnitPacket::RemoteUnitCommand::GetTimer:
+        uint32_t counts;
+        result = this->commands.getTimer(&counts);
+        responseData[0] = counts;
+        responseData[1] = counts >> 8;
+        responseData[2] = counts >> 16;
+        responseData[3] = counts >> 24;
+        break;
     default:
         result = -1;
         break;

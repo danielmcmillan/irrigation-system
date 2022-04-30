@@ -11,7 +11,7 @@ class RemoteUnitBattery
   const uint8_t chargeDisablePin;
 
   uint8_t lastVoltage;
-  unsigned long lastUpdateMillis;
+  unsigned long lastUpdateCounts;
 
 public:
   RemoteUnitBattery(const RemoteUnitConfig &config, uint8_t analogVoltageSensePin, uint8_t chargeDisablePin);
