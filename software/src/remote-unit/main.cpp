@@ -114,7 +114,6 @@ void setup()
 
 void loop()
 {
-    digitalWrite(LED_2, HIGH);
 
     Serial.begin(9600, SERIAL_8N1);
     unsigned long now = millis();
@@ -124,19 +123,21 @@ void loop()
         faults.setFault(RemoteUnitFault::BatteryVoltageError);
     }
 
+    digitalWrite(LED_1, HIGH);
     // Read a packet from Serial and perform any encoded commands.
     // Increase timeout when in sleep mode since we are expecting data on wake that should be read before sleeping again.
     RemoteUnitSerialInterface::Result result = remoteUnitSerial.receivePacket(
-        battery.shouldSleep() ? 10000 : 500);
+        battery.shouldSleep() ? 5000 : 500);
+    digitalWrite(LED_1, LOW);
 
     // Flash to show error
     if (result != RemoteUnitSerialInterface::Result::success && result != RemoteUnitSerialInterface::Result::noData)
     {
         for (int i = 0; i < (uint8_t)result; ++i)
         {
-            digitalWrite(LED_1, HIGH);
+            digitalWrite(LED_2, HIGH);
             delay(500);
-            digitalWrite(LED_1, LOW);
+            digitalWrite(LED_2, LOW);
             delay(500);
         }
     }
@@ -155,14 +156,11 @@ void loop()
         }
     }
 
-    delay(500); // TODO why?
-
     // TODO temporarily apply RF config change until successful communication
     // TODO LED indicators
 
     if (battery.shouldSleep())
     {
-        digitalWrite(LED_2, LOW);
         sleep();
     }
 }
