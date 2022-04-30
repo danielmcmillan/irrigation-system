@@ -5,6 +5,7 @@
 #define VOLTAGE_READING_COUNT 15
 #define MIN_EXPECTED_VOLTAGE 90
 #define MAX_EXPECTED_VOLTAGE 150
+#define NON_MAINTAIN_CHECK_PERIOD 300000 // 5 minutes
 
 int vCompare(const void *elem1, const void *elem2)
 {
@@ -30,7 +31,9 @@ void RemoteUnitBattery::setup()
 
 int RemoteUnitBattery::update(unsigned long now)
 {
-  if (this->lastUpdateMillis == 0 || (now - this->lastUpdateMillis) > this->config.getBatteryVoltageCheckFrequency() * 500)
+  // Update at configured frequency when maintaining, otherwise NON_MAINTAIN_CHECK_FREQUENCY
+  unsigned long checkMillis = this->shouldMaintain() ? (500 * this->config.getBatteryVoltageCheckFrequency()) : NON_MAINTAIN_CHECK_PERIOD;
+  if (this->lastUpdateMillis == 0 || (now - this->lastUpdateMillis) > checkMillis)
   {
     this->lastUpdateMillis = now;
     uint16_t raw = this->readRawVoltage();
@@ -76,9 +79,9 @@ uint8_t RemoteUnitBattery::getVoltage() const
   return this->lastVoltage;
 }
 
-bool RemoteUnitBattery::shouldSleep() const
+bool RemoteUnitBattery::shouldMaintain() const
 {
-  return this->lastVoltage < this->config.getBatteryVoltageThresholdSleep();
+  return this->lastVoltage >= this->config.getBatteryVoltageThresholdMaintain();
 }
 
 bool RemoteUnitBattery::shouldDisable() const

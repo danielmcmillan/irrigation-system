@@ -18,6 +18,8 @@
 #define RF_EN 4
 #define LED_1 8
 #define LED_2 A1
+#define RF_INTERRUPT_PIN 2
+#define RF_INTERRUPT_NUMBER 0
 
 // Solenoid driver pins
 #define DRV_A1 9
@@ -41,54 +43,93 @@ RemoteUnitFaults faults;
 RemoteUnitCommandHandler commandHandler(config, rfModule, solenoids, battery, faults);
 RemoteUnitSerialInterface remoteUnitSerial(NODE_ID, commandHandler);
 
-void wake()
+volatile bool dataPending = false;
+volatile unsigned long millisApprox = 0;
+volatile unsigned long lastCountMillis = 0;
+
+void handleRfModuleInterrupt()
 {
+    dataPending = true;
+
     // cancel sleep as a precaution
-    sleep_disable();
+    // sleep_disable();
+
     // precautionary while we do other stuff
-    detachInterrupt(0);
-    rfModule.wake(); // warning maybe concurrency issue if writing something different in loop
+    // detachInterrupt(0); // TODO remove
+
+    // We need to wake up the RF module as quickly as possible.
+    // Warning - maybe concurrency issue if writing something different in loop.
+    rfModule.wake();
+}
+
+// Watchdog timer interrupt handler
+ISR(WDT_vect)
+{
+    millisApprox += 8000;
+    lastCountMillis = millis();
+}
+
+void enableTimerInterrupt()
+{
+    // Watchdog timer interrupt
+    // Clear the WD reset flag.
+    MCUSR &= ~(1 << WDRF);
+
+    // Set WD change enable and WD system reset enable
+    WDTCSR |= (1 << WDCE) | (1 << WDE);
+
+    // Configure the WD prescaler, unset WDE
+    WDTCSR = 1 << WDP0 | 1 << WDP3; // 8 seconds
+
+    // Enable the WD interrupt
+    WDTCSR |= 1 << WDIE;
+}
+
+void enableRfModuleInterrupt()
+{
+    // Enable pull-up on interrupt pin
+    pinMode(RF_INTERRUPT_PIN, INPUT_PULLUP);
+    noInterrupts();
+    attachInterrupt(RF_INTERRUPT_NUMBER, handleRfModuleInterrupt, FALLING);
+    interrupts();
 }
 
 void sleep()
 {
     // Turns off modules and puts the processor to sleep until RF is received
     // Based on tips from https://www.gammon.com.au/forum/?id=11497
-
-    Serial.end();
     rfModule.sleep();
     // Put motor drivers to sleep
     solenoids.sleep();
 
-    // disable ADC
-    //  ADCSRA = 0;
-
-    // Disable processor modules (no different for PWR_DOWN)
-    //  power_all_disable();
+    // Disable ADC - this caused problems
+    // ADCSRA = 0;
 
     set_sleep_mode(SLEEP_MODE_PWR_DOWN);
     sleep_enable();
 
-    // Do not interrupt before we go to sleep, or the
-    // ISR will detach interrupts and we won't wake.
+    // Call handler when interrupt pin goes low
+    // attachInterrupt(0, handleRfModuleInterrupt, FALLING);
+    // EIFR = bit(INTF0); // clear flag for interrupt 0
+
     noInterrupts();
-
-    // will be called when pin D2 goes low
-    attachInterrupt(0, wake, FALLING);
-    EIFR = bit(INTF0); // clear flag for interrupt 0
-
+    // enableTimerInterrupt();
     // turn off brown-out enable in software
     // BODS must be set to one and BODSE must be set to zero within four clock cycles
     MCUCR = bit(BODS) | bit(BODSE);
     // The BODS bit is automatically cleared after three clock cycles
     MCUCR = bit(BODS);
-
     // We are guaranteed that the sleep_cpu call will be done
     // as the processor executes the next instruction after
     // interrupts are turned on.
     interrupts(); // one cycle
 
     sleep_cpu();
+    // Continues from here after wake
+    sleep_disable();
+    // noInterrupts();
+    // disableTimerInterrupt();
+    // interrupts();
 }
 
 void setup()
@@ -96,8 +137,6 @@ void setup()
     Serial.begin(9600, SERIAL_8N1);
     pinMode(LED_1, OUTPUT);
     pinMode(LED_2, OUTPUT);
-    // Enable pull-up on interrupt pin
-    pinMode(2, INPUT_PULLUP);
 
     if (config.load())
     {
@@ -110,47 +149,63 @@ void setup()
 
     digitalWrite(LED_1, LOW);
     digitalWrite(LED_2, LOW);
+
+    enableRfModuleInterrupt();
+    noInterrupts();
+    enableTimerInterrupt();
+    interrupts();
 }
 
 void loop()
 {
-
-    Serial.begin(9600, SERIAL_8N1);
-    unsigned long now = millis();
-    rfModule.wake();
+    bool handleSerialData = dataPending;
+    if (handleSerialData)
+    {
+        rfModule.wake();
+        digitalWrite(LED_2, HIGH);
+        Serial.begin(9600, SERIAL_8N1);
+    }
+    // Approximation of the time elapsed
+    unsigned long now = millisApprox + (millis() - lastCountMillis);
+    digitalWrite(LED_1, HIGH);
     if (battery.update(now))
     {
         faults.setFault(RemoteUnitFault::BatteryVoltageError);
     }
 
-    digitalWrite(LED_1, HIGH);
-    // Read a packet from Serial and perform any encoded commands.
-    // Increase timeout when in sleep mode since we are expecting data on wake that should be read before sleeping again.
-    RemoteUnitSerialInterface::Result result = remoteUnitSerial.receivePacket(
-        battery.shouldSleep() ? 5000 : 500);
-    digitalWrite(LED_1, LOW);
-
-    // Flash to show error
-    if (result != RemoteUnitSerialInterface::Result::success && result != RemoteUnitSerialInterface::Result::noData)
+    if (handleSerialData)
     {
-        for (int i = 0; i < (uint8_t)result; ++i)
+        delay(200);
+        // Read a packet from Serial and perform any encoded commands.
+        RemoteUnitSerialInterface::Result result = remoteUnitSerial.receivePacket(5000);
+
+        // Flash to show error
+        if (result != RemoteUnitSerialInterface::Result::success && result != RemoteUnitSerialInterface::Result::noData)
         {
-            digitalWrite(LED_2, HIGH);
-            delay(500);
             digitalWrite(LED_2, LOW);
-            delay(500);
+            delay(300);
+            for (int i = 0; i < (uint8_t)result; ++i)
+            {
+                digitalWrite(LED_2, HIGH);
+                delay(300);
+                digitalWrite(LED_2, LOW);
+                delay(300);
+            }
+        }
+        if (result == RemoteUnitSerialInterface::Result::success)
+        {
+            lastSuccessfulCommunication = now;
         }
     }
 
-    if (result == RemoteUnitSerialInterface::Result::success)
-    {
-        lastSuccessfulCommunication = now;
-    }
-    else if (now - lastSuccessfulCommunication > ((unsigned long)(config.getCommunicationTimeout()) << 4))
+    if (now - lastSuccessfulCommunication > ((unsigned long)(config.getCommunicationTimeout()) << 14))
     {
         // No successful communication received for the configured timeout
         // Revert non-persisted config
-        config.load();
+        if (config.load())
+        {
+            faults.setFault(RemoteUnitFault::ConfigReadFailed);
+        }
         // Ensure valves are shut off
         if ((solenoids.getState() & ~SOLENOID_FORCE_FLAG) != 0)
         {
@@ -158,9 +213,20 @@ void loop()
             solenoids.setState(0);
         }
     }
-
-    if (battery.shouldSleep())
+    if (handleSerialData)
     {
-        sleep();
+        delay(200);
+        dataPending = Serial.available() > 0;
+    }
+    if (!dataPending)
+    {
+        digitalWrite(LED_2, LOW);
+        Serial.end();
+        if (!battery.shouldMaintain())
+        {
+            digitalWrite(LED_1, LOW);
+            millisApprox = millisApprox + (millis() - lastCountMillis);
+            sleep();
+        }
     }
 }

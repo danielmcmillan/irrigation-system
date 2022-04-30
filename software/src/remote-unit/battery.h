@@ -36,10 +36,10 @@ public:
   uint16_t readRawVoltage() const;
 
   /**
-   * Check whether processor should go to sleep.
-   * If the voltage is high enough it should stay awake and keep calling update.
+   * Check whether the battery requires attention to maintain voltage.
+   * If true, then update should continue being called at least as frequently as the configured check frequency.
    */
-  bool shouldSleep() const;
+  bool shouldMaintain() const;
 
   /**
    * Check whether the critical low battery threshold is reached and solenoid control should be disabled.

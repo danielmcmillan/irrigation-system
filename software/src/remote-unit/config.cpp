@@ -97,7 +97,7 @@ uint8_t RemoteUnitConfig::getBatteryVoltageThresholdLower() const
   return this->config[9];
 }
 
-uint8_t RemoteUnitConfig::getBatteryVoltageThresholdSleep() const
+uint8_t RemoteUnitConfig::getBatteryVoltageThresholdMaintain() const
 {
   return this->config[10];
 }

@@ -36,7 +36,7 @@ public:
   const uint8_t *getRfConfig() const;
   uint8_t getBatteryVoltageThresholdUpper() const;
   uint8_t getBatteryVoltageThresholdLower() const;
-  uint8_t getBatteryVoltageThresholdSleep() const;
+  uint8_t getBatteryVoltageThresholdMaintain() const;
   uint8_t getBatteryVoltageThresholdDisable() const;
   uint8_t getBatteryVoltageCheckFrequency() const;
   uint8_t getSolenoidAOnPulseWidth() const;
