@@ -38,6 +38,12 @@ void RemoteUnitSerialInterface::handleCommand(RemoteUnitPacket::RemoteUnitComman
     case RemoteUnitPacket::RemoteUnitCommand::SetConfig:
         result = this->commands.setConfig(data, responseData);
         break;
+    case RemoteUnitPacket::RemoteUnitCommand::PersistConfig:
+        result = this->commands.persistConfig(responseData);
+        break;
+    case RemoteUnitPacket::RemoteUnitCommand::ApplyRfConfig:
+        result = this->commands.applyRfConfig(responseData);
+        break;
     default:
         result = -1;
         break;

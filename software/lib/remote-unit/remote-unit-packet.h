@@ -25,6 +25,9 @@ namespace IrrigationSystem
             SetSolenoidState = 0x20,
             ClearFaults = 0x22,
             SetConfig = 0x25,
+            // Other operations
+            PersistConfig = 0x30,
+            ApplyRfConfig = 0x31,
             // Corresponding responses
             GetSolenoidStateResponse = responseFlag | 0x10,
             GetBatteryVoltageResponse = responseFlag | 0x11,
@@ -35,6 +38,8 @@ namespace IrrigationSystem
             SetSolenoidStateResponse = responseFlag | 0x20,
             ClearFaultsResponse = responseFlag | 0x22,
             SetConfigResponse = responseFlag | 0x25,
+            PersistConfigResponse = responseFlag | 0x30,
+            ApplyRfConfigResponse = responseFlag | 0x31,
             ErrorResponse = responseFlag
 
         };

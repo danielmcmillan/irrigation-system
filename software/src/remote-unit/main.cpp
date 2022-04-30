@@ -99,7 +99,7 @@ void setup()
     // Enable pull-up on interrupt pin
     pinMode(2, INPUT_PULLUP);
 
-    if (config.loadFromEeprom())
+    if (config.load())
     {
         faults.setFault(RemoteUnitFault::ConfigReadFailed);
     }
@@ -146,18 +146,18 @@ void loop()
     {
         lastSuccessfulCommunication = now;
     }
-    else if (now - lastSuccessfulCommunication > ((unsigned long)(config.getSolenoidTimeout()) << 4))
+    else if (now - lastSuccessfulCommunication > ((unsigned long)(config.getCommunicationTimeout()) << 4))
     {
-        // No successful communication received for the configured timeout, ensure valves are shut off
-        if (solenoids.getState() != 0)
+        // No successful communication received for the configured timeout
+        // Revert non-persisted config
+        config.load();
+        // Ensure valves are shut off
+        if ((solenoids.getState() & ~SOLENOID_FORCE_FLAG) != 0)
         {
             faults.setFault(RemoteUnitFault::SolenoidTimeoutOccurred);
             solenoids.setState(0);
         }
     }
-
-    // TODO temporarily apply RF config change until successful communication
-    // TODO LED indicators
 
     if (battery.shouldSleep())
     {

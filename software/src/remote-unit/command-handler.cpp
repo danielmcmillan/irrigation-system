@@ -65,5 +65,17 @@ int RemoteUnitCommandHandler::setConfig(const uint8_t *configData, uint8_t *conf
 {
     this->config.setRaw(configData);
     memcpy(configDataOut, this->config.getRaw(), REMOTE_UNIT_CONFIG_SIZE);
-    return this->config.saveToEeprom();
+    return 0;
+}
+
+int RemoteUnitCommandHandler::persistConfig(uint8_t *configDataOut) const
+{
+    memcpy(configDataOut, this->config.getRaw(), REMOTE_UNIT_CONFIG_SIZE);
+    return this->config.persist();
+}
+
+int RemoteUnitCommandHandler::applyRfConfig(uint8_t *configDataOut) const
+{
+    memcpy(configDataOut, this->config.getRaw(), REMOTE_UNIT_CONFIG_SIZE);
+    return this->rfModule.applyConfig();
 }

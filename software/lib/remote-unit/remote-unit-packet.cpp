@@ -98,6 +98,14 @@ namespace IrrigationSystem
                 return 17;
             case RemoteUnitCommand::SetConfigResponse:
                 return 17;
+            case RemoteUnitCommand::PersistConfig:
+                return 0;
+            case RemoteUnitCommand::PersistConfigResponse:
+                return 17;
+            case RemoteUnitCommand::ApplyRfConfig:
+                return 0;
+            case RemoteUnitCommand::ApplyRfConfigResponse:
+                return 17;
             case RemoteUnitCommand::ErrorResponse:
                 return 0;
             default:

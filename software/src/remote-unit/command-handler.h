@@ -75,7 +75,18 @@ public:
 
   /**
    * Sets the 13 byte config value.
+   * The config is not persisted, so the change will revert after reset or a period of no communication.
    */
   int setConfig(const uint8_t *configData, uint8_t *configDataOut) const;
+
+  /**
+   * Persists the current config, so that it does not revert after reset or a period of no communication.
+   */
+  int persistConfig(uint8_t *configDataOut) const;
+
+  /**
+   * Applies the current config to the RF module.
+   */
+  int applyRfConfig(uint8_t *configDataOut) const;
 };
 #endif
