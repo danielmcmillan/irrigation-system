@@ -43,12 +43,11 @@ int RemoteUnitRfModule::applyConfig() const
       .breathTime = rfConfig[5]};
   uint8_t message[25] = {0};
   uint8_t length = yl800tSendWriteAllParameters(&params, message);
-  delay(100); // TODO why?
+  delay(100);
   Serial.write(message, length);
   Serial.flush();
   Serial.readBytes(message, 25);
-  // TODO check response?
-  return 0;
+  return yl800tReceiveWriteAllParameters(message);
 }
 
 int RemoteUnitRfModule::readSignalStrength(uint8_t *signalStrengthOut) const
