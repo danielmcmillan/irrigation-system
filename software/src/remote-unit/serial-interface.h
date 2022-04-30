@@ -16,9 +16,10 @@ public:
   {
     success = 0,
     noData,
+    dataPacketTooSmall,
+    invalidNodeId,
     invalidPacketCrc,
     invalidPacketCommand,
-    invalidNodeId,
     invalidPacketResponseTooLarge,
     writeFailure
   };

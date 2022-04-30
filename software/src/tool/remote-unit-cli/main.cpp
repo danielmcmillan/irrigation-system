@@ -215,17 +215,19 @@ void remoteCommandRaw(int argc, char **argv)
         std::cerr << "Timed out waiting for response on serial device '" << deviceStr << "'\n";
         exit(EXIT_FAILURE);
     }
+    uint8_t *receivedPacket;
+    packetSize = IrrigationSystem::RemoteUnitPacket::getPacket(packetBuffer, result, &receivedPacket);
 
     // Debug output
     std::cout << "Received packet: 0x";
     for (unsigned i = 0; i < result; ++i)
     {
-        std::cout << std::hex << std::setfill('0') << std::setw(2) << static_cast<unsigned>(packetBuffer[i]);
+        std::cout << std::hex << std::setfill('0') << std::setw(2) << static_cast<unsigned>(receivedPacket[i]);
     }
     std::cout << "\n";
 
     // Parse response
-    int numCommands = IrrigationSystem::RemoteUnitPacket::validatePacket(packetBuffer, result, true);
+    int numCommands = IrrigationSystem::RemoteUnitPacket::validatePacket(receivedPacket, packetSize, true);
     if (numCommands < 0)
     {
         if (numCommands == -2)
@@ -239,12 +241,12 @@ void remoteCommandRaw(int argc, char **argv)
         exit(EXIT_FAILURE);
     }
     std::cout << "Received response from node 0x";
-    std::cout << std::hex << std::setfill('0') << std::setw(4) << IrrigationSystem::RemoteUnitPacket::getNodeId(packetBuffer) << "\n";
+    std::cout << std::hex << std::setfill('0') << std::setw(4) << IrrigationSystem::RemoteUnitPacket::getNodeId(receivedPacket) << "\n";
     for (int i = 0; i < numCommands; ++i)
     {
         const uint8_t *responseData;
         IrrigationSystem::RemoteUnitPacket::RemoteUnitCommand responseCommand =
-            IrrigationSystem::RemoteUnitPacket::getCommandAtIndex(packetBuffer, i, &responseData);
+            IrrigationSystem::RemoteUnitPacket::getCommandAtIndex(receivedPacket, i, &responseData);
         unsigned responseDataSize = IrrigationSystem::RemoteUnitPacket::getCommandDataSize(responseCommand);
         std::cout << "Command: 0x" << std::hex << std::setfill('0') << std::setw(2) << static_cast<unsigned>(responseCommand);
         std::cout << std::dec << ", dataSize: " << responseDataSize;

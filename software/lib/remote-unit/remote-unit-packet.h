@@ -45,6 +45,13 @@ namespace IrrigationSystem
         };
 
         /**
+         * Get the packet in the given data.
+         *
+         * Returns the packet size. Sets `packetOut` to point to the start of the packet.
+         */
+        size_t getPacket(uint8_t *buffer, size_t size, uint8_t **packetOut);
+
+        /**
          * Validate a remote unit command or response data packet.
          *
          * On success, returns a value >= 0 indicating the number of commands included in the packet.

@@ -2,10 +2,12 @@
 #include "remote-unit-packet.h"
 #include "crc16.h"
 
-#define PACKET_HEADER_SIZE 2
+#define SYNC_BYTE_COUNT 4
+#define SYNC_END_BYTE 0xA0
+#define PACKET_HEADER_SIZE (SYNC_BYTE_COUNT + 3)
 #define PACKET_FOOTER_SIZE 3
 #define END_COMMAND_BYTE 0x03
-#define END_RESPONSE_BYTE responseFlag | 0x03
+#define END_RESPONSE_BYTE (responseFlag | 0x03)
 
 uint16_t read16LE(const uint8_t *data)
 {
@@ -23,6 +25,24 @@ namespace IrrigationSystem
     namespace RemoteUnitPacket
     {
         const uint8_t commandDataSizeInvalid = 0xff;
+
+        size_t getPacket(uint8_t *buffer, size_t size, uint8_t **packetOut)
+        {
+            size_t index = 0;
+            while (index < size && buffer[index] != SYNC_END_BYTE)
+            {
+                ++index;
+            }
+            ++index;
+            if (index < size)
+            {
+                *packetOut = buffer + index;
+                return size - index;
+            }
+            // If no sync is found, just try with the full set of data
+            *packetOut = buffer;
+            return size;
+        }
 
         int validatePacket(const uint8_t *packet, size_t packetSize, bool isResponse)
         {
@@ -151,8 +171,11 @@ namespace IrrigationSystem
             {
                 return 0;
             }
+            // Sync bytes
+            memset(packetBuffer, 0x00, SYNC_BYTE_COUNT);
+            packetBuffer[SYNC_BYTE_COUNT] = SYNC_END_BYTE;
             // Node id
-            write16LE(packetBuffer, nodeId);
+            write16LE(packetBuffer + SYNC_BYTE_COUNT + 1, nodeId);
             return PACKET_HEADER_SIZE;
         }
 
@@ -184,7 +207,7 @@ namespace IrrigationSystem
             // End command
             packetBuffer[intermediatePacketSize] = isResponse ? END_RESPONSE_BYTE : END_COMMAND_BYTE;
             // CRC
-            uint16_t crc = CRC::crc16(packetBuffer, intermediatePacketSize + 1);
+            uint16_t crc = CRC::crc16(packetBuffer + SYNC_BYTE_COUNT + 1, intermediatePacketSize - SYNC_BYTE_COUNT);
             write16LE(packetBuffer + intermediatePacketSize + 1, crc);
             return newSize;
         }

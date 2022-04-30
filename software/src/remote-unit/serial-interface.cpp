@@ -57,8 +57,12 @@ void RemoteUnitSerialInterface::handleCommand(RemoteUnitPacket::RemoteUnitComman
 
 RemoteUnitSerialInterface::Result RemoteUnitSerialInterface::handlePacket(const uint8_t *packet, size_t size) const
 {
+    if (size < 5)
+    {
+        return Result::dataPacketTooSmall;
+    }
     // Don't do anything if NODE_ID doesn't match
-    if (size < 2 || this->nodeId != RemoteUnitPacket::getNodeId(packet))
+    if (this->nodeId != RemoteUnitPacket::getNodeId(packet))
     {
         return Result::invalidNodeId;
     }
@@ -140,7 +144,9 @@ RemoteUnitSerialInterface::Result RemoteUnitSerialInterface::receivePacket(unsig
     }
     Serial.setTimeout(100);
     read = Serial.readBytes(buffer + 1, PACKET_BUFFER_SIZE - 1);
-
-    Result result = this->handlePacket(buffer, read + 1);
+    uint8_t *packet;
+    size_t packetSize = RemoteUnitPacket::getPacket(buffer, read + 1, &packet);
+    Result result = this->handlePacket(packet, packetSize);
+    Serial.flush();
     return result;
 }

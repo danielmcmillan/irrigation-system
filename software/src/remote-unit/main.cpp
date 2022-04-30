@@ -89,9 +89,7 @@ void enableRfModuleInterrupt()
 {
     // Enable pull-up on interrupt pin
     pinMode(RF_INTERRUPT_PIN, INPUT_PULLUP);
-    noInterrupts();
     attachInterrupt(RF_INTERRUPT_NUMBER, handleRfModuleInterrupt, FALLING);
-    interrupts();
 }
 
 void sleep()
@@ -108,13 +106,8 @@ void sleep()
     set_sleep_mode(SLEEP_MODE_PWR_DOWN);
     sleep_enable();
 
-    // Call handler when interrupt pin goes low
-    // attachInterrupt(0, handleRfModuleInterrupt, FALLING);
-    // EIFR = bit(INTF0); // clear flag for interrupt 0
-
-    noInterrupts();
-    // enableTimerInterrupt();
     // turn off brown-out enable in software
+    noInterrupts();
     // BODS must be set to one and BODSE must be set to zero within four clock cycles
     MCUCR = bit(BODS) | bit(BODSE);
     // The BODS bit is automatically cleared after three clock cycles
@@ -127,9 +120,6 @@ void sleep()
     sleep_cpu();
     // Continues from here after wake
     sleep_disable();
-    // noInterrupts();
-    // disableTimerInterrupt();
-    // interrupts();
 }
 
 void setup()
@@ -150,8 +140,8 @@ void setup()
     digitalWrite(LED_1, LOW);
     digitalWrite(LED_2, LOW);
 
-    enableRfModuleInterrupt();
     noInterrupts();
+    enableRfModuleInterrupt();
     enableTimerInterrupt();
     interrupts();
 }
@@ -162,7 +152,6 @@ void loop()
     if (handleSerialData)
     {
         rfModule.wake();
-        digitalWrite(LED_2, HIGH);
         Serial.begin(9600, SERIAL_8N1);
     }
     // Approximation of the time elapsed
@@ -175,14 +164,14 @@ void loop()
 
     if (handleSerialData)
     {
-        delay(200);
+        digitalWrite(LED_2, HIGH);
         // Read a packet from Serial and perform any encoded commands.
         RemoteUnitSerialInterface::Result result = remoteUnitSerial.receivePacket(5000);
+        digitalWrite(LED_2, LOW);
 
         // Flash to show error
         if (result != RemoteUnitSerialInterface::Result::success && result != RemoteUnitSerialInterface::Result::noData)
         {
-            digitalWrite(LED_2, LOW);
             delay(300);
             for (int i = 0; i < (uint8_t)result; ++i)
             {
@@ -215,12 +204,11 @@ void loop()
     }
     if (handleSerialData)
     {
-        delay(200);
+        delay(17);
         dataPending = Serial.available() > 0;
     }
     if (!dataPending)
     {
-        digitalWrite(LED_2, LOW);
         Serial.end();
         if (!battery.shouldMaintain())
         {
