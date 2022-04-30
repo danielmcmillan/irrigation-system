@@ -11,8 +11,6 @@
 
 // TODO:
 // serial header file
-// support multiple commands
-// handle packet creation error
 
 void commands()
 {
@@ -33,6 +31,12 @@ void required(const char *argv0, const char *param)
 void invalid(const char *argv0, const char *param, const char *value)
 {
     std::cerr << argv0 << ": value " << value << " is not valid for option '" << param << "'\n";
+    exit(EXIT_FAILURE);
+}
+
+void tooLarge(const char *argv0)
+{
+    std::cerr << argv0 << ": the packet size is too large\n";
     exit(EXIT_FAILURE);
 }
 
@@ -166,10 +170,18 @@ void remoteCommandRaw(int argc, char **argv)
         // Add command to packet
         uint8_t *commandData;
         packetSize = IrrigationSystem::RemoteUnitPacket::addCommandToPacket(packetBuffer, PACKET_BUFFER_SIZE, packetSize, command, &commandData);
+        if (packetSize == 0)
+        {
+            tooLarge(argv[0]);
+        }
         memcpy(commandData, data, dataSize);
     }
 
     packetSize = IrrigationSystem::RemoteUnitPacket::finalisePacket(packetBuffer, PACKET_BUFFER_SIZE, packetSize, false);
+    if (packetSize == 0)
+    {
+        tooLarge(argv[0]);
+    }
 
     if (!noNodePrefix)
     {
@@ -186,7 +198,7 @@ void remoteCommandRaw(int argc, char **argv)
     {
         std::cout << std::hex << std::setfill('0') << std::setw(2) << static_cast<unsigned>(packetBuffer[i]);
     }
-    std::cout << "\n";
+    std::cout << std::dec << " (" << packetSize << " bytes)\n";
 
     // Send the packet
     int serialPort = serialOpen(deviceStr);
@@ -216,18 +228,18 @@ void remoteCommandRaw(int argc, char **argv)
         exit(EXIT_FAILURE);
     }
     uint8_t *receivedPacket;
-    packetSize = IrrigationSystem::RemoteUnitPacket::getPacket(packetBuffer, result, &receivedPacket);
+    size_t receivedPacketSize = IrrigationSystem::RemoteUnitPacket::getPacket(packetBuffer, result, &receivedPacket);
 
     // Debug output
     std::cout << "Received packet: 0x";
     for (unsigned i = 0; i < result; ++i)
     {
-        std::cout << std::hex << std::setfill('0') << std::setw(2) << static_cast<unsigned>(receivedPacket[i]);
+        std::cout << std::hex << std::setfill('0') << std::setw(2) << static_cast<unsigned>(packetBuffer[i]);
     }
-    std::cout << "\n";
+    std::cout << std::dec << " (" << result << " bytes)\n";
 
     // Parse response
-    int numCommands = IrrigationSystem::RemoteUnitPacket::validatePacket(receivedPacket, packetSize, true);
+    int numCommands = IrrigationSystem::RemoteUnitPacket::validatePacket(receivedPacket, receivedPacketSize, true);
     if (numCommands < 0)
     {
         if (numCommands == -2)
