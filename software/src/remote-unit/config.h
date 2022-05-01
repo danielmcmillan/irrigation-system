@@ -31,6 +31,8 @@ public:
    */
   int persist();
 
+  bool getIsChanged() const;
+
   uint8_t getBatteryCalibration() const;
   uint8_t getCommunicationTimeout() const;
   const uint8_t *getRfConfig() const;

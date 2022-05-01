@@ -131,7 +131,10 @@ void setup()
     rfModule.setup();
     solenoids.setup();
     battery.setup();
-    rfModule.applyConfig();
+    if (rfModule.applyConfig())
+    {
+        faults.setFault(RemoteUnitFault::ConfigureRfModuleFailed);
+    }
 
     noInterrupts();
     enableRfModuleInterrupt();
@@ -182,9 +185,17 @@ void loop()
     {
         // No successful communication received for the configured timeout
         // Revert non-persisted config
-        if (config.load())
+        if (config.getIsChanged())
         {
-            faults.setFault(RemoteUnitFault::ConfigReadFailed);
+            SERIAL_BEGIN;
+            if (config.load())
+            {
+                faults.setFault(RemoteUnitFault::ConfigReadFailed);
+            }
+            if (rfModule.applyConfig())
+            {
+                faults.setFault(RemoteUnitFault::ConfigureRfModuleFailed);
+            }
         }
         // Ensure valves are shut off
         if ((solenoids.getState() & ~SOLENOID_FORCE_FLAG) != 0)

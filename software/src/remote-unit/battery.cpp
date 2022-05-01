@@ -5,7 +5,7 @@
 #define VOLTAGE_READING_COUNT 15
 #define MIN_EXPECTED_VOLTAGE 90
 #define MAX_EXPECTED_VOLTAGE 150
-#define NON_MAINTAIN_CHECK_COUNTS 38 // ~5 minutes
+#define NON_MAINTAIN_CHECK_COUNTS 7 // ~1 minute
 
 int vCompare(const void *elem1, const void *elem2)
 {

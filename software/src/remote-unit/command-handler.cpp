@@ -77,7 +77,12 @@ int RemoteUnitCommandHandler::persistConfig(uint8_t *configDataOut) const
 int RemoteUnitCommandHandler::applyRfConfig(uint8_t *configDataOut) const
 {
     memcpy(configDataOut, this->config.getRaw(), REMOTE_UNIT_CONFIG_SIZE);
-    return this->rfModule.applyConfig();
+    int result = this->rfModule.applyConfig();
+    if (result)
+    {
+        faults.setFault(RemoteUnitFault::ConfigureRfModuleFailed);
+    }
+    return result;
 }
 
 int RemoteUnitCommandHandler::getTimer(uint32_t *timerOut) const

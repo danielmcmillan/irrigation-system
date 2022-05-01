@@ -18,41 +18,37 @@ const uint8_t *RemoteUnitConfig::setRaw(const uint8_t *newConfig)
 
 int RemoteUnitConfig::load()
 {
-  if (this->isChanged)
+  for (uint8_t i = 0; i < REMOTE_UNIT_EEPROM_SIZE; ++i)
   {
-    for (uint8_t i = 0; i < REMOTE_UNIT_EEPROM_SIZE; ++i)
-    {
-      this->config[i] = EEPROM.read(i);
-    }
-    if (IrrigationSystem::CRC::crc16(this->config, REMOTE_UNIT_EEPROM_SIZE) == 0)
-    {
-      // EEPROM data looks good
-      this->isChanged = false;
-      return 0;
-    }
-
-    // EEPROM data is not valid, load default values
-    uint32_t rfFreq = 434l * 1l << 14;          // 434 MHz
-    this->config[0] = 122;                      // battery multiplier 0.0149
-    this->config[1] = 20;                       // solenoid timeout 320 seconds
-    this->config[2] = rfFreq >> 16;             // Rf freq
-    this->config[3] = rfFreq >> 8;              // Rf freq
-    this->config[4] = rfFreq;                   // Rf freq
-    this->config[5] = 5;                        // Rf power
-    this->config[6] = YL_800T_BREATH_CYCLE_2S;  // Rf breath cycle
-    this->config[7] = YL_800T_BREATH_TIME_32MS; // Rf breath time
-    this->config[8] = 138;                      // Upper battery voltage threshold
-    this->config[9] = 135;                      // Lower battery voltage threshold
-    this->config[10] = 132;                     // Sleep battery voltage threshold
-    this->config[11] = 105;                     // Minimum voltage for solenoid operation
-    this->config[12] = 50;                      // Solenoid A on pulse width 100 ms
-    this->config[13] = 50;                      // Solenoid A off pulse width 100 ms
-    this->config[14] = 50;                      // Solenoid B on pulse width 100 ms
-    this->config[15] = 50;                      // Solenoid B off pulse width 100 ms
-
-    return 1;
+    this->config[i] = EEPROM.read(i);
   }
-  return 0;
+  if (IrrigationSystem::CRC::crc16(this->config, REMOTE_UNIT_EEPROM_SIZE) == 0)
+  {
+    // EEPROM data looks good
+    this->isChanged = false;
+    return 0;
+  }
+
+  // EEPROM data is not valid, load default values
+  uint32_t rfFreq = 434l * 1l << 14;          // 434 MHz
+  this->config[0] = 122;                      // battery multiplier 0.0149
+  this->config[1] = 32;                       // solenoid timeout ~280 seconds
+  this->config[2] = rfFreq >> 16;             // Rf freq
+  this->config[3] = rfFreq >> 8;              // Rf freq
+  this->config[4] = rfFreq;                   // Rf freq
+  this->config[5] = 5;                        // Rf power
+  this->config[6] = YL_800T_BREATH_CYCLE_2S;  // Rf breath cycle
+  this->config[7] = YL_800T_BREATH_TIME_32MS; // Rf breath time
+  this->config[8] = 138;                      // Upper battery voltage threshold
+  this->config[9] = 135;                      // Lower battery voltage threshold
+  this->config[10] = 132;                     // Sleep battery voltage threshold
+  this->config[11] = 105;                     // Minimum voltage for solenoid operation
+  this->config[12] = 50;                      // Solenoid A on pulse width 100 ms
+  this->config[13] = 50;                      // Solenoid A off pulse width 100 ms
+  this->config[14] = 50;                      // Solenoid B on pulse width 100 ms
+  this->config[15] = 50;                      // Solenoid B off pulse width 100 ms
+
+  return 1;
 }
 
 int RemoteUnitConfig::persist()
@@ -69,6 +65,11 @@ int RemoteUnitConfig::persist()
     this->isChanged = false;
   }
   return 0;
+}
+
+bool RemoteUnitConfig::getIsChanged() const
+{
+  return this->isChanged;
 }
 
 uint8_t RemoteUnitConfig::getBatteryCalibration() const
