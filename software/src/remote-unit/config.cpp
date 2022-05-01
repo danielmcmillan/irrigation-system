@@ -60,8 +60,8 @@ int RemoteUnitConfig::persist()
     {
       EEPROM.update(i, this->config[i]);
     }
-    EEPROM.update(REMOTE_UNIT_CONFIG_SIZE, crc >> 8);
-    EEPROM.update(REMOTE_UNIT_CONFIG_SIZE + 1, crc);
+    EEPROM.update(REMOTE_UNIT_CONFIG_SIZE, crc);
+    EEPROM.update(REMOTE_UNIT_CONFIG_SIZE + 1, crc >> 8);
     this->isChanged = false;
   }
   return 0;
