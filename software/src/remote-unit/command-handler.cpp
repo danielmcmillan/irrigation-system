@@ -82,6 +82,7 @@ int RemoteUnitCommandHandler::applyRfConfig(uint8_t *configDataOut) const
     {
         faults.setFault(RemoteUnitFault::ConfigureRfModuleFailed);
     }
+    delay(600); // Give module some time before continuing with response
     return result;
 }
 
