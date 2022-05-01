@@ -33,7 +33,7 @@ public:
   /**
    * Read the battery voltage and return the raw 10-bit reading without calibration applied.
    */
-  uint16_t readRawVoltage() const;
+  uint16_t readRawVoltage();
 
   /**
    * Check whether the battery requires attention to maintain voltage.

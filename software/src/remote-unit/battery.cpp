@@ -35,8 +35,7 @@ int RemoteUnitBattery::update(unsigned long counts)
   if (this->shouldMaintain() || this->lastUpdateCounts == 0 || (counts - this->lastUpdateCounts) > NON_MAINTAIN_CHECK_COUNTS)
   {
     this->lastUpdateCounts = counts;
-    uint16_t raw = this->readRawVoltage();
-    this->lastVoltage = ((uint32_t)raw * (uint32_t)this->config.getBatteryCalibration() * 10) >> 13;
+    this->readRawVoltage();
 
     // Update charge state
     if (this->lastVoltage < this->config.getBatteryVoltageThresholdLower())
@@ -52,7 +51,7 @@ int RemoteUnitBattery::update(unsigned long counts)
   return this->lastVoltage < MIN_EXPECTED_VOLTAGE || this->lastVoltage > MAX_EXPECTED_VOLTAGE;
 }
 
-uint16_t RemoteUnitBattery::readRawVoltage() const
+uint16_t RemoteUnitBattery::readRawVoltage()
 {
   // Ignore the first reading
   analogRead(this->analogVoltageSensePin);
@@ -69,8 +68,11 @@ uint16_t RemoteUnitBattery::readRawVoltage() const
   {
     sum += readings[i];
   }
-  // Return the average
-  return sum / (VOLTAGE_READING_COUNT - 4);
+  uint16_t avg = sum / (VOLTAGE_READING_COUNT - 4);
+  // Store the calibrated value
+  this->lastVoltage = ((uint32_t)avg * (uint32_t)this->config.getBatteryCalibration() * 10 + (1 << 12)) >> 13;
+  // Return the uncalibrated value
+  return avg;
 }
 
 uint8_t RemoteUnitBattery::getVoltage() const
