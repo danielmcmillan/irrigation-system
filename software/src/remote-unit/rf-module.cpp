@@ -12,6 +12,9 @@ RemoteUnitRfModule::RemoteUnitRfModule(uint16_t nodeId, const RemoteUnitConfig &
 void RemoteUnitRfModule::setup() const
 {
   pinMode(this->rfEnablePin, OUTPUT);
+  this->wake();
+  // Give the module some time after initial power-on before we try to talk to it
+  delay(500);
 }
 
 void RemoteUnitRfModule::sleep() const
@@ -44,6 +47,10 @@ int RemoteUnitRfModule::applyConfig() const
   uint8_t message[25] = {0};
   uint8_t length = yl800tSendWriteAllParameters(&params, message);
   delay(100);
+  while (Serial.available())
+  {
+    Serial.read();
+  }
   Serial.write(message, length);
   Serial.flush();
   Serial.readBytes(message, 25);

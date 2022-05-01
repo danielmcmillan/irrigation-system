@@ -41,7 +41,7 @@ int RemoteUnitConfig::load()
   this->config[7] = YL_800T_BREATH_TIME_32MS; // Rf breath time
   this->config[8] = 138;                      // Upper battery voltage threshold
   this->config[9] = 135;                      // Lower battery voltage threshold
-  this->config[10] = 132;                     // Sleep battery voltage threshold
+  this->config[10] = 132;                     // Maintain battery voltage threshold
   this->config[11] = 105;                     // Minimum voltage for solenoid operation
   this->config[12] = 50;                      // Solenoid A on pulse width 100 ms
   this->config[13] = 50;                      // Solenoid A off pulse width 100 ms
