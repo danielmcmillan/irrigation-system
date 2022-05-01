@@ -17,7 +17,13 @@ class RemoteUnitCommandHandler
   volatile unsigned long &counts;
 
 public:
-  RemoteUnitCommandHandler(RemoteUnitConfig &config, RemoteUnitRfModule &rfModule, Solenoids &solenoids, RemoteUnitBattery &battery, RemoteUnitFaults &faults, volatile unsigned long &counts);
+  RemoteUnitCommandHandler(
+      RemoteUnitConfig &config,
+      RemoteUnitRfModule &rfModule,
+      Solenoids &solenoids,
+      RemoteUnitBattery &battery,
+      RemoteUnitFaults &faults,
+      volatile unsigned long &counts);
 
   /**
    * Gets the state for all solenoids.
@@ -94,5 +100,10 @@ public:
    * Gets the approximate uptime in multiples of 8 seconds.
    */
   int getTimer(uint32_t *timerOut) const;
+
+  /**
+   * Gets the current software revision.
+   */
+  int getSoftwareRevision(uint16_t *softwareRevisionOut) const;
 };
 #endif

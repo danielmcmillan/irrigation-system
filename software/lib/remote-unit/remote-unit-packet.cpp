@@ -118,6 +118,10 @@ namespace IrrigationSystem
                 return 0;
             case RemoteUnitCommand::GetTimerResponse:
                 return 4;
+            case RemoteUnitCommand::GetSoftwareRevision:
+                return 0;
+            case RemoteUnitCommand::GetSoftwareRevisionResponse:
+                return 2;
             case RemoteUnitCommand::SetConfig:
                 return 16;
             case RemoteUnitCommand::SetConfigResponse:

@@ -7,14 +7,9 @@
 #include "solenoids.h"
 #include "battery.h"
 #include "faults.h"
+#include "settings.h"
 
 #define SERIAL_BEGIN Serial.begin(9600, SERIAL_8N1)
-
-/**
- * Unique 16 bit identifier for a remote unit.
- * Each remote unit should have a unique value.
- */
-#define NODE_ID 0x00ff
 
 // Pins
 #define RF_EN 4

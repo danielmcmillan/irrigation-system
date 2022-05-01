@@ -1,9 +1,15 @@
 #include "command-handler.h"
 #include <Arduino.h>
 #include <string.h>
+#include "settings.h"
 
 RemoteUnitCommandHandler::RemoteUnitCommandHandler(
-    RemoteUnitConfig &config, RemoteUnitRfModule &rfModule, Solenoids &solenoids, RemoteUnitBattery &battery, RemoteUnitFaults &faults, volatile unsigned long &counts)
+    RemoteUnitConfig &config,
+    RemoteUnitRfModule &rfModule,
+    Solenoids &solenoids,
+    RemoteUnitBattery &battery,
+    RemoteUnitFaults &faults,
+    volatile unsigned long &counts)
     : config(config), rfModule(rfModule), solenoids(solenoids), battery(battery), faults(faults), counts(counts)
 {
 }
@@ -89,5 +95,11 @@ int RemoteUnitCommandHandler::applyRfConfig(uint8_t *configDataOut) const
 int RemoteUnitCommandHandler::getTimer(uint32_t *timerOut) const
 {
     *timerOut = this->counts;
+    return 0;
+}
+
+int RemoteUnitCommandHandler::getSoftwareRevision(uint16_t *softwareRevisionOut) const
+{
+    *softwareRevisionOut = REMOTE_UNIT_REVISION;
     return 0;
 }

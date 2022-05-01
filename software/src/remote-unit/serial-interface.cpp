@@ -52,6 +52,12 @@ void RemoteUnitSerialInterface::handleCommand(RemoteUnitPacket::RemoteUnitComman
         responseData[2] = counts >> 16;
         responseData[3] = counts >> 24;
         break;
+    case RemoteUnitPacket::RemoteUnitCommand::GetSoftwareRevision:
+        uint16_t softwareRevision;
+        result = this->commands.getSoftwareRevision(&softwareRevision);
+        responseData[0] = softwareRevision;
+        responseData[1] = softwareRevision >> 8;
+        break;
     default:
         result = -1;
         break;
