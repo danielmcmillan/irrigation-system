@@ -1,22 +1,28 @@
 #ifndef _CONTROLLER_DEFINITION_MANAGER_H
 #define _CONTROLLER_DEFINITION_MANAGER_H
 #include "controller-definition.h"
+#include "controller-definition-provider.h"
 
-struct ControllerDefinitionRegistration
+namespace IrrigationSystem
 {
-    const uint8_t controllerId;
-    IrrigationSystem::ControllerDefinition *controllerDefinition;
-};
+    struct ControllerDefinitionRegistration
+    {
+        const uint8_t controllerId;
+        ControllerDefinition *controllerDefinition;
+    };
 
-class ControllerDefinitionManager
-{
-public:
-    ControllerDefinitionManager(ControllerDefinitionRegistration *definitions, unsigned int num);
-    IrrigationSystem::ControllerDefinition *getControllerDefinition(uint8_t controllerId);
-    void resetControllerDefinitions();
+    class ControllerDefinitionManager : public ControllerDefinitionProvider
+    {
+    public:
+        ControllerDefinitionManager(ControllerDefinitionRegistration *definitions, unsigned int num);
+        ControllerDefinition *getControllerDefinition(uint8_t controllerId);
+        const ControllerDefinition *getControllerDefinition(uint8_t controllerId) const override;
+        void resetControllerDefinitions();
 
-private:
-    ControllerDefinitionRegistration *definitions;
-    unsigned int numDefinitions;
-};
+    private:
+        ControllerDefinitionRegistration *definitions;
+        unsigned int numDefinitions;
+    };
+}
+
 #endif

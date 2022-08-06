@@ -4,14 +4,15 @@
 #include "crc16.h"
 #include "vacon-100-controller.h"
 #include "controller-manager.h"
+#include "controller-definition-manager.h"
 
 #define I2C_SLAVE_ADDRESS 10
 
 IrrigationSystem::Vacon100Controller vacon100Controller;
-ControllerRegistration registeredControllers[] = {
+IrrigationSystem::ControllerRegistration registeredControllers[] = {
     {0x02, &vacon100Controller}};
 
-ControllerManager controllers(registeredControllers, sizeof(registeredControllers) / sizeof(registeredControllers[0]));
+IrrigationSystem::ControllerManager controllers(registeredControllers, sizeof(registeredControllers) / sizeof(registeredControllers[0]));
 
 void onReceive(int length)
 {
@@ -122,17 +123,22 @@ void setup()
     Wire.onRequest(onRequest);
 
     controllers.resetControllers();
-    controllers.beginControllers(); // TODO only begin after requested
+    controllers.beginControllers(); // TODO only begin when requested after configuration
 }
 
 void loop()
 {
     delay(3000);
     vacon100Controller.update();
+    vacon100Controller.applyPropertyValues();
+    bool available = vacon100Controller.getPropertyValue(IrrigationSystem::Vacon100ControllerProperties::available);
     bool motorOn = vacon100Controller.getPropertyValue(IrrigationSystem::Vacon100ControllerProperties::motorOn);
     bool desiredMotorOn = vacon100Controller.getPropertyDesiredValue(IrrigationSystem::Vacon100ControllerProperties::motorOn);
     uint16_t status = vacon100Controller.getPropertyValue(IrrigationSystem::Vacon100ControllerProperties::status);
     uint16_t motorVoltage = vacon100Controller.getPropertyValue(IrrigationSystem::Vacon100ControllerProperties::motorVoltage);
+    Serial.print("Vacon available: ");
+    Serial.print(available);
+    Serial.println();
     Serial.print("Motor on: ");
     Serial.print(motorOn);
     Serial.println();

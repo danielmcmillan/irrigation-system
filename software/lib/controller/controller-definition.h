@@ -11,8 +11,20 @@ namespace IrrigationSystem
         virtual void reset() = 0;
         virtual void configure(uint8_t type, const uint8_t *data) = 0;
         // TODO iterator over property ids
+        /**
+         * Get the length of the property with the specified id in bytes.
+         *
+         * Returns 0 if the property does not exist.
+         */
         virtual unsigned int getPropertyLength(uint16_t id) const = 0;
+        /**
+         * Returns true if the property with the specified id is read-only.
+         * Otherwise returns false.
+         */
         virtual bool getPropertyReadOnly(uint16_t id) const = 0;
+
+        // TODO get config length
+        // virtual unsigned int getConfigValueLength(uint8_t type) const = 0;
     };
 }
 #endif
