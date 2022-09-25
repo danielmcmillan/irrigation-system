@@ -1,6 +1,7 @@
 #include <string.h>
 #include "remote-unit-packet.h"
 #include "crc16.h"
+#include "binary-util.h"
 
 #define SYNC_BYTE_COUNT 4
 #define SYNC_END_BYTE 0xA0
@@ -8,17 +9,6 @@
 #define PACKET_FOOTER_SIZE 3
 #define END_COMMAND_BYTE 0x03
 #define END_RESPONSE_BYTE (responseFlag | 0x03)
-
-uint16_t read16LE(const uint8_t *data)
-{
-    return (uint16_t)data[0] | (uint16_t)data[1] << 8;
-}
-
-void write16LE(uint8_t *data, uint16_t value)
-{
-    data[0] = (uint8_t)value;
-    data[1] = (uint8_t)(value >> 8);
-}
 
 namespace IrrigationSystem
 {

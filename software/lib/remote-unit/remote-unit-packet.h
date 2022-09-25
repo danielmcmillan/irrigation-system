@@ -106,7 +106,6 @@ namespace IrrigationSystem
          */
         size_t addCommandToPacket(uint8_t *packetBuffer, size_t bufferSize, size_t intermediatePacketSize, RemoteUnitCommand command, uint8_t **dataPtr);
 
-        // Add end part of packet. Return packet size. Return 0 if invalid.
         /**
          * Finalises a packet with the end byte and CRC.
          *
