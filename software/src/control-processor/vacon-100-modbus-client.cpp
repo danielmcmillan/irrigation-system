@@ -4,13 +4,13 @@
 #include <errno.h>
 
 // IN: Control word
-#define CONTROL_WORD_ADDRESS 2001
+#define CONTROL_WORD_ADDRESS (2001 - 1)
 #define CONTROL_WORD_ON 0x0001
 #define CONTROL_WORD_FORCE 0x0100
 // IN: Speed reference
-#define SPEED_REF_ADDRESS 2003
+#define SPEED_REF_ADDRESS (2003 - 1)
 // OUT: Status word
-#define STATUS_WORD_ADDRESS 2101
+#define STATUS_WORD_ADDRESS (2101 - 1)
 
 namespace IrrigationSystem
 {
