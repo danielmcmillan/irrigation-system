@@ -77,7 +77,7 @@ int ControlProcessorI2cInterface::handleMessage(ControlProcessorPacket::MessageT
     case ControlProcessorPacket::MessageType::PropertyRead:
         return this->handler.propertyRead(data[0], read16LE(&data[1]), responseDataOut, responseDataSizeOut);
     case ControlProcessorPacket::MessageType::PropertySet:
-        return this->handler.propertyWrite(data[0], read16LE(&data[1]), data);
+        return this->handler.propertyWrite(data[0], read16LE(&data[1]), data + 3);
         *responseDataSizeOut = 0;
         break;
     default:
