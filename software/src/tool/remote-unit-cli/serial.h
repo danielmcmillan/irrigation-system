@@ -1,10 +1,10 @@
-#include <stdio.h>
-#include <string.h>
-#include <inttypes.h>
+#include <cstdio>
+#include <cstring>
+#include <cinttypes>
 #include <unistd.h>
 #include <termios.h>
 #include <fcntl.h>
-#include <errno.h>
+#include <cerrno>
 
 int serialOpen(const char *device)
 {

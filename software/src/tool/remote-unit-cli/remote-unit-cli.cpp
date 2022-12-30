@@ -12,17 +12,6 @@
 // TODO:
 // serial header file
 
-void commands()
-{
-    std::cerr << "Available commands: remote-command-raw\n";
-}
-
-void usage(const char *argv0)
-{
-    std::cerr << "usage: " << argv0 << " <command> [parameters]\n";
-    exit(EXIT_FAILURE);
-}
-
 void required(const char *argv0, const char *param)
 {
     std::cerr << argv0 << ": option '" << param << "' is required\n";
@@ -283,26 +272,5 @@ void remoteCommandRaw(int argc, char **argv)
             std::cout << " (" << std::dec << (static_cast<unsigned>(responseData[3] << 24) | (responseData[2] << 16) | (responseData[1] << 8) | responseData[0]) << ")";
         }
         std::cout << "\n";
-    }
-}
-
-int main(int argc, char **argv)
-{
-    if (argc < 2)
-    {
-        commands();
-        usage(argv[0]);
-    }
-    optind = 2;
-
-    if (strcasecmp(argv[1], "remote-command-raw") == 0)
-    {
-        remoteCommandRaw(argc, argv);
-    }
-    else
-    {
-        std::cerr << argv[0] << ": invalid command '" << argv[1] << "'\n";
-        commands();
-        usage(argv[0]);
     }
 }
