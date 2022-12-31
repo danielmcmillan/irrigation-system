@@ -33,7 +33,7 @@ void ControlProcessorI2cInterface::handleRequest()
     ControlProcessorPacket::MessageType *responseType;
     uint8_t *responseData;
     size_t responseDataSize = 0;
-    packet.createPacket(responseBuffer, &responseType, &responseData);
+    packet.createPacket(responseBuffer + 1, &responseType, &responseData);
 
     if (result == 2)
     {
@@ -60,7 +60,8 @@ void ControlProcessorI2cInterface::handleRequest()
         *responseData = result;
         responseDataSize = 1;
     }
-    size_t responseSize = packet.finalisePacket(responseBuffer, responseDataSize);
+    size_t responseSize = packet.finalisePacket(responseBuffer + 1, responseDataSize) + 1;
+    responseBuffer[0] = responseSize;
     Wire.write(responseBuffer, responseSize);
 }
 

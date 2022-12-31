@@ -181,7 +181,7 @@ int vaconSim(int argc, char **argv)
         }
     }
 
-    printf("Quit the loop: %s\n", modbus_strerror(errno));
+    printf("Error: %s\n", modbus_strerror(errno));
 
     modbus_mapping_free(mb_mapping);
     modbus_close(ctx);

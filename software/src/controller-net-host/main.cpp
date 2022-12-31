@@ -17,10 +17,10 @@ const char *http_username = "admin";
 const char *http_password = "admin";
 
 IrrigationSystem::Vacon100ControllerDefinition vacon100Definition;
-ControllerDefinitionRegistration registeredDefinitions[] = {
+IrrigationSystem::ControllerDefinitionRegistration registeredDefinitions[] = {
     {0x02, &vacon100Definition}};
 
-ControllerDefinitionManager controllers(registeredDefinitions, sizeof(registeredDefinitions) / sizeof(registeredDefinitions[0]));
+IrrigationSystem::ControllerDefinitionManager controllers(registeredDefinitions, sizeof(registeredDefinitions) / sizeof(registeredDefinitions[0]));
 
 // enum class PropertyFormat
 // {
@@ -60,14 +60,17 @@ void logProperties()
 
 void onRequest(AsyncWebServerRequest *request)
 {
-    //Handle Unknown Request
+    // Handle Unknown Request
     request->send(404);
 }
 
 void onBody(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total)
 {
-    //Handle body
+    // Handle body
 }
+
+uint8_t inBuffer[128];
+uint8_t outBuffer[128];
 
 void setup()
 {
@@ -76,6 +79,7 @@ void setup()
 
     // WiFi
     WiFi.mode(WIFI_STA);
+    WiFi.setHostname("esp32-irrigation");
     WiFi.begin(ssid, password);
     if (WiFi.waitForConnectResult() != WL_CONNECTED)
     {
@@ -87,12 +91,59 @@ void setup()
     server.on("/heap", HTTP_GET, [](AsyncWebServerRequest *request)
               { request->send(200, "text/plain", String(ESP.getFreeHeap())); });
 
+    server.on(
+        "/raw",
+        HTTP_POST,
+        [](AsyncWebServerRequest *request)
+        {
+            AsyncWebParameter *dataParam = request->getParam("d");
+            if (dataParam != nullptr)
+            {
+                size_t dataSize = dataParam->value().length() / 2;
+                for (int i = 0; i < dataSize; ++i)
+                {
+                    inBuffer[i] = strtoul(dataParam->value().substring(i * 2, i * 2 + 2).c_str(), nullptr, 16);
+                }
+
+                size_t responseSize;
+                int result = cih.sendRawData(inBuffer, dataSize, &responseSize, outBuffer);
+                char *body = logBuffer;
+
+                body += sprintf(body, "Request (%d bytes): 0x", dataSize);
+                for (int i = 0; i < dataSize; ++i)
+                {
+                    body += sprintf(body, "%02x", inBuffer[i]);
+                }
+                body += sprintf(body, "\nResponse (%d bytes): 0x", responseSize);
+                for (int i = 0; i < responseSize; ++i)
+                {
+                    body += sprintf(body, "%02x", outBuffer[i]);
+                }
+                body += sprintf(body, "\n");
+                if (result == 0)
+                {
+                    request->send(200, "text/plain", logBuffer);
+                }
+                else
+                {
+                    body += sprintf(body, "Error: %d\n", result);
+                    request->send(500, "text/plain", logBuffer);
+                }
+            }
+            else
+            {
+                request->send(400, "text/plain", "Invalid parameters");
+            }
+        });
+
     server.on("/properties", HTTP_GET, [](AsyncWebServerRequest *request)
               {
                   char response[1024] = {0};
                   sprintf(response,
-                          "<html><body><ul>\n"
-                          "<li><b>motorOn</b>: %d (%d <input type='button' id='button-motor-on' value='On'/><input type='button' id='button-motor-off' value='Off'/>)</li>\n"
+                          "<html>"
+                          "<meta http-equiv=\"refresh\" content=\"5\">"
+                          "<body><ul>\n"
+                          "<li><b>motorOn</b>: Actual: %d, Desired: %d <input type='button' id='button-motor-on' value='On'/><input type='button' id='button-motor-off' value='Off'/></li>\n"
                           "</ul>\n"
                           "<script>\n"
                           "[['button-motor-on', true], ['button-motor-off', false]].forEach(([elId, on]) => {\n"
@@ -107,11 +158,11 @@ void setup()
                           "  });\n"
                           "});\n"
                           "</script>\n"
-                          "</body></html>",
+                          "</body>"
+                          "</html>",
                           properties[0].value[0],
                           properties[0].desiredValue[0]);
-                  request->send(200, "text/html", response);
-              });
+                  request->send(200, "text/html", response); });
 
     server.on("/api/getProperty", HTTP_POST, [](AsyncWebServerRequest *request)
               {
@@ -124,16 +175,21 @@ void setup()
                   uint8_t *valueParts = (uint8_t *)&value; // assumes little endian (value is array of bytes with LSB first)
                   uint32_t desiredValue = 0;
                   uint8_t *desiredValueParts = (uint8_t *)&desiredValue; // assumes little endian (value is array of bytes with LSB first)
-                  cih.getPropertyValue(
+        int result = cih.getPropertyValue(
                       controllerId,
                       propertyId,
                       definition->getPropertyLength(propertyId),
                       definition->getPropertyReadOnly(propertyId),
                       valueParts,
                       desiredValueParts); // TODO send i2c request asynchronously
-
-                  request->send(200, "text/plain", String(value));
-              });
+        if (result == 0)
+        {
+            request->send(200, "text/plain", String(value));
+        }
+        else
+        {
+            request->send(500, "text/plain", String(result));
+        } });
 
     server.on("/api/setProperty", HTTP_POST, [](AsyncWebServerRequest *request)
               {
@@ -145,9 +201,15 @@ void setup()
                   uint32_t value = strtoul(valueParam.c_str(), NULL, 16);
                   uint8_t valueLength = controllers.getControllerDefinition(controllerId)->getPropertyLength(propertyId);
                   uint8_t *valueParts = (uint8_t *)&value;                                        // assumes little endian (value is array of bytes with LSB first)
-                  cih.setPropertyDesiredValue(controllerId, propertyId, valueLength, valueParts); // TODO send i2c request asynchronously
-                  request->send(200, "text/plain", String(value));
-              });
+        int result = cih.setPropertyDesiredValue(controllerId, propertyId, valueLength, valueParts); // TODO send i2c request asynchronously
+        if (result == 0)
+        {
+            request->send(200, "text/plain", String(value));
+        }
+        else
+        {
+            request->send(500, "text/plain", String(result));
+        } });
 
     server.onNotFound(onRequest);
     server.onRequestBody(onBody);

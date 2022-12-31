@@ -22,68 +22,94 @@ public:
         }
     }
 
-    void getPropertyValue(uint8_t controllerId, uint16_t propertyId, uint8_t valueSize, bool readOnly, uint8_t *resultValue, uint8_t *resultDesiredValue)
+    int sendRawData(const uint8_t *data, size_t size, size_t *resultLength, uint8_t *result)
     {
-        uint8_t dataBuffer[32] = {0};
+        size_t bufferSize = 32;
+        uint8_t dataBuffer[bufferSize] = {0};
+        memcpy(dataBuffer, data, size);
 
         unsigned long startMillis = millis();
-        LOG_INFO("Starting getPropertyValue");
+        LOG_INFO("Starting sendRawData");
 
+        uint16_t crc = IrrigationSystem::CRC::crc16(data, size);
+        dataBuffer[size] = crc;          // LSB
+        dataBuffer[size + 1] = crc >> 8; // MSB
+
+        // Send command
+        Wire.beginTransmission(controlProcessorI2CAddress);
+        Wire.write(dataBuffer, size + 2);
+        uint8_t writeResult = Wire.endTransmission(false);
+        sprintf(logBuffer, "Write result: %d.", writeResult);
+        Serial.println(logBuffer);
+
+        // Read property value
+        uint8_t bytesRead = Wire.requestFrom(controlProcessorI2CAddress, bufferSize);
+        Wire.readBytes(dataBuffer, bytesRead);
+        if (bytesRead == 0)
+        {
+            LOG_ERROR("Failed to receive any data from I2C");
+            return 1;
+        }
+
+        uint8_t responseLength = dataBuffer[0];
+        if (responseLength < 1 || responseLength > bytesRead)
+        {
+            LOG_ERROR("Response included invalid length");
+            return 2;
+        }
+
+        uint16_t responseCrc = IrrigationSystem::CRC::crc16(dataBuffer + 1, responseLength - 1);
+        sprintf(logBuffer, "Response: %d/%d bytes. CRC: 0x%04x", responseLength, bytesRead, responseCrc);
+        Serial.println(logBuffer);
+        if (responseCrc != 0)
+        {
+            LOG_ERROR("Got a non-zero CRC");
+            return 3;
+        }
+
+        sprintf(logBuffer, "Finished sendRawData after %lu ms", millis() - startMillis);
+        Serial.println(logBuffer);
+
+        *resultLength = responseLength - 3;
+        memcpy(result, dataBuffer + 1, *resultLength);
+
+        if (dataBuffer[1] != ackMessageType)
+        {
+            LOG_ERROR("Response wasn't ACK");
+            return 4;
+        }
+        return 0;
+    }
+
+    int getPropertyValue(uint8_t controllerId, uint16_t propertyId, uint8_t valueSize, bool readOnly, uint8_t *resultValue, uint8_t *resultDesiredValue)
+    {
+        uint8_t dataBuffer[32] = {0};
         // Build command to request property value
         dataBuffer[0] = getPropertyMessageType;
         dataBuffer[1] = controllerId;
         dataBuffer[2] = propertyId;      // LSB
         dataBuffer[3] = propertyId >> 8; // MSB
-        uint16_t crc = IrrigationSystem::CRC::crc16(dataBuffer, 4);
-        dataBuffer[4] = crc;      // LSB
-        dataBuffer[5] = crc >> 8; // MSB
 
-        // Send command
-        Wire.beginTransmission(controlProcessorI2CAddress);
-        Wire.write(dataBuffer, 6);
-        uint8_t writeResult = Wire.endTransmission(false);
-        sprintf(logBuffer, "Write get message result: %d.", writeResult);
-        Serial.println(logBuffer);
-
-        // Read property value
-        size_t responseLength = 1 /*ack*/ + valueSize * 2 /*value + desired value*/ + 2 /*crc*/;
-        uint8_t bytesRead = Wire.requestFrom(controlProcessorI2CAddress, responseLength);
-        Wire.readBytes(dataBuffer, responseLength);
-        uint16_t responseCrc = IrrigationSystem::CRC::crc16(dataBuffer, responseLength);
-        sprintf(logBuffer, "Get property response: %d bytes: 0x%02x%02x%02x%02x%02x. CRC: 0x%04x", bytesRead, dataBuffer[0], dataBuffer[1], dataBuffer[2], dataBuffer[3], dataBuffer[4], responseCrc);
-        Serial.println(logBuffer);
-
-        if (bytesRead != responseLength)
+        size_t resultLength;
+        int result = sendRawData(dataBuffer, 4, &resultLength, dataBuffer);
+        if (result != 0)
         {
-            LOG_ERROR("Read wrong number of bytes");
-        }
-        else if (responseCrc != 0)
-        {
-            LOG_ERROR("Got a non-zero CRC");
-        }
-        else if (dataBuffer[0] != ackMessageType)
-        {
-            LOG_ERROR("Response wasn't ACK");
-        }
-        else
-        {
-            // Copy property value to properties
-            memcpy(resultValue, &dataBuffer[1], valueSize);
-            if (!readOnly)
-            {
-                memcpy(resultDesiredValue, &dataBuffer[1 + valueSize], valueSize);
-            }
+            return result;
         }
 
-        sprintf(logBuffer, "Finished property refresh after %lu ms", millis() - startMillis);
-        Serial.println(logBuffer);
+        // TODO further validation of the response data packet (should have value/s of correct length)
+        // Copy value to result
+        memcpy(resultValue, &dataBuffer[1], valueSize);
+        if (!readOnly)
+        {
+            memcpy(resultDesiredValue, &dataBuffer[1 + valueSize], valueSize);
+        }
+        return 0;
     }
 
-    void setPropertyDesiredValue(uint8_t controllerId, uint16_t propertyId, uint8_t valueSize, uint8_t *value)
+    int setPropertyDesiredValue(uint8_t controllerId, uint16_t propertyId, uint8_t valueSize, const uint8_t *value)
     {
         uint8_t dataBuffer[32] = {0};
-        LOG_INFO("Starting setPropertyValue");
-
         // Build command to set property value
         dataBuffer[0] = setPropertyMessageType;
         dataBuffer[1] = controllerId;
@@ -93,39 +119,10 @@ public:
         {
             dataBuffer[4 + i] = value[i];
         }
-        uint16_t crc = IrrigationSystem::CRC::crc16(dataBuffer, 4 + valueSize);
-        dataBuffer[4 + valueSize] = crc;          // LSB
-        dataBuffer[4 + valueSize + 1] = crc >> 8; // MSB
 
-        // Send command
-        Wire.beginTransmission(controlProcessorI2CAddress);
-        Wire.write(dataBuffer, 6 + valueSize);
-        uint8_t writeResult = Wire.endTransmission(false);
-        sprintf(logBuffer, "Write set message result: %d.", writeResult);
-        Serial.println(logBuffer);
-
-        // Read result
-        size_t responseLength = 1 /*ack*/ + 2 /*crc*/;
-        uint8_t bytesRead = Wire.requestFrom(controlProcessorI2CAddress, responseLength);
-        Wire.readBytes(dataBuffer, responseLength);
-        uint16_t responseCrc = IrrigationSystem::CRC::crc16(dataBuffer, responseLength);
-        sprintf(logBuffer, "Set property response: %d bytes: 0x%02x%02x%02x. CRC: 0x%04x", bytesRead, dataBuffer[0], dataBuffer[1], dataBuffer[2], responseCrc);
-        Serial.println(logBuffer);
-
-        if (bytesRead != responseLength)
-        {
-            LOG_ERROR("Read wrong number of bytes");
-        }
-        else if (responseCrc != 0)
-        {
-            LOG_ERROR("Got a non-zero CRC");
-        }
-        else if (dataBuffer[0] != ackMessageType)
-        {
-            LOG_ERROR("Response wasn't ACK");
-        }
-
-        Serial.println("Finished set property");
+        size_t resultLength;
+        // TODO further validation of the response data packet (should have no data part)
+        return sendRawData(dataBuffer, 4 + valueSize, &resultLength, dataBuffer);
     }
 };
 #endif
