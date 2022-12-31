@@ -9,7 +9,7 @@ namespace IrrigationSystem
     struct Vacon100Data
     {
         /** Flags indicating current status. See `Vacon100StatusWordMask`. */
-        uint16_t statusWord;
+        uint8_t statusWord;
         /** The speed percentage in 0.01% increments */
         uint16_t actualSpeed;
         /** The output frequency in 0.01 Hz increments */
@@ -28,6 +28,16 @@ namespace IrrigationSystem
         uint16_t dcLinkVoltage;
         /** The active fault code */
         uint16_t activeFaultCode;
+        /** The pressure reading used as the PID feedback signal */
+        uint16_t feedbackPressure;
+        /** The temperature of the drive heat sink, in 0.1 C increments */
+        uint16_t driveTemp;
+        /** The calculated temperature of the motor as a percentage of the nominal working temperature */
+        uint16_t motorTemp;
+        /** The total energy used in kWh */
+        uint32_t energyUsed;
+        /** The total motor runtime in seconds */
+        uint32_t runTime;
 
         String toString();
     };
@@ -85,10 +95,19 @@ namespace IrrigationSystem
         int setSpeed(uint16_t value);
 
         /**
-         * Read the current state from input registers into the provided Vacon100Data object.
+         * Set up the ID mapping.
+         * This must be performed at least once for readInputRegisters to work.
+         * Returns 0 on failure and sets errno.
+         */
+        int initIdMapping();
+
+        /**
+         * Read the current state from input registers in the ID mapping into the provided Vacon100Data object.
          * Returns 0 on failure and sets errno.
          */
         int readInputRegisters(Vacon100Data *result);
+
+        void printError();
 
     private:
         int slaveId;

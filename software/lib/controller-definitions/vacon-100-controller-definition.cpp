@@ -15,8 +15,8 @@ namespace IrrigationSystem
         {
         case Vacon100ControllerProperties::available:
         case Vacon100ControllerProperties::motorOn:
-            return 1;
         case Vacon100ControllerProperties::status:
+            return 1;
         case Vacon100ControllerProperties::actualSpeed:
         case Vacon100ControllerProperties::outputFrequency:
         case Vacon100ControllerProperties::motorSpeed:
@@ -26,7 +26,13 @@ namespace IrrigationSystem
         case Vacon100ControllerProperties::motorVoltage:
         case Vacon100ControllerProperties::dcLinkVoltage:
         case Vacon100ControllerProperties::activeFaultCode:
+        case Vacon100ControllerProperties::feedbackPressure:
+        case Vacon100ControllerProperties::driveTemp:
+        case Vacon100ControllerProperties::motorTemp:
             return 2;
+        case Vacon100ControllerProperties::energyUsed:
+        case Vacon100ControllerProperties::runTime:
+            return 4;
         default:
             return 0;
         }

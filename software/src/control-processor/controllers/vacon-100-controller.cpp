@@ -34,7 +34,18 @@ namespace IrrigationSystem
     void Vacon100Controller::begin()
     {
         serial.begin(9600);
-        vacon.begin(); // TODO handle error
+        if (!vacon.begin())
+        {
+            // TODO handle error
+            LOG_ERROR("Failed to start Vacon 100 client");
+            vacon.printError();
+        }
+        while (!vacon.initIdMapping())
+        {
+            // TODO handle error
+            LOG_ERROR("Failed to set up Vacon 100 ID mappings");
+            vacon.printError();
+        }
     }
 
     const IrrigationSystem::ControllerDefinition &Vacon100Controller::getDefinition() const
@@ -70,6 +81,16 @@ namespace IrrigationSystem
             return values.dcLinkVoltage;
         case Vacon100ControllerProperties::activeFaultCode:
             return values.activeFaultCode;
+        case Vacon100ControllerProperties::feedbackPressure:
+            return values.feedbackPressure;
+        case Vacon100ControllerProperties::driveTemp:
+            return values.driveTemp;
+        case Vacon100ControllerProperties::motorTemp:
+            return values.motorTemp;
+        case Vacon100ControllerProperties::energyUsed:
+            return values.energyUsed;
+        case Vacon100ControllerProperties::runTime:
+            return values.runTime;
         default:
             LOG_ERROR("getPropertyValue with unknown Vacon 100 property");
             return 0;
@@ -110,8 +131,7 @@ namespace IrrigationSystem
                 // TODO handle error
                 available = false;
                 LOG_ERROR("Failed to write to Vacon 100");
-                Serial.print("Error: ");
-                Serial.println(errno);
+                vacon.printError();
             }
         }
     }
@@ -125,6 +145,8 @@ namespace IrrigationSystem
         else
         {
             available = false;
+            LOG_ERROR("Failed to read from Vacon 100");
+            vacon.printError();
         }
     }
 

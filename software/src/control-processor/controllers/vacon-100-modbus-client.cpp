@@ -9,8 +9,10 @@
 #define CONTROL_WORD_FORCE 0x0100
 // IN: Speed reference
 #define SPEED_REF_ADDRESS (2003 - 1)
-// OUT: Status word
-#define STATUS_WORD_ADDRESS (2101 - 1)
+// IN: ID Map
+#define ID_MAP_ADDRESS (10501 - 1)
+// OUT: ID Map values
+#define ID_MAP_VALUES_ADDRESS (10601 - 1)
 
 namespace IrrigationSystem
 {
@@ -50,33 +52,81 @@ namespace IrrigationSystem
         return ModbusRTUClient.holdingRegisterWrite(slaveId, SPEED_REF_ADDRESS, value);
     }
 
-    int Vacon100Client::readInputRegisters(Vacon100Data *data)
+    int Vacon100Client::initIdMapping()
     {
         errno = 0;
-        int result = ModbusRTUClient.requestFrom(slaveId, INPUT_REGISTERS, STATUS_WORD_ADDRESS, 11);
-        if (result != 0)
+        int result = ModbusRTUClient.beginTransmission(slaveId, HOLDING_REGISTERS, ID_MAP_ADDRESS, 20);
+        if (result == 0)
         {
-            data->statusWord = ModbusRTUClient.read();
-            ModbusRTUClient.read(); // skip reserved register
-            data->actualSpeed = ModbusRTUClient.read();
-            data->outputFrequency = ModbusRTUClient.read();
-            data->motorSpeed = ModbusRTUClient.read();
-            data->motorCurrent = ModbusRTUClient.read();
-            data->motorTorque = ModbusRTUClient.read();
-            data->motorPower = ModbusRTUClient.read();
-            data->motorVoltage = ModbusRTUClient.read();
-            data->dcLinkVoltage = ModbusRTUClient.read();
-            data->activeFaultCode = ModbusRTUClient.read();
+            return result;
         }
-        else
-        {
+        // Write out the Application parameter ID for each value to be read from the corresponding ID Map registers
+        ModbusRTUClient.write(864);   // status
+        ModbusRTUClient.write(865);   // actualSpeed
+        ModbusRTUClient.write(1);     // outputFrequency
+        ModbusRTUClient.write(2);     // motorSpeed
+        ModbusRTUClient.write(3);     // motorCurrent
+        ModbusRTUClient.write(4);     // motorTorque
+        ModbusRTUClient.write(5);     // motorPower
+        ModbusRTUClient.write(6);     // motorVoltage
+        ModbusRTUClient.write(7);     // dcLinkVoltage
+        ModbusRTUClient.write(37);    // activeFaultCode
+        ModbusRTUClient.write(15541); // feedbackPressure
+        ModbusRTUClient.write(8);     // driveTemp
+        ModbusRTUClient.write(9);     // motorTemp
+        ModbusRTUClient.write(1054);  // energyUsed low
+        ModbusRTUClient.write(1067);  // energyUsed high
+        ModbusRTUClient.write(1772);  // runTime y
+        ModbusRTUClient.write(1773);  // runTime d
+        ModbusRTUClient.write(1774);  // runTime h
+        ModbusRTUClient.write(1775);  // runTime m
+        ModbusRTUClient.write(1776);  // runTime s
+        return ModbusRTUClient.endTransmission();
+    }
 
-            Serial.print("Failed to read from Vacon 100: ");
-            Serial.println(errno); // TODO errno ETIMEDOUT 116 was happening a lot, 11246
-            Serial.println(strerror(errno));
-            Serial.println(modbus_strerror(errno));
+    int Vacon100Client::readInputRegisters(Vacon100Data *data)
+    {
+        Serial.println("Reading... ");
+        errno = 0;
+        int result = ModbusRTUClient.requestFrom(slaveId, INPUT_REGISTERS, ID_MAP_VALUES_ADDRESS, 20);
+        if (result == 0)
+        {
+            return result;
         }
+        // Read each value from the ID Map
+        data->statusWord = ModbusRTUClient.read();
+        data->actualSpeed = ModbusRTUClient.read();
+        data->outputFrequency = ModbusRTUClient.read();
+        data->motorSpeed = ModbusRTUClient.read();
+        data->motorCurrent = ModbusRTUClient.read();
+        data->motorTorque = ModbusRTUClient.read();
+        data->motorPower = ModbusRTUClient.read();
+        data->motorVoltage = ModbusRTUClient.read();
+        data->dcLinkVoltage = ModbusRTUClient.read();
+        data->activeFaultCode = ModbusRTUClient.read();
+        data->feedbackPressure = ModbusRTUClient.read();
+        data->driveTemp = ModbusRTUClient.read();
+        data->motorTemp = ModbusRTUClient.read();
+        data->energyUsed = (uint32_t)ModbusRTUClient.read() +
+                           (((uint32_t)ModbusRTUClient.read()) << 16);
+        data->runTime = (((uint32_t)ModbusRTUClient.read()) * 31536000) +
+                        (((uint32_t)ModbusRTUClient.read()) * 86400) +
+                        (((uint32_t)ModbusRTUClient.read()) * 3600) +
+                        (((uint32_t)ModbusRTUClient.read()) * 60) +
+                        ((uint32_t)ModbusRTUClient.read());
+
+        Serial.println("Successful");
         return result;
+    }
+
+    void Vacon100Client::printError()
+    {
+        Serial.print("ERROR Vacon 100 communication failed: ");
+        Serial.print(errno); // TODO errno ETIMEDOUT 116 was happening a lot, 11246 (Invalid CRC)
+        Serial.print(" ");
+        Serial.print(strerror(errno));
+        Serial.print(" / ");
+        Serial.println(modbus_strerror(errno));
     }
 
     String Vacon100Data::toString()
@@ -87,7 +137,8 @@ namespace IrrigationSystem
             PSTR("Status word:\n- ready: %d\n- run: %d\n- direction: %d\n- fault: %d\n- alarm: %d\n"
                  "- atReference: %d\n- zeroSpeed: %d\n- fluxReady: %d\nProcess data:\n- actualSpeed: %d * 0.01%%\n"
                  "- outputFrequency: %d * 0.01 Hz\n- motorSpeed: %d rpm\n- motorCurrent: %d * 0.1 A\n- motorTorque: %d * 0.1%%\n"
-                 "- motorPower: %d * 0.1%%\n- motorVoltage: %d * 0.1 V\n- dcLinkVoltage: %d V\n- activeFaultCode: %d\n"),
+                 "- motorPower: %d * 0.1%%\n- motorVoltage: %d * 0.1 V\n- dcLinkVoltage: %d V\n- activeFaultCode: %d\n"
+                 "- pressure: %d\n- driveTemp: %d * 0.1 C\n- motorTemp: %d * 0.1%%\n- energyUsed: %d kWh\n- runTime: %d seconds\n"),
             (this->statusWord & Vacon100StatusWordMask::ready) > 0,
             (this->statusWord & Vacon100StatusWordMask::run) > 0,
             (this->statusWord & Vacon100StatusWordMask::direction) > 0,
@@ -104,7 +155,12 @@ namespace IrrigationSystem
             this->motorPower,
             this->motorVoltage,
             this->dcLinkVoltage,
-            this->activeFaultCode);
+            this->activeFaultCode,
+            this->feedbackPressure,
+            this->driveTemp,
+            this->motorTemp,
+            this->energyUsed,
+            this->runTime);
         return String(result);
     }
 }

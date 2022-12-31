@@ -4,6 +4,10 @@
 
 namespace IrrigationSystem
 {
+    /**
+     * Controls a set of devices.
+     * Provides access to devices by exposing a set of properties.
+     */
     class Controller
     {
     public:
