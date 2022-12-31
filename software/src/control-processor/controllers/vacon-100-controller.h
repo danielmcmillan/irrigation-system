@@ -1,5 +1,5 @@
-#ifndef VACON100_CONTROLLER
-#define VACON100_CONTROLLER
+#ifndef VACON100_CONTROLLER_H
+#define VACON100_CONTROLLER_H
 #include "controller.h"
 #include "controller-definition.h"
 #include "vacon-100-modbus-client.h"

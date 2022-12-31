@@ -1,4 +1,5 @@
 #include <Arduino.h>
+#include <errno.h>
 #include "vacon-100-controller.h"
 #include "logging.h"
 
@@ -108,6 +109,9 @@ namespace IrrigationSystem
             {
                 // TODO handle error
                 available = false;
+                LOG_ERROR("Failed to write to Vacon 100");
+                Serial.print("Error: ");
+                Serial.println(errno);
             }
         }
     }

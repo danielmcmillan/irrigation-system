@@ -1,5 +1,5 @@
-#ifndef VACON100_MODBUS
-#define VACON100_MODBUS
+#ifndef VACON100_MODBUS_H
+#define VACON100_MODBUS_H
 #include <Arduino.h>
 #include <ArduinoRS485.h>
 

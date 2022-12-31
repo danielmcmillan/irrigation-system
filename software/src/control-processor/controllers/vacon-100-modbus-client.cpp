@@ -27,7 +27,9 @@ namespace IrrigationSystem
     int Vacon100Client::begin()
     {
         errno = 0;
-        return ModbusRTUClient.begin(rs485, 0);
+        int result = ModbusRTUClient.begin(rs485, 0);
+        ModbusRTUClient.setTimeout(2000);
+        return result;
     }
 
     void Vacon100Client::end()
@@ -65,6 +67,14 @@ namespace IrrigationSystem
             data->motorVoltage = ModbusRTUClient.read();
             data->dcLinkVoltage = ModbusRTUClient.read();
             data->activeFaultCode = ModbusRTUClient.read();
+        }
+        else
+        {
+
+            Serial.print("Failed to read from Vacon 100: ");
+            Serial.println(errno); // TODO errno ETIMEDOUT 116 was happening a lot, 11246
+            Serial.println(strerror(errno));
+            Serial.println(modbus_strerror(errno));
         }
         return result;
     }
