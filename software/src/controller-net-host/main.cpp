@@ -3,8 +3,7 @@
 #include <Wire.h>
 #include "ControlI2CHost.h"
 #include "logging.h"
-#include "vacon-100-controller-definition.h"
-#include "controller-definition-manager.h"
+#include "controller-definitions.h"
 
 #include "AsyncTCP.h"
 #include "ESPAsyncWebServer.h"
@@ -16,18 +15,15 @@ const char *password = "*";
 const char *http_username = "admin";
 const char *http_password = "admin";
 
-IrrigationSystem::Vacon100ControllerDefinition vacon100Definition;
-IrrigationSystem::ControllerDefinitionRegistration registeredDefinitions[] = {
-    {0x02, &vacon100Definition}};
-
-IrrigationSystem::ControllerDefinitionManager controllers(registeredDefinitions, sizeof(registeredDefinitions) / sizeof(registeredDefinitions[0]));
-
 // enum class PropertyFormat
 // {
 //     boolean,
 //     signedInt,
 //     unsignedInt
 // };
+
+IrrigationSystem::ControllerDefinitionsBuilder definitionsBuilder;
+IrrigationSystem::ControllerDefinitionManager definitions = definitionsBuilder.buildManager();
 
 struct Property
 {
@@ -170,7 +166,7 @@ void setup()
                   String idParam = request->getParam("id")->value();
                   uint8_t controllerId = strtoul(controllerParam.c_str(), NULL, 16);
                   uint16_t propertyId = strtoul(idParam.c_str(), NULL, 16);
-                  IrrigationSystem::ControllerDefinition *definition = controllers.getControllerDefinition(controllerId);
+        IrrigationSystem::ControllerDefinition *definition = definitions.getControllerDefinition(controllerId);
                   uint32_t value = 0;
                   uint8_t *valueParts = (uint8_t *)&value; // assumes little endian (value is array of bytes with LSB first)
                   uint32_t desiredValue = 0;
@@ -199,7 +195,7 @@ void setup()
                   uint8_t controllerId = strtoul(controllerParam.c_str(), NULL, 16);
                   uint16_t propertyId = strtoul(idParam.c_str(), NULL, 16);
                   uint32_t value = strtoul(valueParam.c_str(), NULL, 16);
-                  uint8_t valueLength = controllers.getControllerDefinition(controllerId)->getPropertyLength(propertyId);
+        uint8_t valueLength = definitions.getControllerDefinition(controllerId)->getPropertyLength(propertyId);
                   uint8_t *valueParts = (uint8_t *)&value;                                        // assumes little endian (value is array of bytes with LSB first)
         int result = cih.setPropertyDesiredValue(controllerId, propertyId, valueLength, valueParts); // TODO send i2c request asynchronously
         if (result == 0)

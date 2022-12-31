@@ -8,7 +8,7 @@ namespace IrrigationSystem
     {
     public:
         /**
-         * Get the controller definition fir the controller with the specified id.
+         * Get the controller definition for the controller with the specified id.
          *
          * Returns nullptr if there is no such controller definition.
          */
