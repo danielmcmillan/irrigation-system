@@ -30,11 +30,11 @@ namespace IrrigationSystem
             motorVoltage = 0x17,
             dcLinkVoltage = 0x18,
             activeFaultCode = 0x19,
-            feedbackPressure = 0x20,
-            driveTemp = 0x21,
-            motorTemp = 0x22,
-            energyUsed = 0x23,
-            runTime = 0x24,
+            feedbackPressure = 0x1a,
+            driveTemp = 0x1b,
+            motorTemp = 0x1c,
+            energyUsed = 0x1d,
+            runTime = 0x1e,
         };
     }
 }

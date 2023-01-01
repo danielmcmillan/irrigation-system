@@ -2,7 +2,7 @@
 #define CONTROLLERS_H
 
 #include "controller-manager.h"
-#include "controllers/vacon-100-controller.h"
+#include "vacon-100-controller.h"
 
 namespace IrrigationSystem
 {

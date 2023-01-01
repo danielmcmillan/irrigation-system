@@ -1,7 +1,7 @@
 #include <Arduino.h>
 #include "logging.h"
 #include "crc16.h"
-#include "controller-builder.h"
+#include "controllers/controller-builder.h"
 #include "i2c-interface.h"
 #include "message-handler.h"
 
