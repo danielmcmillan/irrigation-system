@@ -119,6 +119,11 @@ namespace IrrigationSystem
         return result;
     }
 
+    uint16_t Vacon100Client::getErrorCode()
+    {
+        return errno;
+    }
+
     void Vacon100Client::printError()
     {
         Serial.print("ERROR Vacon 100 communication failed: ");

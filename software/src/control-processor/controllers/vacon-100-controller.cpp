@@ -43,16 +43,17 @@ namespace IrrigationSystem
         serial.begin(9600);
         if (!vacon.begin())
         {
-            // TODO handle error
+            notifyError(0x00);
             LOG_ERROR("Failed to start Vacon 100 client");
             vacon.printError();
         }
         while (!vacon.initIdMapping())
         {
-            // TODO handle error
+            notifyError(0x01);
             LOG_ERROR("Failed to set up Vacon 100 ID mappings");
             vacon.printError();
         }
+        // TODO is any other action required when begin fails?
     }
 
     const IrrigationSystem::ControllerDefinition &Vacon100Controller::getDefinition() const
@@ -104,8 +105,8 @@ namespace IrrigationSystem
         {
             if (!vacon.setStart(desiredMotorOn))
             {
-                // TODO handle error
                 setAvailable(false);
+                notifyError(0x02);
                 LOG_ERROR("Failed to write to Vacon 100");
                 vacon.printError();
             }
@@ -132,6 +133,7 @@ namespace IrrigationSystem
         else
         {
             setAvailable(false);
+            notifyError(0x03);
             LOG_ERROR("Failed to read from Vacon 100");
             vacon.printError();
         }
@@ -186,5 +188,11 @@ namespace IrrigationSystem
             eventHandler->handlePropertyValueChanged(controllerId, Vacon100ControllerProperties::available, 1, available ? 1 : 0);
             this->available = available;
         }
+    }
+    void Vacon100Controller::notifyError(uint8_t data)
+    {
+        uint16_t errorCode = vacon.getErrorCode();
+        uint8_t errorPayload[] = {controllerId, data, (uint8_t)errorCode, (uint8_t)(errorCode >> 8)};
+        eventHandler->handleEvent(EventType::controllerError, sizeof errorPayload, errorPayload);
     }
 }

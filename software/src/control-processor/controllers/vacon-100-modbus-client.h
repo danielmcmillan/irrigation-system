@@ -107,6 +107,7 @@ namespace IrrigationSystem
          */
         int readInputRegisters(Vacon100Data *result);
 
+        uint16_t getErrorCode();
         void printError();
 
     private:

@@ -39,6 +39,7 @@ namespace IrrigationSystem
 
         uint32_t getPropertyValueFromValues(const Vacon100Data &values, uint16_t id) const;
         void setAvailable(bool available);
+        void notifyError(uint8_t data);
     };
 }
 
