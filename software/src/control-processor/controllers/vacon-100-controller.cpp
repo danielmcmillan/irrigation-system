@@ -118,8 +118,16 @@ namespace IrrigationSystem
         if (vacon.readInputRegisters(&values))
         {
             setAvailable(true);
-            // Raise events for changes to vacon data
-            // TODO
+            // Raise events for changes to vacon data, all properties except for first one (available)
+            for (unsigned int i = 1; i < definition.getPropertyCount(); ++i)
+            {
+                uint8_t propertyId = definition.getPropertyIdAt(i);
+                uint32_t newValue = getPropertyValueFromValues(values, propertyId);
+                if (newValue != getPropertyValueFromValues(oldValues, propertyId))
+                {
+                    eventHandler->handlePropertyValueChanged(controllerId, propertyId, definition.getPropertyLength(propertyId), newValue);
+                }
+            }
         }
         else
         {
