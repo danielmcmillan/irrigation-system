@@ -10,13 +10,20 @@
 
 namespace IrrigationSystem
 {
-    Vacon100Controller::Vacon100Controller() : definition(),
-                                               serial(MAX485_RO, MAX485_DI),
-                                               vacon(serial, MAX485_RE, MAX485_DE, MAX485_DI),
-                                               values(),
-                                               desiredMotorOn(false),
-                                               available(false)
+    Vacon100Controller::Vacon100Controller(uint8_t controllerId) : controllerId(controllerId),
+                                                                   definition(),
+                                                                   serial(MAX485_RO, MAX485_DI),
+                                                                   vacon(serial, MAX485_RE, MAX485_DE, MAX485_DI),
+                                                                   values(),
+                                                                   desiredMotorOn(false),
+                                                                   available(false),
+                                                                   eventHandler(nullptr)
     {
+    }
+
+    void Vacon100Controller::setEventHandler(EventHandler &handler)
+    {
+        this->eventHandler = &handler;
     }
 
     void Vacon100Controller::reset()
@@ -55,10 +62,77 @@ namespace IrrigationSystem
 
     uint32_t Vacon100Controller::getPropertyValue(uint16_t id) const
     {
+        if (id == Vacon100ControllerProperties::available)
+        {
+            return available;
+        }
+        else
+        {
+            return this->getPropertyValueFromValues(values, id);
+        }
+    }
+
+    uint32_t Vacon100Controller::getPropertyDesiredValue(uint16_t id) const
+    {
         switch (id)
         {
-        case Vacon100ControllerProperties::available:
-            return available;
+        case Vacon100ControllerProperties::motorOn:
+            return desiredMotorOn;
+        default:
+            LOG_ERROR("getPropertyDesiredValue with unknown Vacon 100 property");
+            return 0;
+        }
+    }
+
+    void Vacon100Controller::setPropertyDesiredValue(uint16_t id, uint32_t value)
+    {
+        switch (id)
+        {
+        case Vacon100ControllerProperties::motorOn:
+            desiredMotorOn = value > 0;
+            eventHandler->handlePropertyDesiredValueChanged(controllerId, id, 1, value);
+            break;
+        default:
+            LOG_ERROR("setPropertyDesiredValue with unknown Vacon 100 property");
+            return;
+        }
+    }
+
+    void Vacon100Controller::applyPropertyValues()
+    {
+        if (getPropertyValue(Vacon100ControllerProperties::motorOn) != desiredMotorOn)
+        {
+            if (!vacon.setStart(desiredMotorOn))
+            {
+                // TODO handle error
+                setAvailable(false);
+                LOG_ERROR("Failed to write to Vacon 100");
+                vacon.printError();
+            }
+        }
+    }
+
+    void Vacon100Controller::update()
+    {
+        Vacon100Data oldValues = values;
+        if (vacon.readInputRegisters(&values))
+        {
+            setAvailable(true);
+            // Raise events for changes to vacon data
+            // TODO
+        }
+        else
+        {
+            setAvailable(false);
+            LOG_ERROR("Failed to read from Vacon 100");
+            vacon.printError();
+        }
+    }
+
+    uint32_t Vacon100Controller::getPropertyValueFromValues(const Vacon100Data &values, uint16_t id) const
+    {
+        switch (id)
+        {
         case Vacon100ControllerProperties::motorOn:
             return (values.statusWord & Vacon100StatusWordMask::run) > 0;
         case Vacon100ControllerProperties::status:
@@ -97,57 +171,12 @@ namespace IrrigationSystem
         }
     }
 
-    uint32_t Vacon100Controller::getPropertyDesiredValue(uint16_t id) const
+    void Vacon100Controller::setAvailable(bool available)
     {
-        switch (id)
+        if (this->available != available)
         {
-        case Vacon100ControllerProperties::motorOn:
-            return desiredMotorOn;
-        default:
-            LOG_ERROR("getPropertyDesiredValue with unknown Vacon 100 property");
-            return 0;
+            eventHandler->handlePropertyValueChanged(controllerId, Vacon100ControllerProperties::available, 1, available ? 1 : 0);
+            this->available = available;
         }
     }
-
-    void Vacon100Controller::setPropertyDesiredValue(uint16_t id, uint32_t value)
-    {
-        switch (id)
-        {
-        case Vacon100ControllerProperties::motorOn:
-            desiredMotorOn = value > 0;
-            break;
-        default:
-            LOG_ERROR("setPropertyDesiredValue with unknown Vacon 100 property");
-            break;
-        }
-    }
-
-    void Vacon100Controller::applyPropertyValues()
-    {
-        if (getPropertyValue(Vacon100ControllerProperties::motorOn) != desiredMotorOn)
-        {
-            if (!vacon.setStart(desiredMotorOn))
-            {
-                // TODO handle error
-                available = false;
-                LOG_ERROR("Failed to write to Vacon 100");
-                vacon.printError();
-            }
-        }
-    }
-
-    void Vacon100Controller::update()
-    {
-        if (vacon.readInputRegisters(&values))
-        {
-            available = true;
-        }
-        else
-        {
-            available = false;
-            LOG_ERROR("Failed to read from Vacon 100");
-            vacon.printError();
-        }
-    }
-
 }

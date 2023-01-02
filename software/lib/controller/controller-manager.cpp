@@ -31,6 +31,14 @@ namespace IrrigationSystem
         return nullptr;
     }
 
+    void ControllerManager::setEventHandler(EventHandler &handler)
+    {
+        for (unsigned int i = 0; i < numControllers; ++i)
+        {
+            controllers[i].controller->setEventHandler(handler);
+        }
+    }
+
     void ControllerManager::resetControllers()
     {
         for (unsigned int i = 0; i < numControllers; ++i)

@@ -12,27 +12,33 @@ namespace IrrigationSystem
     class Vacon100Controller : public IrrigationSystem::Controller
     {
     public:
-        Vacon100Controller();
-        void reset();
-        void configure(uint8_t type, const uint8_t *data);
-        void begin();
+        Vacon100Controller(uint8_t controllerId);
+        void setEventHandler(EventHandler &handler);
+        void reset() override;
+        void configure(uint8_t type, const uint8_t *data) override;
+        void begin() override;
 
-        const IrrigationSystem::ControllerDefinition &getDefinition() const;
+        const IrrigationSystem::ControllerDefinition &getDefinition() const override;
 
-        uint32_t getPropertyValue(uint16_t id) const;
-        uint32_t getPropertyDesiredValue(uint16_t id) const;
-        void setPropertyDesiredValue(uint16_t id, uint32_t value);
+        uint32_t getPropertyValue(uint16_t id) const override;
+        uint32_t getPropertyDesiredValue(uint16_t id) const override;
+        void setPropertyDesiredValue(uint16_t id, uint32_t value) override;
 
-        void applyPropertyValues();
-        void update();
+        void applyPropertyValues() override;
+        void update() override;
 
     private:
+        uint8_t controllerId;
         Vacon100ControllerDefinition definition;
         NeoSWSerial serial;
         Vacon100Client vacon;
         Vacon100Data values;
         bool desiredMotorOn;
         bool available;
+        EventHandler *eventHandler;
+
+        uint32_t getPropertyValueFromValues(const Vacon100Data &values, uint16_t id) const;
+        void setAvailable(bool available);
     };
 }
 

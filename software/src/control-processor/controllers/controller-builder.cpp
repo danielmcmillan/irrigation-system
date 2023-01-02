@@ -2,7 +2,7 @@
 
 namespace IrrigationSystem
 {
-    ControllerBuilder::ControllerBuilder() : vacon100Controller(),
+    ControllerBuilder::ControllerBuilder() : vacon100Controller(0x02),
                                              registeredControllers({{0x02, &this->vacon100Controller}})
     {
     }

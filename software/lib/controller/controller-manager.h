@@ -17,6 +17,7 @@ namespace IrrigationSystem
         ControllerManager(ControllerRegistration *controllers, unsigned int num);
         Controller *getController(uint8_t controllerId);
         const ControllerDefinition *getControllerDefinition(uint8_t controllerId) const override;
+        void setEventHandler(EventHandler &handler);
         void resetControllers();
         void beginControllers();
 
