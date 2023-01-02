@@ -3,15 +3,17 @@
 #include <stdlib.h>
 #include <inttypes.h>
 #include "controller-manager.h"
+#include "events/event-history.h"
 
 using namespace IrrigationSystem;
 
 class ControlProcessorMessageHandler
 {
   ControllerManager &controllers;
+  EventHistory &events;
 
 public:
-  ControlProcessorMessageHandler(ControllerManager &controllers);
+  ControlProcessorMessageHandler(ControllerManager &controllers, EventHistory &events);
 
   /**
    * Read the value of a property.
@@ -25,5 +27,11 @@ public:
    * Returns 0.
    */
   int propertyWrite(uint8_t controllerId, uint16_t propertyId, const uint8_t *value) const;
+
+  /**
+   * Get the next event.
+   * Returns 0.
+   */
+  int eventGetNext(uint32_t afterTime, uint8_t *resultIndicatorOut, uint8_t *eventOut, size_t *eventSizeOut) const;
 };
 #endif

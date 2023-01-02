@@ -25,9 +25,12 @@ namespace IrrigationSystem
             PropertyRead = 0x20,
             PropertySet = 0x21,
 
+            // Events
+            EventGetNext = 0x30,
+
             // Response
             Ack = 0x61,
-            Nak = 0xe3
+            Err = 0xe3
         };
 
         /**

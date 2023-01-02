@@ -127,6 +127,12 @@ namespace IrrigationSystem
             break;
         case MessageType::ConfigAdd:
             break;
+        case MessageType::EventGetNext:
+            if (dataSize != 4)
+            {
+                return 1;
+            }
+            break;
         default:
             // Unknown message type
             return 1;

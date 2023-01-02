@@ -11,9 +11,9 @@ using namespace IrrigationSystem;
 ControllerBuilder controllerBuilder;
 ControllerManager controllers = controllerBuilder.buildManager();
 
-EventHistory eventHistory;
+EventHistory events;
 
-ControlProcessorMessageHandler handler(controllers);
+ControlProcessorMessageHandler handler(controllers, events);
 ControlProcessorI2cInterface i2c = ControlProcessorI2cInterface::initialise(controllers, handler);
 
 void setup()
@@ -21,7 +21,7 @@ void setup()
     Serial.begin(9600);
     i2c.setup();
 
-    controllers.setEventHandler(eventHistory);
+    controllers.setEventHandler(events);
     controllers.resetControllers();
     controllers.beginControllers(); // TODO only begin when requested after configuration
 }

@@ -47,13 +47,13 @@ namespace IrrigationSystem
             LOG_ERROR("Failed to start Vacon 100 client");
             vacon.printError();
         }
-        while (!vacon.initIdMapping())
+        if (!vacon.initIdMapping())
         {
             notifyError(0x01);
             LOG_ERROR("Failed to set up Vacon 100 ID mappings");
             vacon.printError();
         }
-        // TODO is any other action required when begin fails?
+        // TODO some automatic retry, without generating too many events. Is any other action required when begin fails?
     }
 
     const IrrigationSystem::ControllerDefinition &Vacon100Controller::getDefinition() const

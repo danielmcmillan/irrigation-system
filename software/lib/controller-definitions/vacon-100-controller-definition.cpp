@@ -11,7 +11,7 @@ namespace IrrigationSystem
 
     unsigned int Vacon100ControllerDefinition::getPropertyCount() const
     {
-        return sizeof Vacon100ControllerProperties::propertyIds / sizeof Vacon100ControllerProperties::propertyIds[0];
+        return (sizeof Vacon100ControllerProperties::propertyIds) / (sizeof Vacon100ControllerProperties::propertyIds[0]);
     }
 
     uint16_t Vacon100ControllerDefinition::getPropertyIdAt(unsigned int index) const

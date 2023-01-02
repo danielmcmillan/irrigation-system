@@ -12,6 +12,8 @@ EventHistory::EventHistory() : eventHistory{0},
 void EventHistory::start()
 {
     this->startTime = millis();
+    this->historyStartIndex = 0;
+    this->historyActualSize = 0;
 }
 
 void EventHistory::handleEvent(uint8_t type, uint8_t payloadSize, const uint8_t *payload)
@@ -50,29 +52,40 @@ void EventHistory::handleEvent(uint8_t type, uint8_t payloadSize, const uint8_t 
     this->historyActualSize += eventSize;
 }
 
-bool EventHistory::getEvent(uint32_t withTime, EventHistoryRecord *eventOut) const
+bool EventHistory::getNextEvent(uint32_t afterTime, bool *timeMatched, EventHistoryRecord *eventOut) const
 {
+    *timeMatched = false;
     // Iterate through events to find the specified one
     unsigned int offsetFromStart = 0;
     for (;;)
     {
         if (offsetFromStart < this->historyActualSize)
         {
+            // Get event at this index
             this->getEventAtOffset(offsetFromStart, eventOut);
-            if (eventOut->time == withTime)
+            if (*timeMatched)
             {
+                // The event matching requested time was found in previous iteration, so return this next event
                 return true;
             }
-            else
+            // Check for a match
+            if (eventOut->time == afterTime)
             {
-                // Move index to the next event
-                offsetFromStart += EVENT_HEADER_SIZE + eventOut->payloadSize;
+                *timeMatched = true;
             }
+            // Move index to the next event
+            offsetFromStart += EVENT_HEADER_SIZE + eventOut->payloadSize;
+        }
+        else if (*timeMatched)
+        {
+            // The event was found, there was no event after it
+            // This happens when the requester is already up to date with the latest events
+            return false;
         }
         else
         {
-            // No event at or after the specified one exists
-            // This may happen due to bad request, or when time overflows
+            // No event for the specified time exists
+            // This may happen on initial request for first event, or when time overflows
             // Use the first event if it exists, to handle overflow
             if (this->historyActualSize > 0)
             {

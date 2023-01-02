@@ -56,7 +56,7 @@ void ControlProcessorI2cInterface::handleRequest()
     }
     else
     {
-        *responseType = ControlProcessorPacket::MessageType::Nak;
+        *responseType = ControlProcessorPacket::MessageType::Err;
         *responseData = result;
         responseDataSize = 1;
     }
@@ -65,7 +65,7 @@ void ControlProcessorI2cInterface::handleRequest()
     Wire.write(responseBuffer, responseSize);
 }
 
-// Returns 0 on success, otherwise a NAK failure reason
+// Returns 0 on success, otherwise an error reason
 int ControlProcessorI2cInterface::handleMessage(ControlProcessorPacket::MessageType type, const uint8_t *data, uint8_t *responseDataOut, size_t *responseDataSizeOut)
 {
     switch (type)
@@ -78,8 +78,15 @@ int ControlProcessorI2cInterface::handleMessage(ControlProcessorPacket::MessageT
     case ControlProcessorPacket::MessageType::PropertyRead:
         return this->handler.propertyRead(data[0], read16LE(&data[1]), responseDataOut, responseDataSizeOut);
     case ControlProcessorPacket::MessageType::PropertySet:
-        return this->handler.propertyWrite(data[0], read16LE(&data[1]), data + 3);
         *responseDataSizeOut = 0;
+        return this->handler.propertyWrite(data[0], read16LE(&data[1]), data + 3);
+    case ControlProcessorPacket::MessageType::EventGetNext:
+        this->handler.eventGetNext(
+            (uint32_t)data[0] + ((uint32_t)data[1] << 8) + ((uint32_t)data[2] << 16) + ((uint32_t)data[3] << 24),
+            responseDataOut,
+            responseDataOut + 1,
+            responseDataSizeOut);
+        *responseDataSizeOut += 1;
         break;
     default:
         break;

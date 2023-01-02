@@ -30,11 +30,12 @@ public:
      */
     void handleEvent(uint8_t type, uint8_t payloadSize, const uint8_t *payload) override;
     /**
-     * Get the event for the specified time.
-     * If the event doesn't exist, returns the earliest event if any.
-     * Returns whether any event was found.
+     * Get the next event after the one at the specified time.
+     * If the event exists, returns the immediately following event if any, and timeMatched is set to true.
+     * If the event doesn't exist, returns the earliest event if any, and timeMatched is set to false.
+     * Returns whether any event was found and set in eventOut.
      */
-    bool getEvent(uint32_t withTime, EventHistoryRecord *eventOut) const;
+    bool getNextEvent(uint32_t afterTime, bool *timeMatched, EventHistoryRecord *eventOut) const;
 
 private:
     uint8_t eventHistory[EVENT_HISTORY_SIZE];
