@@ -9,6 +9,16 @@ namespace IrrigationSystem
 
     void Vacon100ControllerDefinition::configure(uint8_t type, const uint8_t *data) {}
 
+    unsigned int Vacon100ControllerDefinition::getPropertyCount() const
+    {
+        return sizeof Vacon100ControllerProperties::propertyIds / sizeof Vacon100ControllerProperties::propertyIds[0];
+    }
+
+    uint16_t Vacon100ControllerDefinition::getPropertyIdAt(unsigned int index) const
+    {
+        return Vacon100ControllerProperties::propertyIds[index];
+    }
+
     unsigned int Vacon100ControllerDefinition::getPropertyLength(uint16_t id) const
     {
         switch (id)

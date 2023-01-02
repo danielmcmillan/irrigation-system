@@ -10,7 +10,14 @@ namespace IrrigationSystem
     public:
         virtual void reset() = 0;
         virtual void configure(uint8_t type, const uint8_t *data) = 0;
-        // TODO iterator over property ids
+        /**
+         * Get the number of available properties.
+         */
+        virtual unsigned int getPropertyCount() const = 0;
+        /**
+         * Get the id of the property at the given index.
+         */
+        virtual uint16_t getPropertyIdAt(unsigned int index) const = 0;
         /**
          * Get the length of the property with the specified id in bytes.
          *
