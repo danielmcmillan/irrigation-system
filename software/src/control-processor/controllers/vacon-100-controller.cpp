@@ -91,7 +91,10 @@ namespace IrrigationSystem
         {
         case Vacon100ControllerProperties::motorOn:
             desiredMotorOn = value > 0;
-            eventHandler->handlePropertyDesiredValueChanged(controllerId, id, 1, value);
+            if (eventHandler != nullptr)
+            {
+                eventHandler->handlePropertyDesiredValueChanged(controllerId, id, 1, value);
+            }
             break;
         default:
             LOG_ERROR("setPropertyDesiredValue with unknown Vacon 100 property");
@@ -119,14 +122,17 @@ namespace IrrigationSystem
         if (vacon.readInputRegisters(&values))
         {
             setAvailable(true);
-            // Raise events for changes to vacon data, all properties except for first one (available)
-            for (unsigned int i = 1; i < definition.getPropertyCount(); ++i)
+            if (eventHandler != nullptr)
             {
-                uint8_t propertyId = definition.getPropertyIdAt(i);
-                uint32_t newValue = getPropertyValueFromValues(values, propertyId);
-                if (newValue != getPropertyValueFromValues(oldValues, propertyId))
+                // Raise events for changes to vacon data, all properties except for first one (available)
+                for (unsigned int i = 1; i < definition.getPropertyCount(); ++i)
                 {
-                    eventHandler->handlePropertyValueChanged(controllerId, propertyId, definition.getPropertyLength(propertyId), newValue);
+                    uint8_t propertyId = definition.getPropertyIdAt(i);
+                    uint32_t newValue = getPropertyValueFromValues(values, propertyId);
+                    if (newValue != getPropertyValueFromValues(oldValues, propertyId))
+                    {
+                        eventHandler->handlePropertyValueChanged(controllerId, propertyId, definition.getPropertyLength(propertyId), newValue);
+                    }
                 }
             }
         }
@@ -185,14 +191,20 @@ namespace IrrigationSystem
     {
         if (this->available != available)
         {
-            eventHandler->handlePropertyValueChanged(controllerId, Vacon100ControllerProperties::available, 1, available ? 1 : 0);
+            if (eventHandler != nullptr)
+            {
+                eventHandler->handlePropertyValueChanged(controllerId, Vacon100ControllerProperties::available, 1, available ? 1 : 0);
+            }
             this->available = available;
         }
     }
     void Vacon100Controller::notifyError(uint8_t data)
     {
-        uint16_t errorCode = vacon.getErrorCode();
-        uint8_t errorPayload[] = {controllerId, data, (uint8_t)errorCode, (uint8_t)(errorCode >> 8)};
-        eventHandler->handleEvent(EventType::controllerError, sizeof errorPayload, errorPayload);
+        if (eventHandler != nullptr)
+        {
+            uint16_t errorCode = vacon.getErrorCode();
+            uint8_t errorPayload[] = {controllerId, data, (uint8_t)errorCode, (uint8_t)(errorCode >> 8)};
+            eventHandler->handleEvent(EventType::controllerError, sizeof errorPayload, errorPayload);
+        }
     }
 }
