@@ -107,13 +107,13 @@ namespace IrrigationSystem
         data->feedbackPressure = ModbusRTUClient.read();
         data->driveTemp = ModbusRTUClient.read();
         data->motorTemp = ModbusRTUClient.read();
-        data->energyUsed = (uint32_t)ModbusRTUClient.read() +
-                           (((uint32_t)ModbusRTUClient.read()) << 16);
-        data->runTime = (((uint32_t)ModbusRTUClient.read()) * 31536000) +
-                        (((uint32_t)ModbusRTUClient.read()) * 86400) +
-                        (((uint32_t)ModbusRTUClient.read()) * 3600) +
-                        (((uint32_t)ModbusRTUClient.read()) * 60) +
-                        ((uint32_t)ModbusRTUClient.read());
+        data->energyUsed = (uint32_t)ModbusRTUClient.read();
+        data->energyUsed += ((uint32_t)ModbusRTUClient.read()) << 16;
+        data->runTime = ((uint32_t)ModbusRTUClient.read()) * 31536000;
+        data->runTime += ((uint32_t)ModbusRTUClient.read()) * 86400;
+        data->runTime += ((uint32_t)ModbusRTUClient.read()) * 3600;
+        data->runTime += ((uint32_t)ModbusRTUClient.read()) * 60;
+        data->runTime += (uint32_t)ModbusRTUClient.read();
 
         Serial.println("Successful");
         return result;
