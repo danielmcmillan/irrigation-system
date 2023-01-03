@@ -1,7 +1,8 @@
 #include "vacon-100-modbus-client.h"
-#include <ArduinoModbus.h>
+#include <ModbusRTUClient.h>
 #include <ArduinoRS485.h>
 #include <errno.h>
+#include "logging.h"
 
 // IN: Control word
 #define CONTROL_WORD_ADDRESS (2001 - 1)
@@ -86,7 +87,7 @@ namespace IrrigationSystem
 
     int Vacon100Client::readInputRegisters(Vacon100Data *data)
     {
-        Serial.println("Reading... ");
+        LOG_INFO("Reading... ");
         errno = 0;
         int result = ModbusRTUClient.requestFrom(slaveId, INPUT_REGISTERS, ID_MAP_VALUES_ADDRESS, 20);
         if (result == 0)
@@ -115,7 +116,7 @@ namespace IrrigationSystem
         data->runTime += ((uint32_t)ModbusRTUClient.read()) * 60;
         data->runTime += (uint32_t)ModbusRTUClient.read();
 
-        Serial.println("Successful");
+        LOG_INFO("Read successful");
         return result;
     }
 
@@ -126,12 +127,8 @@ namespace IrrigationSystem
 
     void Vacon100Client::printError()
     {
-        Serial.print("ERROR Vacon 100 communication failed: ");
-        Serial.print(errno); // TODO errno ETIMEDOUT 116 was happening a lot, 11246 (Invalid CRC)
-        Serial.print(" ");
-        Serial.print(strerror(errno));
-        Serial.print(" / ");
-        Serial.println(modbus_strerror(errno));
+        Serial.print(F("ERROR Vacon 100 communication failed: "));
+        Serial.println(errno); // TODO errno ETIMEDOUT 116 was happening a lot, 11246 (Invalid CRC)
     }
 
     String Vacon100Data::toString()
