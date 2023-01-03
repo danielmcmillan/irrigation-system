@@ -12,9 +12,8 @@ ControlProcessorI2cInterface::ControlProcessorI2cInterface(const ControllerManag
 ControlProcessorI2cInterface ControlProcessorI2cInterface::initialise(const ControllerManager &controllers, const ControlProcessorMessageHandler &handler)
 {
     static ControlProcessorI2cInterface instance(controllers, handler);
-    Wire.onReceive([](int _) {});
-    Wire.onRequest([]()
-                   { instance.handleRequest(); });
+    Wire.onRequest([](uint8_t *input, uint8_t inputSize, uint8_t *output, uint8_t *outputSize)
+                   { instance.handleRequest(input, inputSize, output, outputSize); });
     return instance;
 }
 
@@ -23,17 +22,14 @@ void ControlProcessorI2cInterface::setup()
     Wire.begin(CONTROL_PROCESSOR_I2C_SLAVE_ADDRESS);
 }
 
-void ControlProcessorI2cInterface::handleRequest()
+void ControlProcessorI2cInterface::handleRequest(uint8_t *input, uint8_t inputSize, uint8_t *output, uint8_t *outputSize)
 {
-    static uint8_t buffer[32];
-    size_t length = Wire.readBytes(buffer, Wire.available());
-    uint8_t result = packet.validatePacket(buffer, length);
+    uint8_t result = packet.validatePacket(input, inputSize);
 
-    static uint8_t responseBuffer[32];
     ControlProcessorPacket::MessageType *responseType;
     uint8_t *responseData;
     size_t responseDataSize = 0;
-    packet.createPacket(responseBuffer + 1, &responseType, &responseData);
+    packet.createPacket(output + 1, &responseType, &responseData);
 
     if (result == 2)
     {
@@ -46,7 +42,7 @@ void ControlProcessorI2cInterface::handleRequest()
     else if (result == 0)
     {
         const uint8_t *data;
-        ControlProcessorPacket::MessageType type = packet.getMessageType(buffer, &data);
+        ControlProcessorPacket::MessageType type = packet.getMessageType(input, &data);
         result = this->handleMessage(type, data, responseData, &responseDataSize);
     }
 
@@ -60,9 +56,8 @@ void ControlProcessorI2cInterface::handleRequest()
         *responseData = result;
         responseDataSize = 1;
     }
-    size_t responseSize = packet.finalisePacket(responseBuffer + 1, responseDataSize) + 1;
-    responseBuffer[0] = responseSize;
-    Wire.write(responseBuffer, responseSize);
+    *outputSize = packet.finalisePacket(output + 1, responseDataSize) + 1;
+    output[0] = *outputSize;
 }
 
 // Returns 0 on success, otherwise an error reason
