@@ -223,13 +223,58 @@ void setup()
             }
             else
             {
-            char *payload = (char *)outBuffer;
-            char *ptr = payload;
-            for (int i = 0; i < event.payloadSize; ++i)
+                char *outPtr = charBuffer;
+                outPtr += sprintf(outPtr, "{\"id\":%lu,\"type\":%u,\"found\":%s", event.id, event.type, result == -2 ? "false" : "true");
+
+                int dataPos = -1;
+                if (event.type == 0x40 || event.type == 0x80 || event.type == 0xc0)
+                {
+                    // Events with generic data payload
+                    dataPos = 0;
+                }
+                else if (event.type == 0xc1)
+                {
+                    // Events with data payload after controller id
+                    dataPos = 1;
+                }
+                else if (event.type == 0xc2)
+                {
+                    // Events with data payload after controller id and property id
+                    dataPos = 2;
+                }
+
+                if (event.type == 0x48 || event.type == 0x49 || event.type == 0xc1 || event.type == 0xc2)
+                {
+                    // Events with controller id
+                    outPtr += sprintf(outPtr, ",\"controllerId\":%u", event.payload[0]);
+                }
+                if (event.type == 0x48 || event.type == 0x49 || event.type == 0xc2)
+                {
+                    // Events with property id
+                    outPtr += sprintf(outPtr, ",\"propertyId\":%u", read16LE(event.payload + 1));
+                }
+                if (event.type == 0x48 || event.type == 0x49)
+                {
+                    // Events with property value
+                    uint32_t value = 0;
+                    for (int i = 0; i < event.payloadSize - 3; ++i)
+                    {
+                        value |= (uint32_t)event.payload[i + 3] << (i * 8);
+                    }
+                    outPtr += sprintf(outPtr, ",\"value\":%lu", value);
+                }
+
+                if (dataPos >= 0)
+                {
+                    outPtr += sprintf(outPtr, ",\"data\":\"0x");
+                    for (int i = dataPos; i < event.payloadSize; ++i)
             {
-                ptr += sprintf(ptr, "%02x", event.payload[i]);
+                        outPtr += sprintf(outPtr, "%02x", event.payload[i]);
             }
-                sprintf(charBuffer, "{\"id\":%lu,\"type\":%u,\"data\":\"0x%s\",\"found\":%s}", event.id, event.type, payload, result == -2 ? "false" : "true");
+                    outPtr += sprintf(outPtr, "\"");
+                }
+
+                outPtr += sprintf(outPtr, "}");
                 request->send(200, "application/json", charBuffer);
             }
         }
