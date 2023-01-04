@@ -711,6 +711,7 @@ static int _modbus_rtu_connect(modbus_t *ctx)
         return -1;
     }
 #elif defined(ARDUINO)
+    ctx_rtu->rs485->begin(0, 0);
     ctx_rtu->rs485->receive();
 #else
     /* The O_NOCTTY flag tells UNIX that this program doesn't want
