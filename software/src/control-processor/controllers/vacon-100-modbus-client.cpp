@@ -1,5 +1,4 @@
 #include "vacon-100-modbus-client.h"
-#include <ModbusRTUClient.h>
 #include <ArduinoRS485.h>
 #include <errno.h>
 #include "logging.h"
@@ -17,107 +16,129 @@
 
 namespace IrrigationSystem
 {
-    Vacon100Client::Vacon100Client(Stream &stream, int re, int de, int di) : slaveId(1),
-                                                                             rs485(stream, di, de, re)
+    Vacon100Client::Vacon100Client(Stream &stream, int re, int de, int di) : rs485(stream, di, de, re),
+                                                                             modbus(nullptr)
     {
     }
 
-    void Vacon100Client::setSlaveId(int slaveAddress)
-    {
-        this->slaveId = slaveAddress;
-    }
-
-    int Vacon100Client::begin()
+    int Vacon100Client::begin(uint8_t slaveId)
     {
         errno = 0;
-        int result = ModbusRTUClient.begin(rs485, 0);
-        ModbusRTUClient.setTimeout(2000);
-        return result;
+
+        modbus = modbus_new_rtu(&rs485, 0, 0);
+        if (modbus == nullptr)
+        {
+            return 0;
+        }
+        if (modbus_connect(modbus) != 0)
+        {
+            modbus_free(modbus);
+            return 0;
+        }
+        modbus_set_error_recovery(modbus, MODBUS_ERROR_RECOVERY_PROTOCOL);
+        modbus_set_response_timeout(modbus, 2000);
+        modbus_set_slave(modbus, slaveId);
+
+        return 1;
     }
 
     void Vacon100Client::end()
     {
-        ModbusRTUClient.end();
+        modbus_close(modbus);
+        modbus_free(modbus);
+        modbus = nullptr;
     }
 
     int Vacon100Client::setStart(bool start, bool force)
     {
         errno = 0;
         uint16_t value = (start ? CONTROL_WORD_ON : 0) | (force ? CONTROL_WORD_FORCE : 0);
-        return ModbusRTUClient.holdingRegisterWrite(slaveId, CONTROL_WORD_ADDRESS, value);
+        if (modbus_write_register(modbus, CONTROL_WORD_ADDRESS, value) < 0)
+        {
+            return 0;
+        }
+
+        return 1;
     }
 
     int Vacon100Client::setSpeed(uint16_t value)
     {
         errno = 0;
-        return ModbusRTUClient.holdingRegisterWrite(slaveId, SPEED_REF_ADDRESS, value);
+        if (modbus_write_register(modbus, SPEED_REF_ADDRESS, value) < 0)
+        {
+            return 0;
+        }
+
+        return 1;
     }
 
     int Vacon100Client::initIdMapping()
     {
         errno = 0;
-        int result = ModbusRTUClient.beginTransmission(slaveId, HOLDING_REGISTERS, ID_MAP_ADDRESS, 20);
-        if (result == 0)
-        {
-            return result;
-        }
         // Write out the Application parameter ID for each value to be read from the corresponding ID Map registers
-        ModbusRTUClient.write(864);   // status
-        ModbusRTUClient.write(865);   // actualSpeed
-        ModbusRTUClient.write(1);     // outputFrequency
-        ModbusRTUClient.write(2);     // motorSpeed
-        ModbusRTUClient.write(3);     // motorCurrent
-        ModbusRTUClient.write(4);     // motorTorque
-        ModbusRTUClient.write(5);     // motorPower
-        ModbusRTUClient.write(6);     // motorVoltage
-        ModbusRTUClient.write(7);     // dcLinkVoltage
-        ModbusRTUClient.write(37);    // activeFaultCode
-        ModbusRTUClient.write(15541); // feedbackPressure
-        ModbusRTUClient.write(8);     // driveTemp
-        ModbusRTUClient.write(9);     // motorTemp
-        ModbusRTUClient.write(1054);  // energyUsed low
-        ModbusRTUClient.write(1067);  // energyUsed high
-        ModbusRTUClient.write(1772);  // runTime y
-        ModbusRTUClient.write(1773);  // runTime d
-        ModbusRTUClient.write(1774);  // runTime h
-        ModbusRTUClient.write(1775);  // runTime m
-        ModbusRTUClient.write(1776);  // runTime s
-        return ModbusRTUClient.endTransmission();
+        uint16_t values[] = {
+            864,   // status
+            865,   // actualSpeed
+            1,     // outputFrequency
+            2,     // motorSpeed
+            3,     // motorCurrent
+            4,     // motorTorque
+            5,     // motorPower
+            6,     // motorVoltage
+            7,     // dcLinkVoltage
+            37,    // activeFaultCode
+            15541, // feedbackPressure
+            8,     // driveTemp
+            9,     // motorTemp
+            1054,  // energyUsed low
+            1067,  // energyUsed high
+            1772,  // runTime y
+            1773,  // runTime d
+            1774,  // runTime h
+            1775,  // runTime m
+            1776   // runTime s
+        };
+        if (modbus_write_registers(modbus, ID_MAP_ADDRESS, 20, values) < 0)
+        {
+            return 0;
+        }
+
+        return 1;
     }
 
     int Vacon100Client::readInputRegisters(Vacon100Data *data)
     {
         LOG_INFO("Reading... ");
         errno = 0;
-        int result = ModbusRTUClient.requestFrom(slaveId, INPUT_REGISTERS, ID_MAP_VALUES_ADDRESS, 20);
-        if (result == 0)
+        uint16_t values[20];
+        if (modbus_read_input_registers(modbus, ID_MAP_VALUES_ADDRESS, 20, values) < 0)
         {
-            return result;
+            return 0;
         }
-        // Read each value from the ID Map
-        data->statusWord = ModbusRTUClient.read();
-        data->actualSpeed = ModbusRTUClient.read();
-        data->outputFrequency = ModbusRTUClient.read();
-        data->motorSpeed = ModbusRTUClient.read();
-        data->motorCurrent = ModbusRTUClient.read();
-        data->motorTorque = ModbusRTUClient.read();
-        data->motorPower = ModbusRTUClient.read();
-        data->motorVoltage = ModbusRTUClient.read();
-        data->dcLinkVoltage = ModbusRTUClient.read();
-        data->activeFaultCode = ModbusRTUClient.read();
-        data->feedbackPressure = ModbusRTUClient.read();
-        data->driveTemp = ModbusRTUClient.read();
-        data->motorTemp = ModbusRTUClient.read();
-        data->energyUsed = (uint32_t)ModbusRTUClient.read();
-        data->energyUsed += ((uint32_t)ModbusRTUClient.read()) << 16;
-        data->runTime = ((uint32_t)ModbusRTUClient.read()) * 31536000;
-        data->runTime += ((uint32_t)ModbusRTUClient.read()) * 86400;
-        data->runTime += ((uint32_t)ModbusRTUClient.read()) * 3600;
-        data->runTime += ((uint32_t)ModbusRTUClient.read()) * 60;
-        data->runTime += (uint32_t)ModbusRTUClient.read();
+
+        // Save each value from the ID Map to data
+        data->statusWord = values[0];
+        data->actualSpeed = values[1];
+        data->outputFrequency = values[2];
+        data->motorSpeed = values[3];
+        data->motorCurrent = values[4];
+        data->motorTorque = values[5];
+        data->motorPower = values[6];
+        data->motorVoltage = values[7];
+        data->dcLinkVoltage = values[8];
+        data->activeFaultCode = values[9];
+        data->feedbackPressure = values[10];
+        data->driveTemp = values[11];
+        data->motorTemp = values[12];
+        data->energyUsed = (uint32_t)values[13] + ((uint32_t)values[14] << 16);
+        data->runTime = ((uint32_t)values[15]) * 31536000 +
+                        ((uint32_t)values[16]) * 86400 +
+                        ((uint32_t)values[17]) * 3600 +
+                        ((uint32_t)values[18]) * 60 +
+                        (uint32_t)values[19];
 
         LOG_INFO("Read successful");
-        return result;
+        return 1;
     }
 
     uint16_t Vacon100Client::getErrorCode()

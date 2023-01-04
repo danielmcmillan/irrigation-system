@@ -2,6 +2,10 @@
 #define VACON100_MODBUS_H
 #include <Arduino.h>
 #include <ArduinoRS485.h>
+extern "C"
+{
+#include <modbus-rtu.h>
+}
 
 namespace IrrigationSystem
 {
@@ -66,14 +70,11 @@ namespace IrrigationSystem
     public:
         Vacon100Client(Stream &stream, int re, int de, int di);
 
-        /** Set the slave address of the Vacon 100 to something other than the default 1. */
-        void setSlaveId(int slaveAddress);
-
         /**
          * Start the client.
          * Returns 0 on failure and sets errno.
          */
-        int begin();
+        int begin(uint8_t slaveId = 1);
 
         /**
          * Stop the client.
@@ -111,8 +112,8 @@ namespace IrrigationSystem
         void printError();
 
     private:
-        int slaveId;
         RS485Class rs485;
+        modbus_t *modbus;
     };
 }
 #endif
