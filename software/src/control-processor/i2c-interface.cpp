@@ -1,6 +1,6 @@
 #include "i2c-interface.h"
 #include <Arduino.h>
-#include <Wire.h>
+#include <control-processor/ArduinoTwoWire/Wire.h>
 #include "logging.h"
 #include "binary-util.h"
 

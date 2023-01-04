@@ -4,7 +4,7 @@
 #include <ArduinoRS485.h>
 extern "C"
 {
-#include <modbus-rtu.h>
+#include <control-processor/ArduinoLibModbus/modbus-rtu.h>
 }
 
 namespace IrrigationSystem
