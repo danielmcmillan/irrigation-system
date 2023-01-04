@@ -5,6 +5,8 @@
 #include <cerrno>
 #include <cstdlib>
 #include <cstring>
+#include <getopt.h>
+#include <unistd.h>
 #include "modbus.h"
 
 /**
@@ -65,30 +67,30 @@ const uint16_t registerNumbers[] = {
 };
 
 const uint16_t applicationIds[] = {
-    864,  // FB Status word
-    865,  // FB Actual speed
-    1,    // Output frequency
-    2,    // Motor speed
-    3,    // Motor current
-    4,    // Motor torque
-    5,    // Motor power
-    6,    // Motor voltage
-    7,    // DC link voltage
-    37,   // Active fault code
-    1695, // Input pressure
-    1054, // kWh low
-    1067, // kWh high
-    1772, // Motor run time years
-    1773, // Motor run time days
-    1774, // Motor run time hours
-    1775, // Motor run time minutes
-    1776, // Motor run time seconds
-    45,   // Motor current 1 deci
-    8,    // Drive heatsink temperature
-    9     // Motor temperature
+    864,   // FB Status word
+    865,   // FB Actual speed
+    1,     // Output frequency
+    2,     // Motor speed
+    3,     // Motor current
+    4,     // Motor torque
+    5,     // Motor power
+    6,     // Motor voltage
+    7,     // DC link voltage
+    37,    // Active fault code
+    15541, // Input pressure
+    1054,  // kWh low
+    1067,  // kWh high
+    1772,  // Motor run time years
+    1773,  // Motor run time days
+    1774,  // Motor run time hours
+    1775,  // Motor run time minutes
+    1776,  // Motor run time seconds
+    45,    // Motor current 1 deci
+    8,     // Drive heatsink temperature
+    9      // Motor temperature
 };
 
-uint16_t totalRegisterCount = 11000;
+uint16_t totalRegisterCount = 16000;
 uint16_t controlWordRegister = 2001;
 uint16_t idMapRegister = 10501;
 uint16_t idMapWordValueRegister = 10601;
@@ -139,11 +141,47 @@ void update(modbus_mapping_t *mb_mapping)
     memcpy(mb_mapping->tab_input_registers, mb_mapping->tab_registers, totalRegisterCount * sizeof *mb_mapping->tab_registers);
 }
 
+void vaconSimUsage(const char *argv0)
+{
+    std::cerr << "usage: " << argv0 << " vacon-sim --device <device>\n";
+    exit(EXIT_FAILURE);
+}
+
 int vaconSim(int argc, char **argv)
 {
+    struct option options[] = {{"device", 1, nullptr, 'd'},
+                               {0, 0, 0, 0}};
+    const char *deviceStr = nullptr;
+    while (true)
+    {
+        int option = getopt_long(argc, argv, "d:", options, 0);
+        if (option == -1)
+        {
+            break;
+        }
+        switch (option)
+        {
+        case 'd':
+            deviceStr = optarg;
+            break;
+        default /* '?' */:
+            vaconSimUsage(argv[0]);
+        }
+    }
+    if (!deviceStr)
+    {
+        vaconSimUsage(argv[0]);
+        return 1;
+    }
+    if (access(deviceStr, F_OK) != 0)
+    {
+        std::cerr << "device " << deviceStr << " does not exist\n";
+        return 2;
+    }
+
     printf("Starting Modbus RTU slave\n");
     // Start Modbus RTU Slave/Server
-    modbus_t *ctx = modbus_new_rtu("/dev/ttyUSB1", 9600, 'N', 8, 1);
+    modbus_t *ctx = modbus_new_rtu(deviceStr, 9600, 'N', 8, 1);
     modbus_set_slave(ctx, 1);
     modbus_connect(ctx);
     // modbus_set_debug(ctx, TRUE);
@@ -176,12 +214,9 @@ int vaconSim(int argc, char **argv)
         }
         else if (rc == -1)
         {
-            /* Connection closed by the client or error */
-            break;
+            printf("Error: %s\n", modbus_strerror(errno));
         }
     }
-
-    printf("Error: %s\n", modbus_strerror(errno));
 
     modbus_mapping_free(mb_mapping);
     modbus_close(ctx);
