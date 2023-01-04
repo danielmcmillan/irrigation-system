@@ -1,4 +1,7 @@
 #include "message-handler.h"
+#include "binary-util.h"
+
+using namespace IrrigationSystem;
 
 ControlProcessorMessageHandler::ControlProcessorMessageHandler(ControllerManager &controllers, EventHistory &events)
     : controllers(controllers), events(events)
@@ -52,22 +55,19 @@ int ControlProcessorMessageHandler::propertyWrite(uint8_t controllerId, uint16_t
     return 0;
 }
 
-int ControlProcessorMessageHandler::eventGetNext(uint32_t afterTime, uint8_t *resultIndicatorOut, uint8_t *eventOut, size_t *eventSizeOut) const
+int ControlProcessorMessageHandler::eventGetNext(uint16_t afterId, uint8_t *resultIndicatorOut, uint8_t *eventOut, size_t *eventSizeOut) const
 {
     bool timeMatched;
     EventHistoryRecord event;
 
-    if (events.getNextEvent(afterTime, &timeMatched, &event))
+    if (events.getNextEvent(afterId, &timeMatched, &event))
     {
         *resultIndicatorOut = timeMatched ? 0x01 : 0x02;
         *eventSizeOut = EVENT_HEADER_SIZE + event.payloadSize;
-        // Write the event data. Time is little-endian value
-        eventOut[0] = event.time;
-        eventOut[1] = event.time >> 8;
-        eventOut[2] = event.time >> 16;
-        eventOut[3] = event.time >> 24;
-        eventOut[4] = event.type;
-        eventOut[5] = event.payloadSize;
+        // Write the event data
+        write16LE(eventOut, event.id);
+        eventOut[2] = event.type;
+        eventOut[3] = event.payloadSize;
         // Write payload data
         for (int i = 0; i < event.payloadSize; ++i)
         {

@@ -77,7 +77,7 @@ int ControlProcessorI2cInterface::handleMessage(ControlProcessorPacket::MessageT
         return this->handler.propertyWrite(data[0], read16LE(&data[1]), data + 3);
     case ControlProcessorPacket::MessageType::EventGetNext:
         this->handler.eventGetNext(
-            (uint32_t)data[0] + ((uint32_t)data[1] << 8) + ((uint32_t)data[2] << 16) + ((uint32_t)data[3] << 24),
+            read16LE(data),
             responseDataOut,
             responseDataOut + 1,
             responseDataSizeOut);

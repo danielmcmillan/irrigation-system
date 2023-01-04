@@ -86,7 +86,9 @@ void setup()
     Serial.printf("\nWiFi Connected: %s\n", WiFi.localIP().toString().c_str());
 
     server.on("/heap", HTTP_GET, [](AsyncWebServerRequest *request)
-              { request->send(200, "text/plain", String(ESP.getFreeHeap())); });
+              {
+            sprintf(charBuffer, "{\"free\":%lu}", ESP.getFreeHeap());
+                request->send(200, "application/json", charBuffer); });
 
     server.on(
         "/raw",
@@ -172,12 +174,12 @@ void setup()
                 ptr += sprintf(ptr, ",\"desired\":%d", desiredValue);
             }
             ptr += sprintf(ptr, "}", desiredValue);
-            request->send(200, "text/plain", charBuffer);
+            request->send(200, "application/json", charBuffer);
         }
         else
         {
             sprintf(charBuffer, "{\"error\":%d}", result);
-            request->send(500, "text/plain", charBuffer);
+            request->send(500, "application/json", charBuffer);
         } });
 
     server.on("/api/setProperty", HTTP_POST, [](AsyncWebServerRequest *request)
@@ -195,27 +197,29 @@ void setup()
         if (result == 0)
         {
             sprintf(charBuffer, "{\"desired\":%d}", value);
-            request->send(200, "text/plain", charBuffer);
+            request->send(200, "application/json", charBuffer);
         }
         else
         {
             sprintf(charBuffer, "{\"error\":%d}", result);
-            request->send(500, "text/plain", charBuffer);
+            request->send(500, "application/json", charBuffer);
         } });
 
     server.on("/api/getNextEvent", HTTP_GET, [](AsyncWebServerRequest *request)
               {
         AsyncWebParameter *afterParam = request->getParam("after");
         String afterParamStr = afterParam != nullptr ? afterParam->value() : String();
-        uint32_t afterTime = afterParamStr.isEmpty() ? 0 : strtoul(afterParamStr.c_str(), NULL, 10);
+        uint16_t afterId = afterParamStr.isEmpty() ? 0 : strtoul(afterParamStr.c_str(), NULL, 10);
         EventHistoryRecord event;
-        int result = cih.getNextEvent(afterTime, &event);
+        int result = cih.getNextEvent(afterId, &event);
 
         if (result <= 0)
         {
             if (result == -1)
             {
                 // No events
+                sprintf(charBuffer, "{}");
+                request->send(200, "application/json", charBuffer);
             }
             else
             {
@@ -225,20 +229,14 @@ void setup()
             {
                 ptr += sprintf(ptr, "%02x", event.payload[i]);
             }
-                ptr = charBuffer;
-                ptr += sprintf(ptr, "{\"time\":%lu,\"type\":%u,\"data\":\"0x%s\"", event.time, event.type, payload);
-                if (result == -2)
-                {
-                    ptr += sprintf(ptr, ",\"mismatch\":true", event.time, event.type, payload);
-                }
-                ptr += sprintf(ptr, "}", event.time, event.type, payload);
-            request->send(200, "text/plain", charBuffer);
+                sprintf(charBuffer, "{\"id\":%lu,\"type\":%u,\"data\":\"0x%s\",\"found\":%s}", event.id, event.type, payload, result == -2 ? "false" : "true");
+                request->send(200, "application/json", charBuffer);
             }
         }
         else
         {
             sprintf(charBuffer, "{\"error\":%d}", result);
-            request->send(500, "text/plain", charBuffer);
+            request->send(500, "application/json", charBuffer);
         } });
 
     server.onNotFound(onRequest);

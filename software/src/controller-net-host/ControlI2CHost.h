@@ -4,6 +4,9 @@
 #include <Wire.h>
 #include "crc16.h"
 #include "logging.h"
+#include "binary-util.h"
+
+using namespace IrrigationSystem;
 
 char logBuffer[128] = {0};
 const int controlProcessorI2CAddress = 10;
@@ -14,7 +17,7 @@ const uint8_t ackMessageType = 0x61;
 
 struct EventHistoryRecord
 {
-    uint32_t time;
+    uint16_t id;
     uint8_t type;
     uint8_t payloadSize;
     uint8_t payload[8];
@@ -40,7 +43,7 @@ public:
         unsigned long startMillis = millis();
         LOG_INFO("Starting sendRawData");
 
-        uint16_t crc = IrrigationSystem::CRC::crc16(data, size);
+        uint16_t crc = CRC::crc16(data, size);
         dataBuffer[size] = crc;          // LSB
         dataBuffer[size + 1] = crc >> 8; // MSB
 
@@ -67,7 +70,7 @@ public:
             return 2;
         }
 
-        uint16_t responseCrc = IrrigationSystem::CRC::crc16(dataBuffer + 1, responseLength - 1);
+        uint16_t responseCrc = CRC::crc16(dataBuffer + 1, responseLength - 1);
         sprintf(logBuffer, "Response: %d/%d bytes. CRC: 0x%04x", responseLength, bytesRead, responseCrc);
         Serial.println(logBuffer);
         if (responseCrc != 0)
@@ -134,19 +137,16 @@ public:
         return sendRawData(dataBuffer, 4 + valueSize, &resultLength, dataBuffer);
     }
 
-    int getNextEvent(uint32_t afterTime, EventHistoryRecord *eventOut)
+    int getNextEvent(uint16_t afterId, EventHistoryRecord *eventOut)
     {
         uint8_t dataBuffer[32] = {0};
         // Build command to set property value
         dataBuffer[0] = getEventMessageType;
-        dataBuffer[1] = afterTime;
-        dataBuffer[2] = afterTime >> 8;
-        dataBuffer[3] = afterTime >> 16;
-        dataBuffer[4] = afterTime >> 24;
+        write16LE(dataBuffer + 1, afterId);
 
         size_t resultLength;
         // TODO further validation of the response data packet (payload size consistent with result length)
-        int result = sendRawData(dataBuffer, 5, &resultLength, dataBuffer);
+        int result = sendRawData(dataBuffer, 3, &resultLength, dataBuffer);
         if (result != 0)
         {
             return result;
@@ -158,15 +158,12 @@ public:
             // No new events
             return -1;
         }
-        eventOut->time = ((uint32_t)dataBuffer[2]) +
-                         ((uint32_t)dataBuffer[3] << 8) +
-                         ((uint32_t)dataBuffer[4] << 16) +
-                         ((uint32_t)dataBuffer[5] << 24);
-        eventOut->type = dataBuffer[6];
-        eventOut->payloadSize = dataBuffer[7];
-        memcpy(eventOut->payload, &dataBuffer[8], eventOut->payloadSize);
+        eventOut->id = read16LE(&dataBuffer[2]);
+        eventOut->type = dataBuffer[4];
+        eventOut->payloadSize = dataBuffer[5];
+        memcpy(eventOut->payload, &dataBuffer[6], eventOut->payloadSize);
 
-        if (indicator == 2 && afterTime != 0)
+        if (indicator == 2)
         {
             Serial.println("WARNING some events may have been lost");
             return -2;

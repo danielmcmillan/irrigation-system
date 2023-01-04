@@ -43,7 +43,7 @@ namespace IrrigationSystem
                 responseDataSize = 2 * valueSize;
             }
         }
-        return responseDataSize + 3;
+        return responseDataSize + 4;
     }
 
     ControlProcessorPacket::MessageType ControlProcessorPacket::getMessageType(const uint8_t *packet, const uint8_t **dataOut)
@@ -128,7 +128,7 @@ namespace IrrigationSystem
         case MessageType::ConfigAdd:
             break;
         case MessageType::EventGetNext:
-            if (dataSize != 4)
+            if (dataSize != 2)
             {
                 return 1;
             }
