@@ -9,7 +9,16 @@ char logBuffer[128] = {0};
 const int controlProcessorI2CAddress = 10;
 const uint8_t getPropertyMessageType = 0x20;
 const uint8_t setPropertyMessageType = 0x21;
+const uint8_t getEventMessageType = 0x30;
 const uint8_t ackMessageType = 0x61;
+
+struct EventHistoryRecord
+{
+    uint32_t time;
+    uint8_t type;
+    uint8_t payloadSize;
+    uint8_t payload[8];
+};
 
 class ControlI2CHost
 {
@@ -123,6 +132,46 @@ public:
         size_t resultLength;
         // TODO further validation of the response data packet (should have no data part)
         return sendRawData(dataBuffer, 4 + valueSize, &resultLength, dataBuffer);
+    }
+
+    int getNextEvent(uint32_t afterTime, EventHistoryRecord *eventOut)
+    {
+        uint8_t dataBuffer[32] = {0};
+        // Build command to set property value
+        dataBuffer[0] = getEventMessageType;
+        dataBuffer[1] = afterTime;
+        dataBuffer[2] = afterTime >> 8;
+        dataBuffer[3] = afterTime >> 16;
+        dataBuffer[4] = afterTime >> 24;
+
+        size_t resultLength;
+        // TODO further validation of the response data packet (payload size consistent with result length)
+        int result = sendRawData(dataBuffer, 5, &resultLength, dataBuffer);
+        if (result != 0)
+        {
+            return result;
+        }
+
+        uint8_t indicator = dataBuffer[1];
+        if (indicator == 0)
+        {
+            // No new events
+            return -1;
+        }
+        eventOut->time = ((uint32_t)dataBuffer[2]) +
+                         ((uint32_t)dataBuffer[3] << 8) +
+                         ((uint32_t)dataBuffer[4] << 16) +
+                         ((uint32_t)dataBuffer[5] << 24);
+        eventOut->type = dataBuffer[6];
+        eventOut->payloadSize = dataBuffer[7];
+        memcpy(eventOut->payload, &dataBuffer[8], eventOut->payloadSize);
+
+        if (indicator == 2 && afterTime != 0)
+        {
+            Serial.println("WARNING some events may have been lost");
+            return -2;
+        }
+        return 0;
     }
 };
 #endif

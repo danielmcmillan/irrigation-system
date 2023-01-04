@@ -4,7 +4,7 @@
 #include "event-handler.h"
 
 #define EVENT_HISTORY_SIZE 256
-#define MAX_EVENT_SIZE 20
+#define MAX_EVENT_SIZE 14
 #define EVENT_HEADER_SIZE 6
 
 struct EventHistoryRecord
