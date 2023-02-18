@@ -44,12 +44,6 @@ namespace IrrigationSystem
         uint8_t validatePacket(const uint8_t *packet, size_t packetSize);
 
         /**
-         * Get the expected response size for the message in a given packet.
-         * Undefined behaviour if packet is not valid or is a response.
-         */
-        uint8_t getResponseSize(const uint8_t *packet, size_t packetSize);
-
-        /**
          * Get the message type from a packet.
          * If `dataOut` is not null, then it will be set to point to the data portion of the message.
          */

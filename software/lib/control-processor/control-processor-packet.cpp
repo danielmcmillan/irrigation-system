@@ -22,30 +22,6 @@ namespace IrrigationSystem
         return this->validateData(type, data, packetSize - 3);
     }
 
-    uint8_t ControlProcessorPacket::getResponseSize(const uint8_t *packet, size_t packetSize)
-    {
-        const uint8_t *data;
-        MessageType type = this->getMessageType(packet, &data);
-        size_t responseDataSize = 0;
-        if (type == MessageType::PropertyRead)
-        {
-            // Response data for property read is the property value, and if not readonly then the desired value
-            uint8_t controllerId = data[0];
-            uint16_t propertyId = read16LE(data + 1);
-            const ControllerDefinition *definition = this->controllerDefinitions.getControllerDefinition(controllerId);
-            size_t valueSize = definition->getPropertyLength(propertyId);
-            if (definition->getPropertyReadOnly(propertyId))
-            {
-                responseDataSize = valueSize;
-            }
-            else
-            {
-                responseDataSize = 2 * valueSize;
-            }
-        }
-        return responseDataSize + 4;
-    }
-
     ControlProcessorPacket::MessageType ControlProcessorPacket::getMessageType(const uint8_t *packet, const uint8_t **dataOut)
     {
         ControlProcessorPacket::MessageType messageType = (ControlProcessorPacket::MessageType)(packet[0]);
