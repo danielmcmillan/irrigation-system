@@ -39,19 +39,23 @@ namespace IrrigationSystem
         }
     }
 
+    bool ControllerManager::beginControllers()
+    {
+        for (unsigned int i = 0; i < numControllers; ++i)
+        {
+            if (!controllers[i].controller->begin())
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
     void ControllerManager::resetControllers()
     {
         for (unsigned int i = 0; i < numControllers; ++i)
         {
             controllers[i].controller->reset();
-        }
-    }
-
-    void ControllerManager::beginControllers()
-    {
-        for (unsigned int i = 0; i < numControllers; ++i)
-        {
-            controllers[i].controller->begin();
         }
     }
 }

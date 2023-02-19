@@ -19,23 +19,24 @@ namespace IrrigationSystem
     namespace Vacon100ControllerProperties
     {
         constexpr uint8_t propertyIds[] = {
-            0x01,
-            0x02,
-            0x10,
-            0x11,
-            0x12,
-            0x13,
-            0x14,
-            0x15,
-            0x16,
-            0x17,
-            0x18,
-            0x19,
-            0x1a,
-            0x1b,
-            0x1c,
-            0x1d,
-            0x1e};
+            0x01, // available
+            0x02, // motorOn
+            0x10, // status
+            0x11, // actualSpeed
+            0x12, // outputFrequency
+            0x13, // motorSpeed
+            0x14, // motorCurrent
+            0x15, // motorTorque
+            0x16, // motorPower
+            0x17, // motorVoltage
+            0x18, // dcLinkVoltage
+            0x19, // activeFaultCode
+            0x1a, // feedbackPressure
+            0x1b, // driveTemp
+            0x1c, // motorTemp
+            0x1d, // energyUsed
+            0x1e  // runTime
+        };
         enum : uint8_t
         {
             available = propertyIds[0],

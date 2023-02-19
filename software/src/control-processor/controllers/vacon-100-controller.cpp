@@ -17,6 +17,8 @@ namespace IrrigationSystem
                                                                    values(),
                                                                    desiredMotorOn(false),
                                                                    available(false),
+                                                                   serialStarted(false),
+                                                                   idMapUpdated(false),
                                                                    eventHandler(nullptr)
     {
     }
@@ -26,34 +28,46 @@ namespace IrrigationSystem
         this->eventHandler = &handler;
     }
 
-    void Vacon100Controller::reset()
-    {
-        vacon.end();
-        serial.end();
-        definition.reset();
-    }
-
     void Vacon100Controller::configure(uint8_t type, const uint8_t *data)
     {
         definition.configure(type, data);
     }
 
-    void Vacon100Controller::begin()
+    bool Vacon100Controller::begin()
     {
-        serial.begin(9600);
+        if (!serialStarted)
+        {
+            serial.begin(9600);
+            serialStarted = true;
+        }
         if (!vacon.begin())
         {
             notifyError(0x00);
             LOG_ERROR("Failed to start Vacon 100 client");
             vacon.printError();
+            return false;
         }
         if (!vacon.initIdMapping())
         {
             notifyError(0x01);
             LOG_ERROR("Failed to set up Vacon 100 ID mappings");
             vacon.printError();
+            return false;
         }
-        // TODO some automatic retry, without generating too many events. Is any other action required when begin fails?
+        idMapUpdated = true;
+        return true;
+    }
+
+    void Vacon100Controller::reset()
+    {
+        vacon.end();
+        idMapUpdated = false;
+        if (serialStarted)
+        {
+            serial.end();
+            serialStarted = false;
+        }
+        definition.reset();
     }
 
     const IrrigationSystem::ControllerDefinition &Vacon100Controller::getDefinition() const

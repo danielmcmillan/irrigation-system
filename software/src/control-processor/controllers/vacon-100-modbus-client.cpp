@@ -23,6 +23,12 @@ namespace IrrigationSystem
 
     int Vacon100Client::begin(uint8_t slaveId)
     {
+        if (modbus != nullptr)
+        {
+            // Client already started
+            return 1;
+        }
+
         errno = 0;
 
         modbus = modbus_new_rtu(&rs485, 0, 0);
@@ -33,6 +39,7 @@ namespace IrrigationSystem
         if (modbus_connect(modbus) != 0)
         {
             modbus_free(modbus);
+            modbus = nullptr;
             return 0;
         }
         modbus_set_error_recovery(modbus, MODBUS_ERROR_RECOVERY_PROTOCOL);
@@ -44,9 +51,12 @@ namespace IrrigationSystem
 
     void Vacon100Client::end()
     {
-        modbus_close(modbus);
-        modbus_free(modbus);
-        modbus = nullptr;
+        if (modbus != nullptr)
+        {
+            modbus_close(modbus);
+            modbus_free(modbus);
+            modbus = nullptr;
+        }
     }
 
     int Vacon100Client::setStart(bool start, bool force)

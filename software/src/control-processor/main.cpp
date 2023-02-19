@@ -1,6 +1,5 @@
 #include <Arduino.h>
 #include "logging.h"
-#include "crc16.h"
 #include "events/event-history.h"
 #include "controllers/controller-builder.h"
 #include "i2c-interface.h"
@@ -16,6 +15,8 @@ EventHistory events;
 ControlProcessorMessageHandler handler(controllers, events);
 ControlProcessorI2cInterface i2c = ControlProcessorI2cInterface::initialise(controllers, handler);
 
+bool controllersInitialised = false;
+
 void setup()
 {
     Serial.begin(9600);
@@ -23,12 +24,22 @@ void setup()
 
     controllers.setEventHandler(events);
     controllers.resetControllers();
-    controllers.beginControllers(); // TODO only begin when requested after configuration
 }
 
 void loop()
 {
+    if (controllersInitialised)
+    {
+        controllers.getController(0x02)->update();
+        controllers.getController(0x02)->applyPropertyValues();
+    }
+    else
+    {
+        // TODO only begin when requested after configuration
+        if (controllers.beginControllers())
+        {
+            controllersInitialised = true;
+        }
+    }
     delay(3000);
-    controllers.getController(0x02)->update();
-    controllers.getController(0x02)->applyPropertyValues();
 }

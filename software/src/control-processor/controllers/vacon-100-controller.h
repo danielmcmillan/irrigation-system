@@ -16,7 +16,7 @@ namespace IrrigationSystem
         void setEventHandler(EventHandler &handler);
         void reset() override;
         void configure(uint8_t type, const uint8_t *data) override;
-        void begin() override;
+        bool begin() override;
 
         const IrrigationSystem::ControllerDefinition &getDefinition() const override;
 
@@ -35,6 +35,8 @@ namespace IrrigationSystem
         Vacon100Data values;
         bool desiredMotorOn;
         bool available;
+        bool serialStarted;
+        bool idMapUpdated;
         EventHandler *eventHandler;
 
         uint32_t getPropertyValueFromValues(const Vacon100Data &values, uint16_t id) const;

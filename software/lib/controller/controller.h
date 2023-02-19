@@ -21,12 +21,21 @@ namespace IrrigationSystem
          */
         virtual void setEventHandler(EventHandler &handler) = 0;
 
-        /** End communication and reset configuration. The underlying definition is also reset. */
-        virtual void reset() = 0;
         /** Add a configuration. The underlying definition is also configured. */
         virtual void configure(uint8_t type, const uint8_t *data) = 0;
-        /** Initialise after being configured */
-        virtual void begin() = 0;
+        /**
+         * Initialise after being configured.
+         * The operation should be idempotent, and may be called multiple times in failure scenarios.
+         *
+         * Returns whether initialisation was successful.
+         */
+        virtual bool begin() = 0;
+        /**
+         * End communication and reset configuration. The underlying definition is also reset.
+         *
+         * The operation should be idempotent. It may be called multiple times and before configure or begin is called.
+         */
+        virtual void reset() = 0;
 
         virtual uint32_t getPropertyValue(uint16_t id) const = 0;
         virtual uint32_t getPropertyDesiredValue(uint16_t id) const = 0;
