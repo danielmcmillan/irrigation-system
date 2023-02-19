@@ -7,6 +7,8 @@
 #define MAX485_DE A2
 #define MAX485_RO 9
 #define MAX485_DI 8
+// Number of consecutive errors beyond which connection to Vacon is considered unavailable
+#define MAX_ERROR_COUNT 2
 
 namespace IrrigationSystem
 {
@@ -16,7 +18,7 @@ namespace IrrigationSystem
                                                                    vacon(serial, MAX485_RE, MAX485_DE, MAX485_DI),
                                                                    values(),
                                                                    desiredMotorOn(false),
-                                                                   available(false),
+                                                                   errorCount(255),
                                                                    serialStarted(false),
                                                                    idMapUpdated(false),
                                                                    eventHandler(nullptr)
@@ -79,7 +81,7 @@ namespace IrrigationSystem
     {
         if (id == Vacon100ControllerProperties::available)
         {
-            return available;
+            return errorCount <= MAX_ERROR_COUNT;
         }
         else
         {
@@ -122,7 +124,7 @@ namespace IrrigationSystem
         {
             if (!vacon.setStart(desiredMotorOn))
             {
-                setAvailable(false);
+                updateErrorCount(false);
                 notifyError(0x02);
                 LOG_ERROR("Failed to write to Vacon 100");
                 vacon.printError();
@@ -135,7 +137,7 @@ namespace IrrigationSystem
         Vacon100Data oldValues = values;
         if (vacon.readInputRegisters(&values))
         {
-            setAvailable(true);
+            updateErrorCount(true);
             if (eventHandler != nullptr)
             {
                 // Raise events for changes to vacon data, all properties except for first one (available)
@@ -152,7 +154,7 @@ namespace IrrigationSystem
         }
         else
         {
-            setAvailable(false);
+            updateErrorCount(false);
             notifyError(0x03);
             LOG_ERROR("Failed to read from Vacon 100");
             vacon.printError();
@@ -201,17 +203,25 @@ namespace IrrigationSystem
         }
     }
 
-    void Vacon100Controller::setAvailable(bool available)
+    // Increment the error count, or set it back to 0 if reset is true
+    void Vacon100Controller::updateErrorCount(bool reset)
     {
-        if (this->available != available)
+        bool previousAvailable = errorCount <= MAX_ERROR_COUNT;
+        if (reset)
         {
-            if (eventHandler != nullptr)
-            {
-                eventHandler->handlePropertyValueChanged(controllerId, Vacon100ControllerProperties::available, 1, available ? 1 : 0);
-            }
-            this->available = available;
+            errorCount = 0;
+        }
+        else if (errorCount < 255)
+        {
+            ++errorCount;
+        }
+        bool available = errorCount <= MAX_ERROR_COUNT;
+        if (previousAvailable != available && eventHandler != nullptr)
+        {
+            eventHandler->handlePropertyValueChanged(controllerId, Vacon100ControllerProperties::available, 1, available ? 1 : 0);
         }
     }
+
     void Vacon100Controller::notifyError(uint8_t data)
     {
         if (eventHandler != nullptr)
