@@ -18,9 +18,9 @@ namespace IrrigationSystem
                                                                    vacon(serial, MAX485_RE, MAX485_DE, MAX485_DI),
                                                                    values(),
                                                                    desiredMotorOn(false),
-                                                                   errorCount(255),
                                                                    serialStarted(false),
                                                                    idMapUpdated(false),
+                                                                   errorCount(255),
                                                                    eventHandler(nullptr)
     {
     }
