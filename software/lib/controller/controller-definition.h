@@ -15,7 +15,8 @@ namespace IrrigationSystem
          */
         virtual unsigned int getPropertyCount() const = 0;
         /**
-         * Get the id of the property at the given index.
+         * Get the id of the property at the given index, assuming some ordering of properties.
+         * The order of properties is irrelevant, so long as it is consistent.
          */
         virtual uint16_t getPropertyIdAt(unsigned int index) const = 0;
         /**

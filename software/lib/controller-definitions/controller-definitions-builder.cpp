@@ -3,7 +3,8 @@
 namespace IrrigationSystem
 {
     ControllerDefinitionsBuilder::ControllerDefinitionsBuilder() : vacon100Definition(),
-                                                                   registeredDefinitions({{0x02, &this->vacon100Definition}})
+                                                                   remoteUnitDefinition(),
+                                                                   registeredDefinitions({{0x02, &this->vacon100Definition}, {0x04, &this->remoteUnitDefinition}})
     {
     }
 

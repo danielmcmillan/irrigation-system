@@ -3,6 +3,7 @@
 
 #include "controller-manager.h"
 #include "vacon-100-controller.h"
+#include "remote-unit-controller.h"
 
 namespace IrrigationSystem
 {
@@ -14,7 +15,8 @@ namespace IrrigationSystem
 
     private:
         Vacon100Controller vacon100Controller;
-        ControllerRegistration registeredControllers[1];
+        RemoteUnitController remoteUnitController;
+        ControllerRegistration registeredControllers[2];
     };
 }
 

@@ -3,6 +3,7 @@
 
 #include "controller-definition-manager.h"
 #include "vacon-100-controller-definition.h"
+#include "remote-unit-controller-definition.h"
 
 namespace IrrigationSystem
 {
@@ -17,7 +18,8 @@ namespace IrrigationSystem
 
     private:
         Vacon100ControllerDefinition vacon100Definition;
-        IrrigationSystem::ControllerDefinitionRegistration registeredDefinitions[1];
+        RemoteUnitControllerDefinition remoteUnitDefinition;
+        IrrigationSystem::ControllerDefinitionRegistration registeredDefinitions[2];
     };
 }
 
