@@ -12,7 +12,7 @@ namespace IrrigationSystem
         /** Custom identifier for the remote unit */
         uint8_t id;
         /** RF node number for addressing */
-        uint16_t nodeNumber;
+        uint16_t nodeId;
     };
     struct Solenoid
     {
@@ -43,10 +43,16 @@ namespace IrrigationSystem
         unsigned int getPropertyLength(uint16_t id) const;
         bool getPropertyReadOnly(uint16_t id) const;
 
+        uint8_t getRemoteUnitCount() const;
+        const RemoteUnit &getRemoteUnitAt(int index) const;
         /** Get the index of the RemoteUnit definition with specified id, or -1 if it doesn't exist */
         int getRemoteUnitIndex(uint8_t id) const;
+        uint8_t getSolenoidCount() const;
+        const Solenoid &getSolenoidAt(int index) const;
         /** Get the index of the Solenoid definition with specified id, or -1 if it doesn't exist  */
         int getSolenoidIndex(uint8_t id) const;
+        /** Get the property id for the remote unit or solenoid at the given index */
+        uint16_t getPropertyId(RemoteUnitPropertyType type, int index) const;
 
     private:
         RemoteUnit remoteUnits[MAX_REMOTE_UNITS];

@@ -5,17 +5,32 @@ extern "C"
 {
 #include "yl-800t.h"
 }
+#include "remote-unit-packet.h"
 
 #define RF_ENABLE_PIN 6
 #define RF_MODULE_RESPONSE_TIMEOUT 2000
 #define RF_FREQUENCY (434l * 1l << 14) // 434 MHz
 #define RF_TX_POWER 5
 
+#define PACKET_BUFFER_SIZE 16
+#define REMOTE_UNIT_TIMEOUT 5000
+
+// Number of consecutive errors beyond which connection to a remote unit is considered unavailable
+#define MAX_ERROR_COUNT 2
+// Number of times to retry communication with a rmeote unit before considering it a failure
+#define RETRY_COUNT 3
+// Time in milliseconds between starting heartbeat for all remote units
+#define HEARTBEAT_INTERVAL 600000 // 10 minutes
+
 namespace IrrigationSystem
 {
     RemoteUnitController::RemoteUnitController(uint8_t controllerId) : controllerId(controllerId),
                                                                        definition(),
-                                                                       eventHandler(nullptr)
+                                                                       eventHandler(nullptr),
+                                                                       remoteUnitValues({}),
+                                                                       solenoidValues({}),
+                                                                       lastHeartbeatMillis(0),
+                                                                       remoteUnitHeartbeatIndex(0)
     {
     }
 
@@ -31,9 +46,10 @@ namespace IrrigationSystem
 
     bool RemoteUnitController::begin()
     {
-        // TODO Serial begin
+        // Enable RF module
         pinMode(RF_ENABLE_PIN, OUTPUT);
         digitalWrite(RF_ENABLE_PIN, LOW);
+
         if (!applyRfConfig())
         {
             notifyError(0x01);
@@ -47,6 +63,8 @@ namespace IrrigationSystem
     {
         memset(&remoteUnitValues, 0, sizeof remoteUnitValues);
         memset(&solenoidValues, 0, sizeof solenoidValues);
+        lastHeartbeatMillis = 0;
+        remoteUnitHeartbeatIndex = 0;
         definition.reset();
     }
 
@@ -66,7 +84,7 @@ namespace IrrigationSystem
             index = definition.getRemoteUnitIndex(subId);
             if (index >= 0)
             {
-                return remoteUnitValues[index].available;
+                return remoteUnitValues[index].errorCount <= MAX_ERROR_COUNT;
             }
             break;
         case RemoteUnitPropertyType::RemoteUnitBattery:
@@ -134,15 +152,33 @@ namespace IrrigationSystem
 
     void RemoteUnitController::update()
     {
-        // TODO: heartbeat remote units, periodically check battery voltage, send event when values change
+        // Check if new heartbeat process should be started
+        if (remoteUnitHeartbeatIndex >= definition.getRemoteUnitCount() && (millis() - lastHeartbeatMillis) > HEARTBEAT_INTERVAL)
+        {
+            remoteUnitHeartbeatIndex = 0;
+        }
+        // Continue heartbeat on next remote unit if it is in progress
+        if (remoteUnitHeartbeatIndex < definition.getRemoteUnitCount())
+        {
+            bool success = readFromRemoteUnit(remoteUnitHeartbeatIndex);
+            updateRemoteUnitErrorCount(remoteUnitHeartbeatIndex, success);
+
+            if (success || remoteUnitValues[remoteUnitHeartbeatIndex].errorCount > MAX_ERROR_COUNT)
+            {
+                ++remoteUnitHeartbeatIndex;
+                if (remoteUnitHeartbeatIndex == definition.getRemoteUnitCount())
+                {
+                    lastHeartbeatMillis = millis();
+                }
+            }
+        }
     }
 
-    void RemoteUnitController::notifyError(uint8_t data)
+    void RemoteUnitController::notifyError(uint8_t errorType, uint8_t remoteUnitId)
     {
         if (eventHandler != nullptr)
         {
-            // uint16_t errorCode = vacon.getErrorCode();
-            uint8_t errorPayload[] = {controllerId, data};
+            uint8_t errorPayload[] = {controllerId, errorType, remoteUnitId};
             eventHandler->handleEvent(EventType::controllerError, sizeof errorPayload, errorPayload);
         }
     }
@@ -172,5 +208,109 @@ namespace IrrigationSystem
         Serial.flush();
         Serial.readBytes(message, 25);
         return yl800tReceiveWriteAllParameters(message) == 0;
+    }
+
+    // Increment the error count for a remote unit, or set it back to 0 if reset is true
+    void RemoteUnitController::updateRemoteUnitErrorCount(int index, bool reset)
+    {
+        RemoteUnitPropertyValues &values = remoteUnitValues[index];
+        bool previousAvailable = values.errorCount <= MAX_ERROR_COUNT;
+        if (reset)
+        {
+            values.errorCount = 0;
+        }
+        else if (values.errorCount < 255)
+        {
+            ++values.errorCount;
+        }
+        bool available = values.errorCount <= MAX_ERROR_COUNT;
+        if (previousAvailable != available && eventHandler != nullptr)
+        {
+            eventHandler->handlePropertyValueChanged(controllerId, definition.getPropertyId(RemoteUnitPropertyType::RemoteUnitAvailable, index), 1, available ? 1 : 0);
+        }
+    }
+
+    bool RemoteUnitController::readFromRemoteUnit(int index)
+    {
+        // TODO read more than just battery
+        const RemoteUnit &remoteUnit = definition.getRemoteUnitAt(remoteUnitHeartbeatIndex);
+        uint8_t buffer[PACKET_BUFFER_SIZE + 2];
+
+        // Build request packet
+        uint8_t *packet = buffer + 2;
+        size_t packetSize = RemoteUnitPacket::createPacket(packet, PACKET_BUFFER_SIZE, remoteUnit.nodeId);
+        packetSize = RemoteUnitPacket::addCommandToPacket(packet, PACKET_BUFFER_SIZE, packetSize, RemoteUnitPacket::RemoteUnitCommand::GetBatteryVoltage, nullptr);
+        packetSize = RemoteUnitPacket::finalisePacket(packet, PACKET_BUFFER_SIZE, packetSize, false);
+        // Add big-endian node ID to initial bytes for LoRa module
+        buffer[0] = remoteUnit.nodeId >> 8;
+        buffer[1] = remoteUnit.nodeId;
+        packetSize += 2;
+
+        // Send request packet
+        if (Serial.write(buffer, packetSize) != packetSize)
+        {
+            notifyError(0x02, remoteUnit.id);
+            LOG_ERROR("Failed to write to Serial");
+            return false;
+        }
+
+        // Read response packet
+        // All of the data should arrive at once, so apply timeout only to first byte
+        Serial.setTimeout(REMOTE_UNIT_TIMEOUT);
+        size_t read = Serial.readBytes(buffer, 1);
+        if (read == 0)
+        {
+            notifyError(0x03, remoteUnit.id);
+            LOG_ERROR("Timeout waiting for response on Serial");
+            return false;
+        }
+        Serial.setTimeout(100);
+        read = Serial.readBytes(buffer + 1, PACKET_BUFFER_SIZE - 1);
+
+        // Handle response packet
+        packetSize = RemoteUnitPacket::getPacket(buffer, read + 1, &packet);
+        int numCommands = IrrigationSystem::RemoteUnitPacket::validatePacket(packet, packetSize, true);
+        if (numCommands <= 0)
+        {
+            if (numCommands == -2)
+            {
+                notifyError(0x04, remoteUnit.id);
+                LOG_ERROR("Remote unit response has invalid CRC");
+            }
+            else
+            {
+                notifyError(0x05, remoteUnit.id);
+                LOG_ERROR("Remote unit response includes invalid commands or data");
+            }
+            return false;
+        }
+        if (RemoteUnitPacket::getNodeId(packet) != remoteUnit.nodeId)
+        {
+            notifyError(0x06, remoteUnit.id);
+            LOG_ERROR("Remote unit response is valid but for unexpected node id");
+            return false;
+        }
+        // TODO assuming response is for one battery voltage command, 1 byte of data
+        const uint8_t *responseData;
+        IrrigationSystem::RemoteUnitPacket::RemoteUnitCommand responseCommand =
+            IrrigationSystem::RemoteUnitPacket::getCommandAtIndex(packet, 0, &responseData);
+        if (responseCommand != RemoteUnitPacket::RemoteUnitCommand::GetBatteryVoltageResponse)
+        {
+            notifyError(0x07, remoteUnit.id);
+            LOG_ERROR("Remote unit response is for unexpected commands");
+            return false;
+        }
+
+        // Update property values based on response
+        uint8_t previousBatteryVoltage = remoteUnitValues[index].batteryVoltage;
+        uint8_t batteryVoltage = responseData[0];
+        remoteUnitValues[index].batteryVoltage = batteryVoltage;
+        if (eventHandler != nullptr && previousBatteryVoltage != batteryVoltage)
+        {
+            eventHandler->handlePropertyValueChanged(controllerId, definition.getPropertyId(RemoteUnitPropertyType::RemoteUnitBattery, index), 1, batteryVoltage);
+        }
+
+        Serial.flush();
+        return true;
     }
 }

@@ -8,7 +8,7 @@ namespace IrrigationSystem
 {
     struct RemoteUnitPropertyValues
     {
-        uint8_t available;
+        uint8_t errorCount;
         /** Tenths of a volt */
         uint8_t batteryVoltage;
     };
@@ -42,10 +42,19 @@ namespace IrrigationSystem
         EventHandler *eventHandler;
         RemoteUnitPropertyValues remoteUnitValues[MAX_REMOTE_UNITS];
         RemoteUnitSolenoidPropertyValues solenoidValues[MAX_SOLENOIDS];
+        /** Time that heartbeat was last completed for all remote units */
+        unsigned long lastHeartbeatMillis;
+        /**
+         * The next remote unit to perform heartbeat check on.
+         * If there is no heartbeat check in progress, this would be equal to definition.remoteUnitCount.
+         */
+        uint8_t remoteUnitHeartbeatIndex;
 
-        void notifyError(uint8_t data);
+        void notifyError(uint8_t errorType, uint8_t remoteUnitId = 0);
         /** Write the default config to RF module. Returns whether successful. */
         bool applyRfConfig();
+        void updateRemoteUnitErrorCount(int index, bool reset);
+        bool readFromRemoteUnit(int index);
     };
 }
 
