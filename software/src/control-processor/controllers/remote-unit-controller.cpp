@@ -1,6 +1,15 @@
 #include <Arduino.h>
 #include "remote-unit-controller.h"
 #include "logging.h"
+extern "C"
+{
+#include "yl-800t.h"
+}
+
+#define RF_ENABLE_PIN 6
+#define RF_MODULE_RESPONSE_TIMEOUT 2000
+#define RF_FREQUENCY (434l * 1l << 14) // 434 MHz
+#define RF_TX_POWER 5
 
 namespace IrrigationSystem
 {
@@ -22,7 +31,15 @@ namespace IrrigationSystem
 
     bool RemoteUnitController::begin()
     {
-        // TODO Serial begin, configure RF module
+        // TODO Serial begin
+        pinMode(RF_ENABLE_PIN, OUTPUT);
+        digitalWrite(RF_ENABLE_PIN, LOW);
+        if (!applyRfConfig())
+        {
+            notifyError(0x01);
+            LOG_ERROR("Failed to configure RF module");
+            return false;
+        }
         return true;
     }
 
@@ -118,5 +135,42 @@ namespace IrrigationSystem
     void RemoteUnitController::update()
     {
         // TODO: heartbeat remote units, periodically check battery voltage, send event when values change
+    }
+
+    void RemoteUnitController::notifyError(uint8_t data)
+    {
+        if (eventHandler != nullptr)
+        {
+            // uint16_t errorCode = vacon.getErrorCode();
+            uint8_t errorPayload[] = {controllerId, data};
+            eventHandler->handleEvent(EventType::controllerError, sizeof errorPayload, errorPayload);
+        }
+    }
+
+    bool RemoteUnitController::applyRfConfig()
+    {
+        Serial.setTimeout(RF_MODULE_RESPONSE_TIMEOUT);
+        YL800TReadWriteAllParameters params = {
+            .serialBaudRate = YL_800T_BAUD_RATE_9600,
+            .serialParity = YL_800T_PARITY_NONE,
+            .rfFrequency = RF_FREQUENCY,
+            .rfSpreadingFactor = YL_800T_RF_SPREADING_FACTOR_2048,
+            .mode = YL_800T_RF_MODE_CENTRAL,
+            .rfBandwidth = YL_800T_RF_BANDWIDTH_125K,
+            .nodeId = 0,
+            .netId = 0,
+            .rfTransmitPower = RF_TX_POWER,
+            .breathCycle = YL_800T_BREATH_CYCLE_2S,
+            .breathTime = YL_800T_BREATH_TIME_32MS};
+        uint8_t message[25] = {0};
+        uint8_t length = yl800tSendWriteAllParameters(&params, message);
+        while (Serial.available())
+        {
+            Serial.read();
+        }
+        Serial.write(message, length);
+        Serial.flush();
+        Serial.readBytes(message, 25);
+        return yl800tReceiveWriteAllParameters(message) == 0;
     }
 }

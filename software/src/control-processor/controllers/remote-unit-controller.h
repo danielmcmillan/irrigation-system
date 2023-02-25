@@ -42,6 +42,10 @@ namespace IrrigationSystem
         EventHandler *eventHandler;
         RemoteUnitPropertyValues remoteUnitValues[MAX_REMOTE_UNITS];
         RemoteUnitSolenoidPropertyValues solenoidValues[MAX_SOLENOIDS];
+
+        void notifyError(uint8_t data);
+        /** Write the default config to RF module. Returns whether successful. */
+        bool applyRfConfig();
     };
 }
 
