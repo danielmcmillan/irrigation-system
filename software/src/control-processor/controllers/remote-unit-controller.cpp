@@ -15,10 +15,8 @@ extern "C"
 #define PACKET_BUFFER_SIZE 16
 #define REMOTE_UNIT_TIMEOUT 5000
 
-// Number of consecutive errors beyond which connection to a remote unit is considered unavailable
-#define MAX_ERROR_COUNT 2
-// Number of times to retry communication with a rmeote unit before considering it a failure
-#define RETRY_COUNT 3
+// Number of times to retry communication with a rmeote unit before considering it unavailable
+#define RETRY_COUNT 2
 // Time in milliseconds between starting heartbeat for all remote units
 #define HEARTBEAT_INTERVAL 600000 // 10 minutes
 
@@ -30,7 +28,8 @@ namespace IrrigationSystem
                                                                        remoteUnitValues({}),
                                                                        solenoidValues({}),
                                                                        lastHeartbeatMillis(0),
-                                                                       remoteUnitHeartbeatIndex(0)
+                                                                       remoteUnitHeartbeatIndex(0),
+                                                                       remoteUnitErrorCount(0)
     {
     }
 
@@ -84,7 +83,7 @@ namespace IrrigationSystem
             index = definition.getRemoteUnitIndex(subId);
             if (index >= 0)
             {
-                return remoteUnitValues[index].errorCount <= MAX_ERROR_COUNT;
+                return remoteUnitValues[index].available;
             }
             break;
         case RemoteUnitPropertyType::RemoteUnitBattery:
@@ -161,15 +160,20 @@ namespace IrrigationSystem
         if (remoteUnitHeartbeatIndex < definition.getRemoteUnitCount())
         {
             bool success = readFromRemoteUnit(remoteUnitHeartbeatIndex);
-            updateRemoteUnitErrorCount(remoteUnitHeartbeatIndex, success);
-
-            if (success || remoteUnitValues[remoteUnitHeartbeatIndex].errorCount > MAX_ERROR_COUNT)
+            if (success || remoteUnitErrorCount >= RETRY_COUNT)
             {
+                // Either succeeded or retry count exceeded. Reset errors and move to the next remote unit.
+                updateRemoteUnitAvailable(remoteUnitHeartbeatIndex, success);
+                remoteUnitErrorCount = 0;
                 ++remoteUnitHeartbeatIndex;
                 if (remoteUnitHeartbeatIndex == definition.getRemoteUnitCount())
                 {
                     lastHeartbeatMillis = millis();
                 }
+            }
+            else
+            {
+                ++remoteUnitErrorCount;
             }
         }
     }
@@ -210,23 +214,17 @@ namespace IrrigationSystem
         return yl800tReceiveWriteAllParameters(message) == 0;
     }
 
-    // Increment the error count for a remote unit, or set it back to 0 if reset is true
-    void RemoteUnitController::updateRemoteUnitErrorCount(int index, bool reset)
+    // Increment the error count for a remote unit, or set it back to 0 on success
+    void RemoteUnitController::updateRemoteUnitAvailable(int index, bool available)
     {
         RemoteUnitPropertyValues &values = remoteUnitValues[index];
-        bool previousAvailable = values.errorCount <= MAX_ERROR_COUNT;
-        if (reset)
+        if (values.available != available)
         {
-            values.errorCount = 0;
-        }
-        else if (values.errorCount < 255)
-        {
-            ++values.errorCount;
-        }
-        bool available = values.errorCount <= MAX_ERROR_COUNT;
-        if (previousAvailable != available && eventHandler != nullptr)
-        {
-            eventHandler->handlePropertyValueChanged(controllerId, definition.getPropertyId(RemoteUnitPropertyType::RemoteUnitAvailable, index), 1, available ? 1 : 0);
+            values.available = available;
+            if (eventHandler != nullptr)
+            {
+                eventHandler->handlePropertyValueChanged(controllerId, definition.getPropertyId(RemoteUnitPropertyType::RemoteUnitAvailable, index), 1, available);
+            }
         }
     }
 

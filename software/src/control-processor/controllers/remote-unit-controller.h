@@ -8,7 +8,7 @@ namespace IrrigationSystem
 {
     struct RemoteUnitPropertyValues
     {
-        uint8_t errorCount;
+        bool available;
         /** Tenths of a volt */
         uint8_t batteryVoltage;
     };
@@ -49,11 +49,12 @@ namespace IrrigationSystem
          * If there is no heartbeat check in progress, this would be equal to definition.remoteUnitCount.
          */
         uint8_t remoteUnitHeartbeatIndex;
+        uint8_t remoteUnitErrorCount;
 
         void notifyError(uint8_t errorType, uint8_t remoteUnitId = 0);
         /** Write the default config to RF module. Returns whether successful. */
         bool applyRfConfig();
-        void updateRemoteUnitErrorCount(int index, bool reset);
+        void updateRemoteUnitAvailable(int index, bool available);
         bool readFromRemoteUnit(int index);
     };
 }
