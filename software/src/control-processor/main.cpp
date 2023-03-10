@@ -42,9 +42,7 @@ void loop()
     if (controllersInitialised)
     {
         controllers.getController(0x02)->update();
-        controllers.getController(0x02)->applyPropertyValues();
         controllers.getController(0x04)->update();
-        controllers.getController(0x04)->applyPropertyValues();
     }
     else
     {

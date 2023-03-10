@@ -24,7 +24,6 @@ namespace IrrigationSystem
         uint32_t getPropertyDesiredValue(uint16_t id) const override;
         void setPropertyDesiredValue(uint16_t id, uint32_t value) override;
 
-        void applyPropertyValues() override;
         void update() override;
 
     private:

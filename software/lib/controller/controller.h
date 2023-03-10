@@ -41,8 +41,6 @@ namespace IrrigationSystem
         virtual uint32_t getPropertyDesiredValue(uint16_t id) const = 0;
         virtual void setPropertyDesiredValue(uint16_t id, uint32_t value) = 0;
 
-        /** Indicate that desired values have been changed and should be applied now */
-        virtual void applyPropertyValues() = 0;
         /** Update status and apply pending changes if necessary */
         virtual void update() = 0;
     };

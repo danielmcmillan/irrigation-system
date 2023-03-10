@@ -179,10 +179,6 @@ namespace IrrigationSystem
         LOG_ERROR("setPropertyDesiredValue with unknown Remote Unit property");
     }
 
-    void RemoteUnitController::applyPropertyValues()
-    {
-    }
-
     void RemoteUnitController::update()
     {
         // 1. Check for solenoids with pending value change

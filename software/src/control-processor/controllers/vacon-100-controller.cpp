@@ -118,20 +118,6 @@ namespace IrrigationSystem
         }
     }
 
-    void Vacon100Controller::applyPropertyValues()
-    {
-        if (getPropertyValue(Vacon100ControllerProperties::motorOn) != desiredMotorOn)
-        {
-            if (!vacon.setStart(desiredMotorOn))
-            {
-                updateErrorCount(false);
-                notifyError(0x02);
-                LOG_ERROR("Failed to write to Vacon 100");
-                vacon.printError();
-            }
-        }
-    }
-
     void Vacon100Controller::update()
     {
         Vacon100Data oldValues = values;
@@ -158,6 +144,17 @@ namespace IrrigationSystem
             notifyError(0x03);
             LOG_ERROR("Failed to read from Vacon 100");
             vacon.printError();
+        }
+
+        if (getPropertyValue(Vacon100ControllerProperties::motorOn) != desiredMotorOn)
+        {
+            if (!vacon.setStart(desiredMotorOn))
+            {
+                updateErrorCount(false);
+                notifyError(0x02);
+                LOG_ERROR("Failed to write to Vacon 100");
+                vacon.printError();
+            }
         }
     }
 
