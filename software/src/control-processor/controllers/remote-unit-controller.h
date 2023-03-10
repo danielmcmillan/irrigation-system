@@ -6,16 +6,17 @@
 
 namespace IrrigationSystem
 {
-    struct RemoteUnitPropertyValues
+    struct RemoteUnitState
     {
         bool available;
         /** Tenths of a volt */
         uint8_t batteryVoltage;
-    };
-    struct RemoteUnitSolenoidPropertyValues
-    {
-        uint8_t on : 1;
-        uint8_t desiredOn : 1;
+
+        uint8_t solenoidOn;
+        uint8_t solenoidDesiredOn;
+
+        /** Last update time, as multiples of 2^14 milliseconds (~16s) */
+        uint8_t lastUpdated;
     };
 
     class RemoteUnitController : public IrrigationSystem::Controller
@@ -40,22 +41,15 @@ namespace IrrigationSystem
         uint8_t controllerId;
         RemoteUnitControllerDefinition definition;
         EventHandler *eventHandler;
-        RemoteUnitPropertyValues remoteUnitValues[MAX_REMOTE_UNITS];
-        RemoteUnitSolenoidPropertyValues solenoidValues[MAX_SOLENOIDS];
-        /** Time that heartbeat was last completed for all remote units */
-        unsigned long lastHeartbeatMillis;
-        /**
-         * The next remote unit to perform heartbeat check on.
-         * If there is no heartbeat check in progress, this would be equal to definition.remoteUnitCount.
-         */
-        uint8_t remoteUnitHeartbeatIndex;
-        uint8_t remoteUnitErrorCount;
+        RemoteUnitState remoteUnits[MAX_REMOTE_UNITS];
 
         void notifyError(uint8_t errorType, uint8_t remoteUnitId = 0);
         /** Write the default config to RF module. Returns whether successful. */
         bool applyRfConfig();
-        void updateRemoteUnitAvailable(int index, bool available);
-        bool readFromRemoteUnit(int index);
+        void setRemoteUnitAvailable(int index, bool available);
+        bool updateRemoteUnit(int index);
+        bool handleRemoteUnitResponse(const RemoteUnit &remoteUnit, int remoteUnitIndex, uint8_t *packet);
+        void handleSolenoidValuesChanged(const RemoteUnit &remoteUnit, int remoteUnitIndex, uint8_t previousSolenoidOn, uint8_t previousSolenoidDesiredOn);
     };
 }
 

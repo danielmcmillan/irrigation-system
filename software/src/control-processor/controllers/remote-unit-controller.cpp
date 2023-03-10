@@ -12,24 +12,25 @@ extern "C"
 #define RF_FREQUENCY (434l * 1l << 14) // 434 MHz
 #define RF_TX_POWER 5
 
-#define PACKET_BUFFER_SIZE 16
+// Time to wait for data on Serial after sending a request to a remote unit
 #define REMOTE_UNIT_TIMEOUT 5000
-
 // Number of times to retry communication with a rmeote unit before considering it unavailable
 #define RETRY_COUNT 2
-// Time in milliseconds between starting heartbeat for all remote units
-#define HEARTBEAT_INTERVAL 600000 // 10 minutes
+// Time in milliseconds between heartbeats for each remote units
+#define REMOTE_UNIT_UPDATE_INTERVAL 36 // ~10 minutes
+// Time in milliseconds between heartbeats for remote units with active solenoids
+#define REMOTE_UNIT_ACTIVE_UPDATE_INTERVAL 4 // ~1 minute
+
+#define PACKET_BUFFER_SIZE 24
+// Flag indicating an indeterminate state of a remote unit's solenoids
+#define SOLENOID_ON_INDETERMINATE 0xff
 
 namespace IrrigationSystem
 {
     RemoteUnitController::RemoteUnitController(uint8_t controllerId) : controllerId(controllerId),
                                                                        definition(),
                                                                        eventHandler(nullptr),
-                                                                       remoteUnitValues({}),
-                                                                       solenoidValues({}),
-                                                                       lastHeartbeatMillis(0),
-                                                                       remoteUnitHeartbeatIndex(0),
-                                                                       remoteUnitErrorCount(0)
+                                                                       remoteUnits({})
     {
     }
 
@@ -60,10 +61,13 @@ namespace IrrigationSystem
 
     void RemoteUnitController::reset()
     {
-        memset(&remoteUnitValues, 0, sizeof remoteUnitValues);
-        memset(&solenoidValues, 0, sizeof solenoidValues);
-        lastHeartbeatMillis = 0;
-        remoteUnitHeartbeatIndex = 0;
+        memset(&remoteUnits, 0, sizeof remoteUnits);
+        // Desired state of solenoids is initially indeterminate, so will take whatever is the actual solenoid state
+        for (int i = 0; i < MAX_REMOTE_UNITS; ++i)
+        {
+            remoteUnits[i].solenoidDesiredOn = SOLENOID_ON_INDETERMINATE;
+            remoteUnits[i].lastUpdated = -REMOTE_UNIT_UPDATE_INTERVAL;
+        }
         definition.reset();
     }
 
@@ -77,27 +81,31 @@ namespace IrrigationSystem
         uint8_t type = id >> 8;
         uint8_t subId = id & 0xff;
         int index;
+
         switch (type)
         {
         case RemoteUnitPropertyType::RemoteUnitAvailable:
             index = definition.getRemoteUnitIndex(subId);
             if (index >= 0)
             {
-                return remoteUnitValues[index].available;
+                return remoteUnits[index].available;
             }
             break;
         case RemoteUnitPropertyType::RemoteUnitBattery:
             index = definition.getRemoteUnitIndex(subId);
             if (index >= 0)
             {
-                return remoteUnitValues[index].batteryVoltage;
+                return remoteUnits[index].batteryVoltage;
             }
             break;
         case RemoteUnitPropertyType::RemoteUnitSolenoidOn:
             index = definition.getSolenoidIndex(subId);
             if (index >= 0)
             {
-                return solenoidValues[index].on;
+                Solenoid const &solenoid = definition.getSolenoidAt(index);
+                index = definition.getRemoteUnitIndex(solenoid.remoteUnitId);
+                // index must be valid, assuming valid configuration
+                return (remoteUnits[index].solenoidOn & (1u << solenoid.numberAtRemoteUnit)) > 0;
             }
             break;
         }
@@ -115,7 +123,16 @@ namespace IrrigationSystem
             int index = definition.getSolenoidIndex(subId);
             if (index >= 0)
             {
-                return solenoidValues[index].desiredOn;
+                Solenoid const &solenoid = definition.getSolenoidAt(index);
+                // index must be valid, assuming valid configuration
+                index = definition.getRemoteUnitIndex(solenoid.remoteUnitId);
+                uint8_t solenoidDesiredOn = remoteUnits[index].solenoidDesiredOn;
+                // If desired value is indeterminate then it implicitly matches the actual state
+                if (solenoidDesiredOn == SOLENOID_ON_INDETERMINATE)
+                {
+                    solenoidDesiredOn = remoteUnits[index].solenoidOn;
+                }
+                return (solenoidDesiredOn & (1u << solenoid.numberAtRemoteUnit)) > 0;
             }
             break;
         }
@@ -133,8 +150,25 @@ namespace IrrigationSystem
             int index = definition.getSolenoidIndex(subId);
             if (index >= 0)
             {
-                solenoidValues[index].desiredOn = value > 0;
-                if (eventHandler != nullptr)
+                Solenoid const &solenoid = definition.getSolenoidAt(index);
+                // index must be valid, given valid configuration
+                index = definition.getRemoteUnitIndex(solenoid.remoteUnitId);
+                // setting any solenoid value causes all desired values to become determinate
+                if (remoteUnits[index].solenoidDesiredOn == SOLENOID_ON_INDETERMINATE)
+                {
+                    remoteUnits[index].solenoidDesiredOn = remoteUnits[index].solenoidOn;
+                }
+                uint8_t mask = 1u << solenoid.numberAtRemoteUnit;
+                uint8_t previousValue = remoteUnits[index].solenoidDesiredOn & mask;
+                if (value > 0)
+                {
+                    remoteUnits[index].solenoidDesiredOn |= mask;
+                }
+                else
+                {
+                    remoteUnits[index].solenoidDesiredOn &= ~mask;
+                }
+                if (eventHandler != nullptr && value != previousValue)
                 {
                     eventHandler->handlePropertyDesiredValueChanged(controllerId, id, 1, value);
                 }
@@ -146,34 +180,61 @@ namespace IrrigationSystem
 
     void RemoteUnitController::applyPropertyValues()
     {
-        // TODO write out desired solenoid state to remote units
     }
 
     void RemoteUnitController::update()
     {
-        // Check if new heartbeat process should be started
-        if (remoteUnitHeartbeatIndex >= definition.getRemoteUnitCount() && (millis() - lastHeartbeatMillis) > HEARTBEAT_INTERVAL)
+        // 1. Check for solenoids with pending value change
+        // for each related remote unit, do updateRemoteUnit
+
+        // Applying pending value changes for solenoids
+        // on failure, retry immediately RETRY_COUNT times. If still failing, available becomes false and desired value indeterminate.
+        for (int i = 0; i < definition.getRemoteUnitCount(); ++i)
         {
-            remoteUnitHeartbeatIndex = 0;
-        }
-        // Continue heartbeat on next remote unit if it is in progress
-        if (remoteUnitHeartbeatIndex < definition.getRemoteUnitCount())
-        {
-            bool success = readFromRemoteUnit(remoteUnitHeartbeatIndex);
-            if (success || remoteUnitErrorCount >= RETRY_COUNT)
+            if (remoteUnits[i].solenoidDesiredOn != SOLENOID_ON_INDETERMINATE && remoteUnits[i].solenoidOn != remoteUnits[i].solenoidDesiredOn)
             {
-                // Either succeeded or retry count exceeded. Reset errors and move to the next remote unit.
-                updateRemoteUnitAvailable(remoteUnitHeartbeatIndex, success);
-                remoteUnitErrorCount = 0;
-                ++remoteUnitHeartbeatIndex;
-                if (remoteUnitHeartbeatIndex == definition.getRemoteUnitCount())
+                bool succeeded = false;
+                for (int attempt = 0; attempt <= RETRY_COUNT; ++attempt)
                 {
-                    lastHeartbeatMillis = millis();
+                    succeeded = updateRemoteUnit(i);
+                    if (succeeded)
+                    {
+                        break;
+                    }
                 }
+                if (!succeeded)
+                {
+                    // Can't update, so revert desired value to indeterminate
+                    uint8_t previousDesiredValue = remoteUnits[i].solenoidDesiredOn;
+                    remoteUnits[i].solenoidDesiredOn = SOLENOID_ON_INDETERMINATE;
+                    // Actual value didn't change, so only desired value event is sent
+                    handleSolenoidValuesChanged(definition.getRemoteUnitAt(i), i, remoteUnits[i].solenoidOn, previousDesiredValue);
+                }
+                setRemoteUnitAvailable(i, succeeded);
+                remoteUnits[i].lastUpdated = millis() >> 14;
             }
-            else
+        }
+
+        // Do scheduled update for remote units that are not recently updated
+        // on failure, retry immediately RETRY_COUNT times. If still failing, available becomes false
+        uint8_t now = millis() >> 14;
+        for (int i = 0; i < definition.getRemoteUnitCount(); ++i)
+        {
+            uint8_t updateInterval = remoteUnits[i].solenoidOn == 0 ? REMOTE_UNIT_UPDATE_INTERVAL : REMOTE_UNIT_ACTIVE_UPDATE_INTERVAL;
+            // Correctly handle overflow of the time values
+            if ((uint8_t)(now - remoteUnits[i].lastUpdated) > updateInterval)
             {
-                ++remoteUnitErrorCount;
+                bool succeeded = false;
+                for (int attempt = 0; attempt <= RETRY_COUNT; ++attempt)
+                {
+                    succeeded = updateRemoteUnit(i);
+                    if (succeeded)
+                    {
+                        break;
+                    }
+                }
+                setRemoteUnitAvailable(i, succeeded);
+                remoteUnits[i].lastUpdated = millis() >> 14;
             }
         }
     }
@@ -215,9 +276,9 @@ namespace IrrigationSystem
     }
 
     // Increment the error count for a remote unit, or set it back to 0 on success
-    void RemoteUnitController::updateRemoteUnitAvailable(int index, bool available)
+    void RemoteUnitController::setRemoteUnitAvailable(int index, bool available)
     {
-        RemoteUnitPropertyValues &values = remoteUnitValues[index];
+        RemoteUnitState &values = remoteUnits[index];
         if (values.available != available)
         {
             values.available = available;
@@ -228,16 +289,26 @@ namespace IrrigationSystem
         }
     }
 
-    bool RemoteUnitController::readFromRemoteUnit(int index)
+    bool RemoteUnitController::updateRemoteUnit(int index)
     {
-        // TODO read more than just battery
-        const RemoteUnit &remoteUnit = definition.getRemoteUnitAt(remoteUnitHeartbeatIndex);
+        const RemoteUnit &remoteUnit = definition.getRemoteUnitAt(index);
         uint8_t buffer[PACKET_BUFFER_SIZE + 2];
 
-        // Build request packet
+        // Build request packet: get battery + clear faults + get/set solenoid state
         uint8_t *packet = buffer + 2;
         size_t packetSize = RemoteUnitPacket::createPacket(packet, PACKET_BUFFER_SIZE, remoteUnit.nodeId);
         packetSize = RemoteUnitPacket::addCommandToPacket(packet, PACKET_BUFFER_SIZE, packetSize, RemoteUnitPacket::RemoteUnitCommand::GetBatteryVoltage, nullptr);
+        packetSize = RemoteUnitPacket::addCommandToPacket(packet, PACKET_BUFFER_SIZE, packetSize, RemoteUnitPacket::RemoteUnitCommand::ClearFaults, nullptr);
+        if (remoteUnits[index].solenoidDesiredOn == SOLENOID_ON_INDETERMINATE)
+        {
+            packetSize = RemoteUnitPacket::addCommandToPacket(packet, PACKET_BUFFER_SIZE, packetSize, RemoteUnitPacket::RemoteUnitCommand::GetSolenoidState, nullptr);
+        }
+        else
+        {
+            uint8_t *solenoidState;
+            packetSize = RemoteUnitPacket::addCommandToPacket(packet, PACKET_BUFFER_SIZE, packetSize, RemoteUnitPacket::RemoteUnitCommand::SetSolenoidState, &solenoidState);
+            *solenoidState = remoteUnits[index].solenoidDesiredOn;
+        }
         packetSize = RemoteUnitPacket::finalisePacket(packet, PACKET_BUFFER_SIZE, packetSize, false);
         // Add big-endian node ID to initial bytes for LoRa module
         buffer[0] = remoteUnit.nodeId >> 8;
@@ -267,8 +338,9 @@ namespace IrrigationSystem
 
         // Handle response packet
         packetSize = RemoteUnitPacket::getPacket(buffer, read + 1, &packet);
+
         int numCommands = IrrigationSystem::RemoteUnitPacket::validatePacket(packet, packetSize, true);
-        if (numCommands <= 0)
+        if (numCommands != 3)
         {
             if (numCommands == -2)
             {
@@ -288,27 +360,100 @@ namespace IrrigationSystem
             LOG_ERROR("Remote unit response is valid but for unexpected node id");
             return false;
         }
-        // TODO assuming response is for one battery voltage command, 1 byte of data
-        const uint8_t *responseData;
-        IrrigationSystem::RemoteUnitPacket::RemoteUnitCommand responseCommand =
-            IrrigationSystem::RemoteUnitPacket::getCommandAtIndex(packet, 0, &responseData);
-        if (responseCommand != RemoteUnitPacket::RemoteUnitCommand::GetBatteryVoltageResponse)
+        if (!handleRemoteUnitResponse(remoteUnit, index, packet))
         {
             notifyError(0x07, remoteUnit.id);
             LOG_ERROR("Remote unit response is for unexpected commands");
             return false;
         }
 
-        // Update property values based on response
-        uint8_t previousBatteryVoltage = remoteUnitValues[index].batteryVoltage;
-        uint8_t batteryVoltage = responseData[0];
-        remoteUnitValues[index].batteryVoltage = batteryVoltage;
-        if (eventHandler != nullptr && previousBatteryVoltage != batteryVoltage)
-        {
-            eventHandler->handlePropertyValueChanged(controllerId, definition.getPropertyId(RemoteUnitPropertyType::RemoteUnitBattery, index), 1, batteryVoltage);
-        }
-
         Serial.flush();
         return true;
+    }
+
+    bool RemoteUnitController::handleRemoteUnitResponse(const RemoteUnit &remoteUnit, int remoteUnitIndex, uint8_t *packet)
+    {
+        const uint8_t *responseData;
+        IrrigationSystem::RemoteUnitPacket::RemoteUnitCommand responseCommand;
+
+        // Update battery value based on response
+        responseCommand = IrrigationSystem::RemoteUnitPacket::getCommandAtIndex(packet, 0, &responseData);
+        if (responseCommand != RemoteUnitPacket::RemoteUnitCommand::GetBatteryVoltageResponse)
+        {
+            return false;
+        }
+        uint8_t previousBatteryVoltage = remoteUnits[remoteUnitIndex].batteryVoltage;
+        uint8_t batteryVoltage = responseData[0];
+        remoteUnits[remoteUnitIndex].batteryVoltage = batteryVoltage;
+        if (eventHandler != nullptr && previousBatteryVoltage != batteryVoltage)
+        {
+            eventHandler->handlePropertyValueChanged(controllerId, definition.getPropertyId(RemoteUnitPropertyType::RemoteUnitBattery, remoteUnitIndex), 1, batteryVoltage);
+        }
+
+        // Send events for faults
+        responseCommand = IrrigationSystem::RemoteUnitPacket::getCommandAtIndex(packet, 1, &responseData);
+        if (responseCommand != RemoteUnitPacket::RemoteUnitCommand::ClearFaultsResponse && responseCommand != RemoteUnitPacket::RemoteUnitCommand::GetFaultsResponse)
+        {
+            return false;
+        }
+        if (eventHandler != nullptr)
+        {
+            for (uint8_t faultNumber = 0; faultNumber < 8; ++faultNumber)
+            {
+                if ((responseData[0] & (1u << faultNumber)) > 0)
+                {
+                    notifyError(0x80 | faultNumber, remoteUnit.id);
+                }
+            }
+        }
+
+        // Update solenoid state based on response
+        responseCommand = IrrigationSystem::RemoteUnitPacket::getCommandAtIndex(packet, 2, &responseData);
+        if (responseCommand != RemoteUnitPacket::RemoteUnitCommand::SetSolenoidStateResponse && responseCommand != RemoteUnitPacket::RemoteUnitCommand::GetSolenoidStateResponse)
+        {
+            return false;
+        }
+        uint8_t previousSolenoidOn = remoteUnits[remoteUnitIndex].solenoidOn;
+        remoteUnits[remoteUnitIndex].solenoidOn = responseData[0];
+        uint8_t previousSolenoidDesiredOn = remoteUnits[remoteUnitIndex].solenoidDesiredOn;
+        remoteUnits[remoteUnitIndex].solenoidDesiredOn = responseData[0];
+        // Send events for any solenoid that changed state
+        handleSolenoidValuesChanged(remoteUnit, remoteUnitIndex, previousSolenoidOn, previousSolenoidDesiredOn);
+        return true;
+    }
+
+    // Handle updated solenoidOn and solenoidDesiredOn value for a remote unit.
+    void RemoteUnitController::handleSolenoidValuesChanged(const RemoteUnit &remoteUnit, int remoteUnitIndex, uint8_t previousSolenoidOn, uint8_t previousSolenoidDesiredOn)
+    {
+        if (eventHandler == nullptr)
+        {
+            return;
+        }
+        for (int solenoidIndex = 0; solenoidIndex < definition.getSolenoidCount(); ++solenoidIndex)
+        {
+            const Solenoid &solenoid = definition.getSolenoidAt(solenoidIndex);
+            if (solenoid.remoteUnitId == remoteUnit.id)
+            {
+                uint16_t propertyId = definition.getPropertyId(RemoteUnitPropertyType::RemoteUnitSolenoidOn, solenoidIndex);
+                uint8_t mask = 1u << solenoid.numberAtRemoteUnit;
+                uint8_t value = (remoteUnits[remoteUnitIndex].solenoidOn & mask) > 0;
+                uint8_t previousValue = previousSolenoidOn & mask;
+                uint8_t desiredValue = remoteUnits[remoteUnitIndex].solenoidDesiredOn == SOLENOID_ON_INDETERMINATE
+                                           ? value
+                                           : (remoteUnits[remoteUnitIndex].solenoidDesiredOn & mask) > 0;
+                uint8_t previousDesiredValue = previousSolenoidDesiredOn == SOLENOID_ON_INDETERMINATE
+                                                   ? previousValue
+                                                   : (previousSolenoidDesiredOn & mask) > 0;
+
+                if (value != previousValue)
+                {
+                    eventHandler->handlePropertyValueChanged(controllerId, propertyId, 1, value);
+                }
+                if (desiredValue != previousDesiredValue)
+                {
+                    eventHandler->handlePropertyDesiredValueChanged(controllerId, propertyId, 1, value);
+                }
+            }
+        }
     }
 }
