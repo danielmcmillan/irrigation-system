@@ -17,9 +17,9 @@ extern "C"
 // Number of times to retry communication with a rmeote unit before considering it unavailable
 #define RETRY_COUNT 2
 // Time in milliseconds between heartbeats for each remote units
-#define REMOTE_UNIT_UPDATE_INTERVAL 36 // ~10 minutes
+#define REMOTE_UNIT_UPDATE_INTERVAL 73 // ~20 minutes
 // Time in milliseconds between heartbeats for remote units with active solenoids
-#define REMOTE_UNIT_ACTIVE_UPDATE_INTERVAL 4 // ~1 minute
+#define REMOTE_UNIT_ACTIVE_UPDATE_INTERVAL 11 // ~3 minutes
 
 #define PACKET_BUFFER_SIZE 24
 // Flag indicating an indeterminate state of a remote unit's solenoids
@@ -49,6 +49,7 @@ namespace IrrigationSystem
         // Enable RF module
         pinMode(RF_ENABLE_PIN, OUTPUT);
         digitalWrite(RF_ENABLE_PIN, LOW);
+        delay(500);
 
         if (!applyRfConfig())
         {
@@ -66,7 +67,7 @@ namespace IrrigationSystem
         for (int i = 0; i < MAX_REMOTE_UNITS; ++i)
         {
             remoteUnits[i].solenoidDesiredOn = SOLENOID_ON_INDETERMINATE;
-            remoteUnits[i].lastUpdated = -REMOTE_UNIT_UPDATE_INTERVAL;
+            remoteUnits[i].lastUpdated = -REMOTE_UNIT_UPDATE_INTERVAL - 1;
         }
         definition.reset();
     }
