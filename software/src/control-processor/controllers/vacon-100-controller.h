@@ -8,7 +8,6 @@
 
 namespace IrrigationSystem
 {
-
     class Vacon100Controller : public IrrigationSystem::Controller
     {
     public:
@@ -33,6 +32,9 @@ namespace IrrigationSystem
         Vacon100Client vacon;
         Vacon100Data values;
         bool desiredMotorOn;
+        bool desiredMotorOnIndeterminate;
+        uint8_t lastUpdateTime;
+
         bool serialStarted;
         bool idMapUpdated;
         uint8_t errorCount;

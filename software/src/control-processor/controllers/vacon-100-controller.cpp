@@ -10,6 +10,13 @@
 // Number of consecutive errors beyond which connection to Vacon is considered unavailable
 #define MAX_ERROR_COUNT 2
 
+// Time in 2^14 milliseconds between reading values
+#define VACON_UPDATE_INTERVAL 4 // ~1 minute
+// Whether to start with initial determinate state of off
+#define VACON_OFF_ON_STARTUP true
+// Whether to force control when Fieldbus is not the configured control place
+#define VACON_FORCE_CONTROL false
+
 namespace IrrigationSystem
 {
     Vacon100Controller::Vacon100Controller(uint8_t controllerId) : controllerId(controllerId),
@@ -18,6 +25,8 @@ namespace IrrigationSystem
                                                                    vacon(serial, MAX485_RE, MAX485_DE, MAX485_DI),
                                                                    values(),
                                                                    desiredMotorOn(false),
+                                                                   desiredMotorOnIndeterminate(false),
+                                                                   lastUpdateTime(0),
                                                                    serialStarted(false),
                                                                    idMapUpdated(false),
                                                                    errorCount(255),
@@ -70,6 +79,11 @@ namespace IrrigationSystem
             serialStarted = false;
         }
         definition.reset();
+
+        desiredMotorOn = false;
+        desiredMotorOnIndeterminate = !VACON_OFF_ON_STARTUP;
+        lastUpdateTime = -VACON_UPDATE_INTERVAL - 1;
+        errorCount = 255;
     }
 
     const IrrigationSystem::ControllerDefinition &Vacon100Controller::getDefinition() const
@@ -94,7 +108,7 @@ namespace IrrigationSystem
         switch (id)
         {
         case Vacon100ControllerProperties::motorOn:
-            return desiredMotorOn;
+            return desiredMotorOnIndeterminate ? this->getPropertyValueFromValues(values, id) : desiredMotorOn;
         default:
             LOG_ERROR("getPropertyDesiredValue with unknown Vacon 100 property");
             return 0;
@@ -107,6 +121,7 @@ namespace IrrigationSystem
         {
         case Vacon100ControllerProperties::motorOn:
             desiredMotorOn = value > 0;
+            desiredMotorOnIndeterminate = false;
             if (eventHandler != nullptr)
             {
                 eventHandler->handlePropertyDesiredValueChanged(controllerId, id, 1, value);
@@ -120,40 +135,72 @@ namespace IrrigationSystem
 
     void Vacon100Controller::update()
     {
-        Vacon100Data oldValues = values;
-        if (vacon.readInputRegisters(&values))
+        // Read values if update is due or current value doesn't match desired
+        uint8_t now = millis() >> 14;
+        if (
+            (!desiredMotorOnIndeterminate && getPropertyValue(Vacon100ControllerProperties::motorOn) != desiredMotorOn) ||
+            (uint8_t)(now - lastUpdateTime) > VACON_UPDATE_INTERVAL)
         {
-            updateErrorCount(true);
-            if (eventHandler != nullptr)
+            Vacon100Data oldValues = values;
+            if (vacon.readInputRegisters(&values))
             {
-                // Raise events for changes to vacon data, all properties except for first one (available)
-                for (unsigned int i = 1; i < definition.getPropertyCount(); ++i)
+                lastUpdateTime = millis() >> 14;
+                updateErrorCount(true);
+                if (eventHandler != nullptr)
                 {
-                    uint8_t propertyId = definition.getPropertyIdAt(i);
-                    uint32_t newValue = getPropertyValueFromValues(values, propertyId);
-                    if (newValue != getPropertyValueFromValues(oldValues, propertyId))
+                    // Raise events for changes to vacon data, all properties except for first one (available)
+                    for (unsigned int i = 1; i < definition.getPropertyCount(); ++i)
                     {
-                        eventHandler->handlePropertyValueChanged(controllerId, propertyId, definition.getPropertyLength(propertyId), newValue);
+                        uint8_t propertyId = definition.getPropertyIdAt(i);
+                        uint32_t newValue = getPropertyValueFromValues(values, propertyId);
+                        if (newValue != getPropertyValueFromValues(oldValues, propertyId))
+                        {
+                            eventHandler->handlePropertyValueChanged(controllerId, propertyId, definition.getPropertyLength(propertyId), newValue);
+                            if (desiredMotorOnIndeterminate && propertyId == Vacon100ControllerProperties::motorOn)
+                            {
+                                eventHandler->handlePropertyDesiredValueChanged(controllerId, propertyId, definition.getPropertyLength(propertyId), newValue);
+                            }
+                        }
                     }
                 }
             }
-        }
-        else
-        {
-            updateErrorCount(false);
-            notifyError(0x03);
-            LOG_ERROR("Failed to read from Vacon 100");
-            vacon.printError();
-        }
-
-        if (getPropertyValue(Vacon100ControllerProperties::motorOn) != desiredMotorOn)
-        {
-            if (!vacon.setStart(desiredMotorOn))
+            else
             {
                 updateErrorCount(false);
-                notifyError(0x02);
-                LOG_ERROR("Failed to write to Vacon 100");
+                notifyError(0x03);
+                LOG_ERROR("Failed to read from Vacon 100");
                 vacon.printError();
+            }
+        }
+
+        // Write value if current value doesn't match desired
+        if (!desiredMotorOnIndeterminate && getPropertyValue(Vacon100ControllerProperties::motorOn) != desiredMotorOn)
+        {
+            bool successful = false;
+            for (int attempt = 0; attempt <= MAX_ERROR_COUNT; ++attempt)
+            {
+                if (vacon.setStart(desiredMotorOn, VACON_FORCE_CONTROL))
+                {
+                    successful = true;
+                    break;
+                }
+                else
+                {
+                    updateErrorCount(false);
+                    notifyError(0x02);
+                    LOG_ERROR("Failed to write to Vacon 100");
+                    vacon.printError();
+                }
+            }
+            if (!successful)
+            {
+                // Revert desiredMotorOn to match actual value and make it indeterminate
+                desiredMotorOn = getPropertyValueFromValues(values, Vacon100ControllerProperties::motorOn);
+                desiredMotorOnIndeterminate = true;
+                if (eventHandler != nullptr)
+                {
+                    eventHandler->handlePropertyDesiredValueChanged(controllerId, Vacon100ControllerProperties::motorOn, 1, desiredMotorOn);
+                }
             }
         }
     }

@@ -16,9 +16,9 @@ extern "C"
 #define REMOTE_UNIT_TIMEOUT 5000
 // Number of times to retry communication with a rmeote unit before considering it unavailable
 #define RETRY_COUNT 2
-// Time in milliseconds between heartbeats for each remote units
+// Time in 2^14 milliseconds between heartbeats for each remote units
 #define REMOTE_UNIT_UPDATE_INTERVAL 73 // ~20 minutes
-// Time in milliseconds between heartbeats for remote units with active solenoids
+// Time in 2^14 milliseconds between heartbeats for remote units with active solenoids
 #define REMOTE_UNIT_ACTIVE_UPDATE_INTERVAL 11 // ~3 minutes
 
 #define PACKET_BUFFER_SIZE 24
