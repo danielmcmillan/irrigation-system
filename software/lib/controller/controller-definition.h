@@ -11,6 +11,10 @@ namespace IrrigationSystem
         virtual void reset() = 0;
         virtual void configure(uint8_t type, const uint8_t *data) = 0;
         /**
+         * Get the expected length of configuration data for the specified type.
+         */
+        virtual unsigned int getConfigLength(uint8_t type) const = 0;
+        /**
          * Get the number of available properties.
          */
         virtual unsigned int getPropertyCount() const = 0;
@@ -30,9 +34,6 @@ namespace IrrigationSystem
          * Otherwise returns false.
          */
         virtual bool getPropertyReadOnly(uint16_t id) const = 0;
-
-        // TODO get config length
-        // virtual unsigned int getConfigValueLength(uint8_t type) const = 0;
     };
 }
 #endif

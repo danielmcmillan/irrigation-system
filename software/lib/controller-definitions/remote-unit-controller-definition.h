@@ -37,6 +37,7 @@ namespace IrrigationSystem
     public:
         void reset();
         void configure(uint8_t type, const uint8_t *data);
+        unsigned int getConfigLength(uint8_t type) const override;
 
         unsigned int getPropertyCount() const;
         uint16_t getPropertyIdAt(unsigned int index) const;

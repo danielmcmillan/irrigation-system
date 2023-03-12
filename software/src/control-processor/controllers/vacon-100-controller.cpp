@@ -58,14 +58,17 @@ namespace IrrigationSystem
             vacon.printError();
             return false;
         }
-        if (!vacon.initIdMapping())
+        if (!idMapUpdated)
         {
-            notifyError(0x01);
-            LOG_ERROR("Failed to set up Vacon 100 ID mappings");
-            vacon.printError();
-            return false;
+            if (!vacon.initIdMapping())
+            {
+                notifyError(0x01);
+                LOG_ERROR("Failed to set up Vacon 100 ID mappings");
+                vacon.printError();
+                return false;
+            }
+            idMapUpdated = true;
         }
-        idMapUpdated = true;
         return true;
     }
 
@@ -84,6 +87,7 @@ namespace IrrigationSystem
         desiredMotorOnIndeterminate = !VACON_OFF_ON_STARTUP;
         lastUpdateTime = -VACON_UPDATE_INTERVAL - 1;
         errorCount = 255;
+        values = {};
     }
 
     const IrrigationSystem::ControllerDefinition &Vacon100Controller::getDefinition() const

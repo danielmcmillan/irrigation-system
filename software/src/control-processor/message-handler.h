@@ -4,16 +4,34 @@
 #include <inttypes.h>
 #include "controller-manager.h"
 #include "events/event-history.h"
+#include "state.h"
 
 namespace IrrigationSystem
 {
   class ControlProcessorMessageHandler
   {
     ControllerManager &controllers;
+    ControlProcessorState &state;
     EventHistory &events;
 
   public:
-    ControlProcessorMessageHandler(ControllerManager &controllers, EventHistory &events);
+    ControlProcessorMessageHandler(ControllerManager &controllers, ControlProcessorState &state, EventHistory &events);
+
+    /**
+     * Reset config and state and enter configuration mode.
+     */
+    int configStart() const;
+
+    /**
+     * Add a new configuration.
+     * Must be in unconfigured state.
+     */
+    int configAdd(uint8_t controllerId, uint8_t configType, const uint8_t *configData) const;
+
+    /**
+     * Complete configuration and start the controller.
+     */
+    int configEnd() const;
 
     /**
      * Read the value of a property.

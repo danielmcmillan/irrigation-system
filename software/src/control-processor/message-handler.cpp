@@ -3,13 +3,47 @@
 
 using namespace IrrigationSystem;
 
-ControlProcessorMessageHandler::ControlProcessorMessageHandler(ControllerManager &controllers, EventHistory &events)
-    : controllers(controllers), events(events)
+ControlProcessorMessageHandler::ControlProcessorMessageHandler(ControllerManager &controllers, ControlProcessorState &state, EventHistory &events)
+    : controllers(controllers), state(state), events(events)
 {
+}
+
+int IrrigationSystem::ControlProcessorMessageHandler::configStart() const
+{
+    state.status = ControlProcessorStatus::Unconfigured;
+    controllers.resetControllers();
+    events.handleEvent(EventType::started, 0, nullptr);
+    return 0;
+}
+
+int IrrigationSystem::ControlProcessorMessageHandler::configAdd(uint8_t controllerId, uint8_t configType, const uint8_t *configData) const
+{
+    if (state.status != ControlProcessorStatus::Unconfigured)
+    {
+        return 3;
+    }
+    IrrigationSystem::Controller *controller = this->controllers.getController(controllerId);
+    controller->configure(configType, configData);
+    return 0;
+}
+
+int IrrigationSystem::ControlProcessorMessageHandler::configEnd() const
+{
+    if (state.status != ControlProcessorStatus::Unconfigured)
+    {
+        return 3;
+    }
+    state.status = ControlProcessorStatus::Initializing;
+    events.handleEvent(EventType::configured, 0, nullptr);
+    return 0;
 }
 
 int ControlProcessorMessageHandler::propertyRead(uint8_t controllerId, uint16_t propertyId, uint8_t *valueOut, size_t *valueSizeOut) const
 {
+    if (state.status == ControlProcessorStatus::Unconfigured)
+    {
+        return 3;
+    }
     IrrigationSystem::Controller *controller = this->controllers.getController(controllerId);
     const IrrigationSystem::ControllerDefinition &definition = controller->getDefinition();
     unsigned int valueLength = definition.getPropertyLength(propertyId);
@@ -41,6 +75,10 @@ int ControlProcessorMessageHandler::propertyRead(uint8_t controllerId, uint16_t 
 
 int ControlProcessorMessageHandler::propertyWrite(uint8_t controllerId, uint16_t propertyId, const uint8_t *value) const
 {
+    if (state.status == ControlProcessorStatus::Unconfigured)
+    {
+        return 3;
+    }
     IrrigationSystem::Controller *controller = controllers.getController(controllerId);
     const IrrigationSystem::ControllerDefinition &definition = controller->getDefinition();
     unsigned int valueLength = definition.getPropertyLength(propertyId);

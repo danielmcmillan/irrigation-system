@@ -36,6 +36,19 @@ namespace IrrigationSystem
         }
     }
 
+    unsigned int RemoteUnitControllerDefinition::getConfigLength(uint8_t type) const
+    {
+        switch (type)
+        {
+        case RemoteUnitConfigType::AddRemoteUnitConfig:
+            return 3;
+        case RemoteUnitConfigType::AddRemoteUnitSolenoidConfig:
+            return 3;
+        default:
+            return 0;
+        }
+    }
+
     unsigned int RemoteUnitControllerDefinition::getPropertyCount() const
     {
         return remoteUnitCount * 2u + solenoidCount;

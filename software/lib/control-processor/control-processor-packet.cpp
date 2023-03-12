@@ -59,7 +59,7 @@ namespace IrrigationSystem
             bool write = messageType == MessageType::PropertySet;
             if (dataSize < 3 || (!write && dataSize != 3))
             {
-                // No controller/property
+                // No controller and property id
                 return 1;
             }
             uint8_t controllerId = data[0];
@@ -89,6 +89,34 @@ namespace IrrigationSystem
                     // Incorrect size of value
                     return 1;
                 }
+            }
+            return 0;
+        }
+        if (messageType == MessageType::ConfigAdd)
+        {
+            if (dataSize < 2)
+            {
+                // No controller and config type
+                return 1;
+            }
+            uint8_t controllerId = data[0];
+            uint8_t configType = data[1];
+            const ControllerDefinition *definition = this->controllerDefinitions.getControllerDefinition(controllerId);
+            if (definition == nullptr)
+            {
+                // Unknown controller
+                return 1;
+            }
+            size_t configLength = definition->getConfigLength(configType);
+            if (configLength == 0)
+            {
+                // Unknown config type
+                return 1;
+            }
+            if (dataSize != 2 + configLength)
+            {
+                // Incorrect size of config value
+                return 1;
             }
             return 0;
         }

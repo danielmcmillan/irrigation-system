@@ -66,10 +66,14 @@ int ControlProcessorI2cInterface::handleMessage(ControlProcessorPacket::MessageT
     switch (type)
     {
     case ControlProcessorPacket::MessageType::ConfigStart:
+        *responseDataSizeOut = 0;
+        return this->handler.configStart();
     case ControlProcessorPacket::MessageType::ConfigEnd:
+        *responseDataSizeOut = 0;
+        return this->handler.configEnd();
     case ControlProcessorPacket::MessageType::ConfigAdd:
-        LOG_ERROR("Config commands not implemented.");
-        break;
+        *responseDataSizeOut = 0;
+        return this->handler.configAdd(data[0], data[1], &data[2]);
     case ControlProcessorPacket::MessageType::PropertyRead:
         return this->handler.propertyRead(data[0], read16LE(&data[1]), responseDataOut, responseDataSizeOut);
     case ControlProcessorPacket::MessageType::PropertySet:
