@@ -5,12 +5,10 @@ class WiFiManager
 {
 public:
     WiFiManager(const char *ssid, const char *password);
-    void begin();
-
     /**
-     * Checks whether connection is established, and performs reconnection if required.
+     * Maintain WiFi connection. Returns whether connnection is currently active.
      */
-    bool check();
+    bool loop();
 
 private:
     const char *ssid;

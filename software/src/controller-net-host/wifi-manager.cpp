@@ -4,23 +4,11 @@
 
 WiFiManager::WiFiManager(const char *ssid, const char *password) : ssid(ssid), password(password)
 {
-}
-
-void WiFiManager::begin()
-{
     WiFi.mode(WIFI_STA);
     WiFi.setHostname("esp32-irrigation");
-
-    // WiFi.begin(ssid, password);
-    // if (WiFi.waitForConnectResult() != WL_CONNECTED)
-    // {
-    //     Serial.printf("\nWiFi Failed!\n");
-    //     return;
-    // }
-    // Serial.printf("\nWiFi Connected: %s\n", WiFi.localIP().toString().c_str());
 }
 
-bool WiFiManager::check()
+bool WiFiManager::loop()
 {
     if (WiFi.status() == WL_CONNECTED)
     {
