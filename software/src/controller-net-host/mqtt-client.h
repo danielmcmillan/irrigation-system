@@ -4,10 +4,12 @@
 #include <WiFiClientSecure.h>
 #include <MQTTClient.h>
 
+typedef std::function<void(char *topic, uint8_t *payload, int length)> MqttClientMessageHandler;
+
 class MqttClient
 {
 public:
-    MqttClient(const char *endpoint, int port, const char *clientId, const char *caCertificate, const char *certificate, const char *privateKey);
+    MqttClient(const char *endpoint, int port, const char *clientId, const char *caCertificate, const char *certificate, const char *privateKey, MqttClientMessageHandler handler);
     /** Maintain MQTT connection. Returns whether connection is currently active. */
     bool loop();
 
@@ -19,6 +21,7 @@ private:
     const char *endpoint;
     int port;
     const char *clientId;
+    bool subscribed;
 };
 
 #endif

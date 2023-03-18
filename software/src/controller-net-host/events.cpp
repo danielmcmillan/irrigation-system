@@ -1,10 +1,11 @@
 #include "events.h"
 #include "settings.h"
 #include "binary-util.h"
+#include "logging.h"
 
 #define MAX_EVENT_BATCH_SIZE 256
 #define MAX_EVENT_SIZE 14
-#define EVENT_TOPIC "control/" MQTT_CLIENT_ID "/event"
+#define EVENT_TOPIC "icu-out/" MQTT_CLIENT_ID "/event"
 #define POLL_INTERVAL 2500
 
 Events::Events(const ControlI2cMaster &control, const MqttClient &mqtt) : control(control), mqtt(mqtt), lastEvent(0xffff), lastPollTime(0)
@@ -43,9 +44,9 @@ int Events::loop()
             break;
         }
     }
-    Serial.printf("Events size: %u\n", eventsSize);
     if (eventsSize > 0)
     {
+        LOG_INFO("Publishing events");
         if (mqtt.publish(EVENT_TOPIC, events, eventsSize))
         {
             lastEvent = nextLastEvent;

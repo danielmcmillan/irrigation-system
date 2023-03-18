@@ -1,14 +1,11 @@
 #include "mqtt-client.h"
 #include "logging.h"
+#include "settings.h"
 
-void messageReceived(String &topic, String &payload)
-{
-    // Note: Do not use the client in the callback to publish, subscribe or unsubscribe
-    Serial.println("incoming: " + topic + " - " + payload);
-}
+#define INCOMING_TOPIC "icu-in/" MQTT_CLIENT_ID "/#"
 
-MqttClient::MqttClient(const char *endpoint, int port, const char *clientId, const char *caCertificate, const char *certificate, const char *privateKey)
-    : wifiClient(), mqttClient(512), endpoint(endpoint), port(port), clientId(clientId)
+MqttClient::MqttClient(const char *endpoint, int port, const char *clientId, const char *caCertificate, const char *certificate, const char *privateKey, MqttClientMessageHandler handler)
+    : wifiClient(), mqttClient(512), endpoint(endpoint), port(port), clientId(clientId), subscribed(false)
 {
     // Configure WiFiClientSecure to use the configured credentials
     this->wifiClient.setCACert(caCertificate);
@@ -16,32 +13,55 @@ MqttClient::MqttClient(const char *endpoint, int port, const char *clientId, con
     this->wifiClient.setPrivateKey(privateKey);
 
     mqttClient.begin(endpoint, port, this->wifiClient);
-    mqttClient.onMessage(messageReceived);
+    mqttClient.onMessageAdvanced([handler](MQTTClient *client, char topic[], char bytes[], int length)
+                                 { handler(topic, (uint8_t *)bytes, length); });
     // mqttClient.setKeepAlive() TODO
     // mqttClient.setWill("topic", "payload", retained, qos) TODO
 }
 
 bool MqttClient::loop()
 {
-    // TODO Need to manually send ping, or library handles that?
-    if (mqttClient.loop())
-    {
-        return true;
-    }
+    bool connected = mqttClient.loop();
 
-    LOG_INFO("[MQTT] Connecting");
-    for (int i = 0; i < 10; ++i)
+    if (!connected)
     {
-        if (mqttClient.connect(clientId))
+        subscribed = false;
+
+        LOG_INFO("[MQTT] Connecting");
+        for (int i = 0; i < 10; ++i)
         {
-            LOG_INFO("[MQTT] Connected successfully");
-            // TODO subscribe topics
-            return true;
+            if (mqttClient.connect(clientId))
+            {
+                LOG_INFO("[MQTT] Connected successfully");
+                connected = true;
+                break;
+            }
+            delay(500);
         }
-        delay(500);
+        if (!connected)
+        {
+            LOG_ERROR("[MQTT] Connection failed"); // mqttClient.lastError()
+        }
     }
-    LOG_ERROR("[MQTT] Connection failed");
-    return false;
+    if (connected && !subscribed)
+    {
+        LOG_INFO("[MQTT] Subscribing");
+        for (int i = 0; i < 10; ++i)
+        {
+            if (mqttClient.subscribe(INCOMING_TOPIC))
+            {
+                LOG_INFO("[MQTT] Subscribed successfully");
+                subscribed = true;
+                break;
+            }
+            delay(500);
+        }
+        if (!subscribed)
+        {
+            LOG_ERROR("[MQTT] Subscribe failed"); // mqttClient.lastError()
+        }
+    }
+    return connected && subscribed;
 }
 
 bool MqttClient::publish(const char *topic, const uint8_t *payload, int length) const
@@ -52,7 +72,7 @@ bool MqttClient::publish(const char *topic, const uint8_t *payload, int length) 
     }
     else
     {
-        Serial.println("[MQTT] Failed to publish");
+        LOG_ERROR("[MQTT] Failed to publish");
         return false;
     }
 }
