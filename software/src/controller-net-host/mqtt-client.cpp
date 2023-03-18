@@ -3,7 +3,7 @@
 #include "settings.h"
 
 #define INCOMING_TOPIC_PREFIX "icu-in/" MQTT_CLIENT_ID "/"
-#define INCOMING_TOPIC_FILTER INCOMING_TOPIC_PREFIX "/"
+#define INCOMING_TOPIC_FILTER INCOMING_TOPIC_PREFIX "#"
 
 MqttClient::MqttClient(const char *endpoint, int port, const char *clientId, const char *caCertificate, const char *certificate, const char *privateKey, MqttClientMessageHandler handler)
     : wifiClient(), mqttClient(512), endpoint(endpoint), port(port), clientId(clientId), subscribed(false)

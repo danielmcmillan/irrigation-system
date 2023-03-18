@@ -9,6 +9,7 @@
 #include "control-i2c-master.h"
 #include "mqtt-client.h"
 #include "events.h"
+#include "config.h"
 
 IrrigationSystem::ControllerDefinitionsBuilder definitionsBuilder;
 IrrigationSystem::ControllerDefinitionManager definitions = definitionsBuilder.buildManager();
@@ -18,6 +19,7 @@ ControlI2cMaster control(definitions);
 void handleMessage(IncomingMessageType type, const uint8_t *payload, int length);
 MqttClient mqtt(MQTT_BROKER_ENDPOINT, MQTT_BROKER_PORT, MQTT_CLIENT_ID, MQTT_BROKER_CA_CERT, MQTT_CLIENT_CERT, MQTT_CLIENT_KEY, handleMessage);
 Events events(control, mqtt);
+Config config(control);
 
 void setup()
 {
@@ -33,11 +35,17 @@ void loop()
     {
         connected = mqtt.loop();
     }
+    if (!config.loop())
+    {
+        // TODO do something?
+    }
 
     if (connected)
     {
-        events.loop();
-        // TODO handle result
+        if (!events.loop())
+        {
+            // TODO do something?
+        }
     }
 }
 
@@ -45,4 +53,8 @@ void handleMessage(IncomingMessageType type, const uint8_t *payload, int length)
 {
     // Note: Do not use mqttClient here
     Serial.printf("[TEST] Type %d message %s\n", type, payload);
+    if (type == IncomingMessageType::Config)
+    {
+        config.setConfig(payload, length);
+    }
 }

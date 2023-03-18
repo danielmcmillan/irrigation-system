@@ -33,7 +33,10 @@ public:
     ControlI2cMaster(const ControllerDefinitionProvider &controllers);
     void setup();
 
-    int getNextEvent(uint16_t lastEvent, uint8_t *eventOut, size_t *eventSizeOut) const;
+    bool getNextEvent(uint16_t lastEvent, uint8_t *eventOut, size_t *eventSizeOut) const;
+    bool configStart() const;
+    bool configAdd(const uint8_t *data, size_t length) const;
+    bool configEnd() const;
 
 private:
     MessageResultInfo sendMessage(ControlProcessorPacket::MessageType type, const uint8_t *data, size_t dataSize, const uint8_t **responseOut, size_t *responseSizeOut) const;

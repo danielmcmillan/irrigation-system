@@ -17,22 +17,22 @@ void Events::reset()
     lastEvent = 0xffff;
 }
 
-int Events::loop()
+bool Events::loop()
 {
     unsigned long now = millis();
     if ((now - lastPollTime) < POLL_INTERVAL)
     {
-        return 0;
+        return true;
     }
+    lastPollTime = now;
     // Get all pending available events up to a maximum size
     uint8_t events[MAX_EVENT_BATCH_SIZE];
     size_t eventSize;
-    int result;
     size_t eventsSize = 0;
     uint16_t nextLastEvent = lastEvent;
     while (eventsSize + MAX_EVENT_SIZE < MAX_EVENT_BATCH_SIZE)
     {
-        result = control.getNextEvent(nextLastEvent, &events[eventsSize], &eventSize);
+        int result = control.getNextEvent(nextLastEvent, &events[eventsSize], &eventSize);
         if (result)
         {
             nextLastEvent = read16LE(&events[eventsSize]);
@@ -40,6 +40,7 @@ int Events::loop()
         }
         else
         {
+            // TODO handling no more events, but what about error?
             // No more events
             break;
         }
@@ -53,11 +54,10 @@ int Events::loop()
         }
         else
         {
-            // TODO handle error
+            return false;
         }
     }
-    lastPollTime = now;
+    return true;
 
     // TODO do something when first event was not found (like trigger retrieving all properties)?
-    return result;
 }

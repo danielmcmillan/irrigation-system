@@ -17,7 +17,7 @@ void ControlI2cMaster::setup()
     }
 }
 
-int ControlI2cMaster::getNextEvent(uint16_t lastEvent, uint8_t *eventOut, size_t *eventSizeOut) const
+bool ControlI2cMaster::getNextEvent(uint16_t lastEvent, uint8_t *eventOut, size_t *eventSizeOut) const
 {
     uint8_t data[2];
     write16LE(data, lastEvent);
@@ -28,15 +28,33 @@ int ControlI2cMaster::getNextEvent(uint16_t lastEvent, uint8_t *eventOut, size_t
     {
         *eventSizeOut = responseSize - 1;
         memcpy(eventOut, &response[1], *eventSizeOut);
-        return 1;
+        return true;
     }
     // TODO differentiate error, no result, and missed events
-    return 0;
+    return false;
+}
+
+bool ControlI2cMaster::configStart() const
+{
+    return sendMessage(ControlProcessorPacket::MessageType::ConfigStart, nullptr, 0, nullptr, nullptr).type == MessageResultType::Success;
+}
+
+bool ControlI2cMaster::configAdd(const uint8_t *data, size_t length) const
+{
+    return sendMessage(ControlProcessorPacket::MessageType::ConfigAdd, data, length, nullptr, nullptr).type == MessageResultType::Success;
+}
+
+bool ControlI2cMaster::configEnd() const
+{
+    return sendMessage(ControlProcessorPacket::MessageType::ConfigEnd, nullptr, 0, nullptr, nullptr).type == MessageResultType::Success;
 }
 
 MessageResultInfo ControlI2cMaster::sendMessage(ControlProcessorPacket::MessageType type, const uint8_t *data, size_t dataSize, const uint8_t **responseOut, size_t *responseSizeOut) const
 {
-    *responseSizeOut = 0;
+    if (responseSizeOut != nullptr)
+    {
+        *responseSizeOut = 0;
+    }
     // Build the packet
     ControlProcessorPacket::MessageType *packetType;
     uint8_t *packetData;
@@ -93,8 +111,11 @@ MessageResultInfo ControlI2cMaster::sendMessage(ControlProcessorPacket::MessageT
 
     // TODO Packet lib should provide data length?
     // Split the I2C part (send+read+response length) out into separate function?
-    *responseOut = responseData;
-    *responseSizeOut = responseLength - 3;
+    if (responseOut != nullptr)
+    {
+        *responseOut = responseData;
+        *responseSizeOut = responseLength - 3;
+    }
     return {MessageResultType::Success, 0};
 
     // sprintf(logBuffer, "Response: %d/%d bytes. CRC: 0x%04x", responseLength, bytesRead, responseCrc);

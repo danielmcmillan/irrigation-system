@@ -8,7 +8,7 @@ class Events
 public:
     Events(const ControlI2cMaster &control, const MqttClient &mqtt);
     void reset();
-    int loop();
+    bool loop();
 
 private:
     const ControlI2cMaster &control;
