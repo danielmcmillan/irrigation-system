@@ -2,7 +2,8 @@
 #include "logging.h"
 #include "settings.h"
 
-#define INCOMING_TOPIC "icu-in/" MQTT_CLIENT_ID "/#"
+#define INCOMING_TOPIC_PREFIX "icu-in/" MQTT_CLIENT_ID "/"
+#define INCOMING_TOPIC_FILTER INCOMING_TOPIC_PREFIX "/"
 
 MqttClient::MqttClient(const char *endpoint, int port, const char *clientId, const char *caCertificate, const char *certificate, const char *privateKey, MqttClientMessageHandler handler)
     : wifiClient(), mqttClient(512), endpoint(endpoint), port(port), clientId(clientId), subscribed(false)
@@ -14,7 +15,32 @@ MqttClient::MqttClient(const char *endpoint, int port, const char *clientId, con
 
     mqttClient.begin(endpoint, port, this->wifiClient);
     mqttClient.onMessageAdvanced([handler](MQTTClient *client, char topic[], char bytes[], int length)
-                                 { handler(topic, (uint8_t *)bytes, length); });
+                                 {
+                                    size_t prefixLength = sizeof(INCOMING_TOPIC_PREFIX) - sizeof(INCOMING_TOPIC_PREFIX[0]);
+                                    if (strncmp(INCOMING_TOPIC_PREFIX, topic, prefixLength) != 0)
+                                    {
+                                        LOG_ERROR("[MQTT] Message topic has unexpected prefix");
+                                    }
+                                    char *segment = topic + prefixLength;
+                                    IncomingMessageType type;
+                                    if (strcmp(segment, "config") == 0)
+                                    {
+                                        type = IncomingMessageType::Config;
+                                    }
+                                    else if (strcmp(segment, "retrieve") == 0)
+                                    {
+                                        type = IncomingMessageType::Retrieve;
+                                    }
+                                    else if (strcmp(segment, "set") == 0)
+                                    {
+                                        type = IncomingMessageType::Set;
+                                    }
+                                    else
+                                    {
+                                        LOG_ERROR("[MQTT] Message topic has unexpected suffix");
+                                        return;
+                                    }
+                                    handler(type, (uint8_t *)bytes, length); });
     // mqttClient.setKeepAlive() TODO
     // mqttClient.setWill("topic", "payload", retained, qos) TODO
 }
@@ -48,7 +74,7 @@ bool MqttClient::loop()
         LOG_INFO("[MQTT] Subscribing");
         for (int i = 0; i < 10; ++i)
         {
-            if (mqttClient.subscribe(INCOMING_TOPIC))
+            if (mqttClient.subscribe(INCOMING_TOPIC_FILTER))
             {
                 LOG_INFO("[MQTT] Subscribed successfully");
                 subscribed = true;

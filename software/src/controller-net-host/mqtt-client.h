@@ -4,7 +4,13 @@
 #include <WiFiClientSecure.h>
 #include <MQTTClient.h>
 
-typedef std::function<void(char *topic, uint8_t *payload, int length)> MqttClientMessageHandler;
+enum class IncomingMessageType
+{
+    Config,
+    Retrieve,
+    Set
+};
+typedef std::function<void(IncomingMessageType type, const uint8_t *payload, int length)> MqttClientMessageHandler;
 
 class MqttClient
 {
