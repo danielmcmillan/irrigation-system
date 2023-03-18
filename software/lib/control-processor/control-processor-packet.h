@@ -41,30 +41,40 @@ namespace IrrigationSystem
          * Returns 0x01 if the packet includes invalid message type or data.
          * Returns 0x02 if the packet fails CRC.
          */
-        uint8_t validatePacket(const uint8_t *packet, size_t packetSize);
+        uint8_t validatePacket(const uint8_t *packet, size_t packetSize) const;
+
+        /**
+         * Validate a control processor response data packet.
+         * Checks that response data is of the correct size, but does no check the value is valid.
+         *
+         * On success, returns 0.
+         * Returns 0x01 if the packet includes invalid message type or data.
+         * Returns 0x02 if the packet fails CRC.
+         */
+        uint8_t validateResponsePacket(const uint8_t *packet, size_t packetSize) const;
 
         /**
          * Get the message type from a packet.
          * If `dataOut` is not null, then it will be set to point to the data portion of the message.
          */
-        MessageType getMessageType(const uint8_t *packet, const uint8_t **dataOut = nullptr);
+        MessageType getMessageType(const uint8_t *packet, const uint8_t **dataOut = nullptr) const;
 
         /**
          * Initialises a new data packet.
          * `messageTypePtr` will be set to point to the type of the message.
          * If `dataPtr` is not null, then it will be set to point to the data portion of the message.
          */
-        void createPacket(uint8_t *packetBuffer, MessageType **messageTypePtr, uint8_t **dataPtr = nullptr);
+        void createPacket(uint8_t *packetBuffer, MessageType **messageTypePtr, uint8_t **dataPtr = nullptr) const;
 
         /**
          * Finalises a packet after data has been written.
          *
          * Returns the total packet size.
          */
-        size_t finalisePacket(uint8_t *packetBuffer, size_t dataSize);
+        size_t finalisePacket(uint8_t *packetBuffer, size_t dataSize) const;
 
     private:
-        uint8_t validateData(MessageType messageType, const uint8_t *data, size_t dataSize);
+        uint8_t validateData(MessageType messageType, const uint8_t *data, size_t dataSize) const;
     };
 }
 #endif

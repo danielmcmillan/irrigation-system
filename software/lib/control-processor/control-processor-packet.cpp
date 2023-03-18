@@ -9,7 +9,7 @@ namespace IrrigationSystem
     {
     }
 
-    uint8_t ControlProcessorPacket::validatePacket(const uint8_t *packet, size_t packetSize)
+    uint8_t ControlProcessorPacket::validatePacket(const uint8_t *packet, size_t packetSize) const
     {
         // Check that the packet includes a valid CRC
         if (packetSize < 3 || CRC::crc16(packet, packetSize) != 0)
@@ -22,7 +22,7 @@ namespace IrrigationSystem
         return this->validateData(type, data, packetSize - 3);
     }
 
-    ControlProcessorPacket::MessageType ControlProcessorPacket::getMessageType(const uint8_t *packet, const uint8_t **dataOut)
+    ControlProcessorPacket::MessageType ControlProcessorPacket::getMessageType(const uint8_t *packet, const uint8_t **dataOut) const
     {
         ControlProcessorPacket::MessageType messageType = (ControlProcessorPacket::MessageType)(packet[0]);
         if (dataOut != nullptr)
@@ -32,7 +32,7 @@ namespace IrrigationSystem
         return messageType;
     }
 
-    void ControlProcessorPacket::createPacket(uint8_t *packetBuffer, MessageType **messageTypePtr, uint8_t **dataPtr)
+    void ControlProcessorPacket::createPacket(uint8_t *packetBuffer, MessageType **messageTypePtr, uint8_t **dataPtr) const
     {
         // Message type
         *messageTypePtr = (MessageType *)packetBuffer;
@@ -43,7 +43,7 @@ namespace IrrigationSystem
         }
     }
 
-    size_t ControlProcessorPacket::finalisePacket(uint8_t *packetBuffer, size_t dataSize)
+    size_t ControlProcessorPacket::finalisePacket(uint8_t *packetBuffer, size_t dataSize) const
     {
         // CRC
         uint16_t crc = CRC::crc16(packetBuffer, 1 + dataSize);
@@ -52,7 +52,7 @@ namespace IrrigationSystem
         return 1 + dataSize + 2;
     }
 
-    uint8_t ControlProcessorPacket::validateData(MessageType messageType, const uint8_t *data, size_t dataSize)
+    uint8_t ControlProcessorPacket::validateData(MessageType messageType, const uint8_t *data, size_t dataSize) const
     {
         if (messageType == MessageType::PropertyRead || messageType == MessageType::PropertySet)
         {
@@ -136,6 +136,14 @@ namespace IrrigationSystem
             {
                 return 1;
             }
+            break;
+        case MessageType::Err:
+            if (dataSize != 1)
+            {
+                return 1;
+            }
+            break;
+        case MessageType::Ack:
             break;
         default:
             // Unknown message type

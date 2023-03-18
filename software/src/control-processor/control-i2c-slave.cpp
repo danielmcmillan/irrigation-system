@@ -1,28 +1,28 @@
-#include "i2c-interface.h"
+#include "control-i2c-slave.h"
 #include <Arduino.h>
 #include <control-processor/ArduinoTwoWire/Wire.h>
 #include "logging.h"
 #include "binary-util.h"
 
-ControlProcessorI2cInterface::ControlProcessorI2cInterface(const ControllerManager &controllers, const ControlProcessorMessageHandler &handler)
+ControlI2cSlave::ControlI2cSlave(const ControllerManager &controllers, const ControlProcessorMessageHandler &handler)
     : packet(controllers), handler(handler)
 {
 }
 
-ControlProcessorI2cInterface ControlProcessorI2cInterface::initialise(const ControllerManager &controllers, const ControlProcessorMessageHandler &handler)
+ControlI2cSlave ControlI2cSlave::initialise(const ControllerManager &controllers, const ControlProcessorMessageHandler &handler)
 {
-    static ControlProcessorI2cInterface instance(controllers, handler);
+    static ControlI2cSlave instance(controllers, handler);
     Wire.onRequest([](uint8_t *input, uint8_t inputSize, uint8_t *output, uint8_t *outputSize)
                    { instance.handleRequest(input, inputSize, output, outputSize); });
     return instance;
 }
 
-void ControlProcessorI2cInterface::setup()
+void ControlI2cSlave::setup()
 {
     Wire.begin(CONTROL_PROCESSOR_I2C_SLAVE_ADDRESS);
 }
 
-void ControlProcessorI2cInterface::handleRequest(uint8_t *input, uint8_t inputSize, uint8_t *output, uint8_t *outputSize)
+void ControlI2cSlave::handleRequest(uint8_t *input, uint8_t inputSize, uint8_t *output, uint8_t *outputSize)
 {
     uint8_t result = packet.validatePacket(input, inputSize);
 
@@ -61,7 +61,7 @@ void ControlProcessorI2cInterface::handleRequest(uint8_t *input, uint8_t inputSi
 }
 
 // Returns 0 on success, otherwise an error reason
-int ControlProcessorI2cInterface::handleMessage(ControlProcessorPacket::MessageType type, const uint8_t *data, uint8_t *responseDataOut, size_t *responseDataSizeOut)
+int ControlI2cSlave::handleMessage(ControlProcessorPacket::MessageType type, const uint8_t *data, uint8_t *responseDataOut, size_t *responseDataSizeOut)
 {
     switch (type)
     {

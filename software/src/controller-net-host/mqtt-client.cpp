@@ -8,7 +8,7 @@ void messageReceived(String &topic, String &payload)
 }
 
 MqttClient::MqttClient(const char *endpoint, int port, const char *clientId, const char *caCertificate, const char *certificate, const char *privateKey)
-    : wifiClient(), mqttClient(256), endpoint(endpoint), port(port), clientId(clientId)
+    : wifiClient(), mqttClient(512), endpoint(endpoint), port(port), clientId(clientId)
 {
     // Configure WiFiClientSecure to use the configured credentials
     this->wifiClient.setCACert(caCertificate);
@@ -44,9 +44,9 @@ bool MqttClient::loop()
     return false;
 }
 
-bool MqttClient::publish(const char *topic, const char *body)
+bool MqttClient::publish(const char *topic, const uint8_t *payload, int length) const
 {
-    if (this->mqttClient.publish(topic, body))
+    if (this->mqttClient.publish(topic, (char *)payload, length))
     {
         return true;
     }

@@ -6,15 +6,17 @@
 #include "http.h"
 #include "wifi-manager.h"
 #include "settings.h"
+#include "control-i2c-master.h"
 #include "mqtt-client.h"
+#include "events.h"
 
 IrrigationSystem::ControllerDefinitionsBuilder definitionsBuilder;
 IrrigationSystem::ControllerDefinitionManager definitions = definitionsBuilder.buildManager();
 
 WiFiManager wifi(WIFI_SSID, WIFI_PASSWORD);
+ControlI2cMaster control(definitions);
 MqttClient mqtt(MQTT_BROKER_ENDPOINT, MQTT_BROKER_PORT, MQTT_CLIENT_ID, MQTT_BROKER_CA_CERT, MQTT_CLIENT_CERT, MQTT_CLIENT_KEY);
-
-unsigned long lastPublish = 0;
+Events events(control, mqtt);
 
 void setup()
 {
@@ -31,11 +33,9 @@ void loop()
         connected = mqtt.loop();
     }
 
-    unsigned long now = millis();
-    if (connected && (now - lastPublish) > 900000)
+    if (connected)
     {
-        LOG_INFO("Publishing hello world");
-        mqtt.publish("$aws/rules/davis_test", "Hello world!");
-        lastPublish = now;
+        events.loop();
+        // TODO handle result
     }
 }

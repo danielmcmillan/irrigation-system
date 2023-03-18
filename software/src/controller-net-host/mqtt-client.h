@@ -6,17 +6,16 @@
 
 class MqttClient
 {
-    WiFiClientSecure wifiClient;
-    MQTTClient mqttClient;
-
 public:
     MqttClient(const char *endpoint, int port, const char *clientId, const char *caCertificate, const char *certificate, const char *privateKey);
     /** Maintain MQTT connection. Returns whether connection is currently active. */
     bool loop();
 
-    bool publish(const char *topic, const char *body);
+    bool publish(const char *topic, const uint8_t *payload, int length) const;
 
 private:
+    WiFiClientSecure wifiClient;
+    mutable MQTTClient mqttClient;
     const char *endpoint;
     int port;
     const char *clientId;
