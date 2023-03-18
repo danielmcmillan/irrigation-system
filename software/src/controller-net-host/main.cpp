@@ -19,7 +19,7 @@ ControlI2cMaster control(definitions);
 void handleMessage(IncomingMessageType type, const uint8_t *payload, int length);
 MqttClient mqtt(MQTT_BROKER_ENDPOINT, MQTT_BROKER_PORT, MQTT_CLIENT_ID, MQTT_BROKER_CA_CERT, MQTT_CLIENT_CERT, MQTT_CLIENT_KEY, handleMessage);
 Events events(control, mqtt);
-Config config(control);
+Config config(control, definitions);
 
 void setup()
 {
@@ -38,6 +38,7 @@ void loop()
     if (!config.loop())
     {
         // TODO do something?
+        delay(10000);
     }
 
     if (connected)

@@ -1,18 +1,20 @@
 #ifndef _CONTROL_NET_HOST_CONFIG
 #define _CONTROL_NET_HOST_CONFIG
 #include "control-i2c-master.h"
+#include "controller-definition-manager.h"
 
 #define CONFIG_MAX_SIZE 256
 
 class Config
 {
 public:
-    Config(const ControlI2cMaster &control);
+    Config(const ControlI2cMaster &control, IrrigationSystem::ControllerDefinitionManager &definitions);
     bool setConfig(const uint8_t *data, size_t length);
     bool loop();
 
 private:
     const ControlI2cMaster &control;
+    IrrigationSystem::ControllerDefinitionManager &definitions;
     /** Pending to be read from eeprom */
     bool pendingRead;
     /** Pending to be written to eeprom */
