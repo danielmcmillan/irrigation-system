@@ -5,10 +5,10 @@
 
 #define MAX_EVENT_BATCH_SIZE 256
 #define MAX_EVENT_SIZE 14
-#define EVENT_TOPIC "icu-out/" MQTT_CLIENT_ID "/event"
 #define POLL_INTERVAL 2500
 
-Events::Events(const ControlI2cMaster &control, const MqttClient &mqtt, const ErrorHandler &errorHandler) : control(control), mqtt(mqtt), lastEvent(0xffff), lastPollTime(0), errorHandler(errorHandler)
+Events::Events(const ControlI2cMaster &control, PublishEventData publishEventData, const ErrorHandler &errorHandler)
+    : control(control), publishEventData(publishEventData), lastEvent(0xffff), lastPollTime(0), errorHandler(errorHandler)
 {
 }
 
@@ -45,7 +45,7 @@ bool Events::loop()
     if (eventsSize > 0)
     {
         LOG_INFO("Publishing events");
-        if (mqtt.publish(EVENT_TOPIC, events, eventsSize))
+        if (publishEventData(events, eventsSize))
         {
             lastEvent = nextLastEvent;
         }

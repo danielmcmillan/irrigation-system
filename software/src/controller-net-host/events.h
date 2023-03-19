@@ -4,16 +4,18 @@
 #include "mqtt-client.h"
 #include "error-handler.h"
 
+typedef std::function<bool(const uint8_t *data, size_t size)> PublishEventData;
+
 class Events
 {
 public:
-    Events(const ControlI2cMaster &control, const MqttClient &mqtt, const ErrorHandler &errorHandler);
+    Events(const ControlI2cMaster &control, PublishEventData publishEventData, const ErrorHandler &errorHandler);
     void reset();
     bool loop();
 
 private:
     const ControlI2cMaster &control;
-    const MqttClient &mqtt;
+    PublishEventData publishEventData;
     const ErrorHandler &errorHandler;
     uint16_t lastEvent;
     unsigned long lastPollTime;

@@ -10,7 +10,7 @@ enum class ErrorComponent : uint8_t
     ControlI2c
 };
 
-typedef std::function<void(const uint8_t *data, size_t size)> PublishErrorData;
+typedef std::function<bool(const uint8_t *data, size_t size)> PublishErrorData;
 
 class ErrorHandler
 {
