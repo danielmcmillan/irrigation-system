@@ -9,9 +9,10 @@
 
 enum class IncomingMessageType
 {
-    Config,
-    Retrieve,
-    Set,
+    SetConfig,
+    GetConfig,
+    GetProperties,
+    SetProperty,
     Invalid
 };
 typedef std::function<void(IncomingMessageType type, const uint8_t *payload, int length)> MqttClientMessageHandler;

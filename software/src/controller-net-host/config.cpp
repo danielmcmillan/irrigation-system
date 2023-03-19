@@ -1,6 +1,8 @@
 #include "config.h"
 #include <Arduino.h>
 #include "logging.h"
+#include <EEPROM.h>
+#include "crc16.h"
 
 Config::Config(const ControlI2cMaster &control, IrrigationSystem::ControllerDefinitionManager &definitions, const ErrorHandler &errorHandler)
     : control(control), definitions(definitions), pendingRead(true), pendingWrite(false), pendingApply(false), configData{0}, configLength(0), errorHandler(errorHandler)
@@ -20,6 +22,12 @@ bool Config::setConfig(const uint8_t *data, size_t length)
     pendingWrite = true;
     pendingApply = true;
     return true;
+}
+
+size_t Config::getConfig(uint8_t *dataOut) const
+{
+    memcpy(dataOut, configData, configLength);
+    return configLength;
 }
 
 bool Config::loop()

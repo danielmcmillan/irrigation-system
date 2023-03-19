@@ -12,10 +12,11 @@
 #include "config.h"
 #include "error-handler.h"
 
-#define ERROR_TOPIC "icu-out/all/" MQTT_CLIENT_ID "/error"
 #define EVENT_TOPIC "icu-out/all/" MQTT_CLIENT_ID "/event"
+#define ERROR_TOPIC "icu-out/all/" MQTT_CLIENT_ID "/error"
+#define CONFIG_TOPIC "icu-out/%.*s/" MQTT_CLIENT_ID "/config"
 #define PROPERTIES_TOPIC "icu-out/%.*s/" MQTT_CLIENT_ID "/properties"
-#define PROPERTIES_SUBTOPIC_MAX_LENGTH 20
+#define TOPIC_CLIENT_MAX_LENGTH 20
 
 IrrigationSystem::ControllerDefinitionsBuilder definitionsBuilder;
 IrrigationSystem::ControllerDefinitionManager definitions = definitionsBuilder.buildManager();
@@ -60,6 +61,7 @@ void loop()
     }
 }
 
+// TODO move property state retrieval functions to another file
 #define CONTROLLER_STATE_BUFFER_SIZE 512
 #define MAX_PROPERTY_NAME_SIZE 96
 #define MAX_PROPERTY_UNIT_SIZE 16
@@ -116,7 +118,7 @@ size_t writePropertyDetail(const ControllerDefinition *definition, uint8_t contr
 bool sendPropertyState(const uint8_t *subTopic, uint8_t length)
 {
     char topic[64];
-    sprintf(topic, PROPERTIES_TOPIC, length < PROPERTIES_SUBTOPIC_MAX_LENGTH ? length : PROPERTIES_SUBTOPIC_MAX_LENGTH, subTopic);
+    sprintf(topic, PROPERTIES_TOPIC, length < TOPIC_CLIENT_MAX_LENGTH ? length : TOPIC_CLIENT_MAX_LENGTH, subTopic);
     uint8_t buffer[CONTROLLER_STATE_BUFFER_SIZE];
     size_t size = 0;
 
@@ -154,13 +156,22 @@ void handleMessage(IncomingMessageType type, const uint8_t *payload, int length)
 {
     switch (type)
     {
-    case IncomingMessageType::Config:
+    case IncomingMessageType::SetConfig:
         config.setConfig(payload, length);
         break;
-    case IncomingMessageType::Retrieve:
+    case IncomingMessageType::GetConfig:
+    {
+        char topic[64];
+        sprintf(topic, CONFIG_TOPIC, length < TOPIC_CLIENT_MAX_LENGTH ? length : TOPIC_CLIENT_MAX_LENGTH, payload);
+        uint8_t configData[CONFIG_MAX_SIZE];
+        size_t configLength = config.getConfig(configData);
+        mqtt.publish(topic, configData, configLength);
+        break;
+    }
+    case IncomingMessageType::GetProperties:
         sendPropertyState(payload, length);
         break;
-    case IncomingMessageType::Set:
+    case IncomingMessageType::SetProperty:
         control.setPropertyValue(payload, length);
         break;
     }

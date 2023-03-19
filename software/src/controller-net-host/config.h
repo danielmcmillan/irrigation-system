@@ -11,6 +11,12 @@ class Config
 public:
     Config(const ControlI2cMaster &control, IrrigationSystem::ControllerDefinitionManager &definitions, const ErrorHandler &errorHandler);
     bool setConfig(const uint8_t *data, size_t length);
+    /**
+     * Retrieve the current config data.
+     * Provided buffer size should be at least CONFIG_MAX_SIZE.
+     * Returns the length of the data, or 0 if there is none.
+     */
+    size_t getConfig(uint8_t *dataOut) const;
     bool loop();
 
 private:

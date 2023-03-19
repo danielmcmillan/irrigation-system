@@ -118,17 +118,21 @@ void MqttClient::queueMessage(MQTTClient *client, char topic[], char bytes[], in
     else
     {
         char *segment = topic + prefixLength;
-        if (strcmp(segment, "config") == 0)
+        if (strcmp(segment, "setConfig") == 0)
         {
-            type = IncomingMessageType::Config;
+            type = IncomingMessageType::SetConfig;
         }
-        else if (strcmp(segment, "retrieve") == 0)
+        else if (strcmp(segment, "getConfig") == 0)
         {
-            type = IncomingMessageType::Retrieve;
+            type = IncomingMessageType::GetConfig;
         }
-        else if (strcmp(segment, "set") == 0)
+        else if (strcmp(segment, "getProperties") == 0)
         {
-            type = IncomingMessageType::Set;
+            type = IncomingMessageType::GetProperties;
+        }
+        else if (strcmp(segment, "setProperty") == 0)
+        {
+            type = IncomingMessageType::SetProperty;
         }
         else
         {
