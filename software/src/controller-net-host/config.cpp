@@ -5,7 +5,7 @@
 #include "crc16.h"
 
 Config::Config(const ControlI2cMaster &control, IrrigationSystem::ControllerDefinitionManager &definitions, const ErrorHandler &errorHandler)
-    : control(control), definitions(definitions), pendingRead(true), pendingWrite(false), pendingApply(false), configData{0}, configLength(0), errorHandler(errorHandler)
+    : control(control), definitions(definitions), errorHandler(errorHandler), pendingRead(true), pendingWrite(false), pendingApply(false), configData{0}, configLength(0), lastAttempt(0)
 {
 }
 
@@ -32,16 +32,23 @@ size_t Config::getConfig(uint8_t *dataOut) const
 
 bool Config::loop()
 {
+    unsigned long now = millis();
+    if ((now - lastAttempt) < CONFIG_MIN_ATTEMPT_DELAY)
+    {
+        return true;
+    }
     if (pendingRead)
     {
         return readConfig();
     }
-    if (pendingApply)
+    else if (pendingApply)
     {
+        lastAttempt = now;
         return applyConfig();
     }
-    if (pendingWrite)
+    else if (pendingWrite)
     {
+        lastAttempt = now;
         return writeConfig();
     }
     return true;
@@ -50,21 +57,69 @@ bool Config::loop()
 bool Config::readConfig()
 {
     pendingRead = false;
+    EEPROM.begin(CONFIG_MAX_SIZE + 7);
+    if (EEPROM.read(0) != 0x2a)
+    {
+        // No config stored
+        errorHandler.handleError(ErrorComponent::Config, 5, "No config");
+        EEPROM.end();
+        return true;
+    }
+    size_t length = EEPROM.readUInt(1);
+    if (length > CONFIG_MAX_SIZE)
+    {
+        errorHandler.handleError(ErrorComponent::Config, 6, "Read bad config length");
+        EEPROM.end();
+        return false;
+    }
+    configLength = 0;
+    for (int i = 0; i < length + 2; ++i)
+    {
+        configData[i] = EEPROM.read(5 + i);
+    }
+    if (CRC::crc16(configData, length + 2))
+    {
+        errorHandler.handleError(ErrorComponent::Config, 7, "Config had non-zero CRC");
+        EEPROM.end();
+        return false;
+    }
+    // Successfully read new config which should be applied
+    LOG_INFO("[Config] Retrieved");
+    configLength = length;
     pendingWrite = false;
-    // pendingApply = true;
+    pendingApply = true;
+    EEPROM.end();
     return true;
 }
 
 bool Config::writeConfig()
 {
-    pendingRead = false;
-    pendingWrite = false;
-    return true;
+    EEPROM.begin(configLength + 7);
+    EEPROM.write(0, 0x2a); // arbitrary value indicating config exists
+    EEPROM.writeUInt(1, configLength);
+    for (int i = 0; i < configLength; ++i)
+    {
+        EEPROM.write(5 + i, configData[i]);
+    }
+    EEPROM.writeUShort(5 + configLength, CRC::crc16(configData, configLength));
+    bool success = EEPROM.commit();
+    EEPROM.end();
+    if (success)
+    {
+        LOG_INFO("[Config] Persisted");
+        pendingWrite = false;
+        return true;
+    }
+    else
+    {
+        errorHandler.handleError(ErrorComponent::Config, 4, "Persist failed");
+        return false;
+    }
 }
 
 bool Config::applyConfig()
 {
-    LOG_INFO("[Config] Applying configuration");
+    LOG_INFO("[Config] Applying");
     // Reset control processor and local definitions
     if (!control.configStart())
     {
@@ -85,7 +140,7 @@ bool Config::applyConfig()
         IrrigationSystem::ControllerDefinition *definition = definitions.getControllerDefinition(controllerId);
         if (definition->getConfigLength(configType) != nextLength - 3)
         {
-            errorHandler.handleError(ErrorComponent::Config, 2, "Config data length doesn't match config type");
+            errorHandler.handleError(ErrorComponent::Config, 3, "Config data length doesn't match config type");
             return false;
         }
         if (!control.configAdd(&configData[i + 1], nextLength - 1))
@@ -100,7 +155,7 @@ bool Config::applyConfig()
     {
         return false;
     }
-    LOG_INFO("[Config] Configured successfully");
+    LOG_INFO("[Config] Applied");
     pendingApply = false;
-    return 0;
+    return true;
 }

@@ -5,6 +5,7 @@
 #include "error-handler.h"
 
 #define CONFIG_MAX_SIZE 256
+#define CONFIG_MIN_ATTEMPT_DELAY 10000
 
 class Config
 {
@@ -29,8 +30,9 @@ private:
     bool pendingWrite;
     /** Pending to be applied to control processor */
     bool pendingApply;
-    uint8_t configData[CONFIG_MAX_SIZE];
+    uint8_t configData[CONFIG_MAX_SIZE + 2]; // Allow for additional CRC data
     size_t configLength;
+    unsigned long lastAttempt;
 
     bool readConfig();
     bool writeConfig();

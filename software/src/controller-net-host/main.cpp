@@ -46,18 +46,11 @@ void loop()
     {
         connected = mqtt.loop();
     }
-    if (!config.loop())
-    {
-        // TODO do something?
-        delay(10000);
-    }
+    config.loop();
 
     if (connected)
     {
-        if (!events.loop())
-        {
-            // TODO do something?
-        }
+        events.loop();
     }
 }
 
