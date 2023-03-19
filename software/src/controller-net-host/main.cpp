@@ -59,7 +59,6 @@ void loop()
 void handleMessage(IncomingMessageType type, const uint8_t *payload, int length)
 {
     // Note: Do not use mqttClient here
-    Serial.printf("[TEST] Type %d message %s\n", type, payload);
     if (type == IncomingMessageType::Config)
     {
         config.setConfig(payload, length);

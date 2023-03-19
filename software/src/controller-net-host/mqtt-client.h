@@ -20,7 +20,7 @@ public:
     /** Maintain MQTT connection. Returns whether connection is currently active. */
     bool loop();
 
-    bool publish(const char *topic, const uint8_t *payload, int length) const;
+    bool publish(const char *topic, const uint8_t *payload, int length, bool ignoreError = false) const;
 
 private:
     const ErrorHandler &errorHandler;

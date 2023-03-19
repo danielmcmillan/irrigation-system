@@ -23,33 +23,33 @@ bool ControlI2cMaster::getNextEvent(uint16_t lastEvent, uint8_t *eventOut, size_
     write16LE(data, lastEvent);
     const uint8_t *response;
     size_t responseSize;
-    MessageResultInfo result = sendMessage(ControlProcessorPacket::MessageType::EventGetNext, data, 2, &response, &responseSize);
-    if (result.type == MessageResultType::Success && response[0] != 0)
+    bool success = sendMessage(ControlProcessorPacket::MessageType::EventGetNext, data, 2, &response, &responseSize);
+    if (success && response[0] != 0)
     {
         *eventSizeOut = responseSize - 1;
         memcpy(eventOut, &response[1], *eventSizeOut);
         return true;
     }
-    // TODO differentiate error, no result, and missed events
+    // TODO differentiate whether any event was missed
     return false;
 }
 
 bool ControlI2cMaster::configStart() const
 {
-    return sendMessage(ControlProcessorPacket::MessageType::ConfigStart, nullptr, 0, nullptr, nullptr).type == MessageResultType::Success;
+    return sendMessage(ControlProcessorPacket::MessageType::ConfigStart, nullptr, 0, nullptr, nullptr);
 }
 
 bool ControlI2cMaster::configAdd(const uint8_t *data, size_t length) const
 {
-    return sendMessage(ControlProcessorPacket::MessageType::ConfigAdd, data, length, nullptr, nullptr).type == MessageResultType::Success;
+    return sendMessage(ControlProcessorPacket::MessageType::ConfigAdd, data, length, nullptr, nullptr);
 }
 
 bool ControlI2cMaster::configEnd() const
 {
-    return sendMessage(ControlProcessorPacket::MessageType::ConfigEnd, nullptr, 0, nullptr, nullptr).type == MessageResultType::Success;
+    return sendMessage(ControlProcessorPacket::MessageType::ConfigEnd, nullptr, 0, nullptr, nullptr);
 }
 
-MessageResultInfo ControlI2cMaster::sendMessage(ControlProcessorPacket::MessageType type, const uint8_t *data, size_t dataSize, const uint8_t **responseOut, size_t *responseSizeOut) const
+bool ControlI2cMaster::sendMessage(ControlProcessorPacket::MessageType type, const uint8_t *data, size_t dataSize, const uint8_t **responseOut, size_t *responseSizeOut) const
 {
     if (responseSizeOut != nullptr)
     {
@@ -69,8 +69,8 @@ MessageResultInfo ControlI2cMaster::sendMessage(ControlProcessorPacket::MessageT
     uint8_t writeResult = Wire.endTransmission(false);
     if (writeResult != 0)
     {
-        LOG_ERROR("[Control] Failed to write to I2C");
-        return {MessageResultType::SendFailed, writeResult};
+        handleError(type, MessageResultType::SendFailed, writeResult, "Write failed");
+        return false;
     }
 
     // Read response
@@ -78,35 +78,35 @@ MessageResultInfo ControlI2cMaster::sendMessage(ControlProcessorPacket::MessageT
     Wire.readBytes(packetBuffer, bytesRead);
     if (bytesRead == 0)
     {
-        LOG_ERROR("[Control] Failed to receive any data from I2C");
-        return {MessageResultType::ResponseInvalid, 1};
+        handleError(type, MessageResultType::ResponseInvalid, 1, "Failed to receive any data from I2C");
+        return false;
     }
 
     // Validate response
     size_t responseLength = packetBuffer[0];
     if (responseLength == 0 || responseLength > bytesRead)
     {
-        LOG_ERROR("[Control] Response included invalid length");
-        return {MessageResultType::ResponseInvalid, 2};
+        handleError(type, MessageResultType::ResponseInvalid, 2, "Response included invalid length");
+        return false;
     }
     packetSize = responseLength - 1;
     uint8_t responseValidateResult = packet.validatePacket(packetBuffer + 1, packetSize);
     if (responseValidateResult != 0)
     {
-        LOG_ERROR("[Control] Response packet was invalid");
-        return {MessageResultType::ResponseInvalid, (uint8_t)(responseValidateResult + 3u)};
+        handleError(type, MessageResultType::ResponseInvalid, (uint8_t)(responseValidateResult + 3u), "Response packet was invalid");
+        return false;
     }
     const uint8_t *responseData;
     ControlProcessorPacket::MessageType responseType = packet.getMessageType(packetBuffer + 1, &responseData);
     if (responseType == ControlProcessorPacket::MessageType::Err)
     {
-        LOG_ERROR("[Control] Received error response");
-        return {MessageResultType::ResponseError, *responseData};
+        handleError(type, MessageResultType::ResponseError, *responseData, "Received error response");
+        return false;
     }
     else if (responseType != ControlProcessorPacket::MessageType::Ack)
     {
-        LOG_ERROR("[Control] Received invalid response type");
-        return {MessageResultType::ResponseInvalid, 3};
+        handleError(type, MessageResultType::ResponseInvalid, 3, "Received invalid response type");
+        return false;
     }
 
     // TODO Packet lib should provide data length?
@@ -116,7 +116,11 @@ MessageResultInfo ControlI2cMaster::sendMessage(ControlProcessorPacket::MessageT
         *responseOut = responseData;
         *responseSizeOut = responseLength - 3;
     }
-    return {MessageResultType::Success, 0};
+    return true;
+}
 
-    // sprintf(logBuffer, "Response: %d/%d bytes. CRC: 0x%04x", responseLength, bytesRead, responseCrc);
+void ControlI2cMaster::handleError(ControlProcessorPacket::MessageType messageType, MessageResultType resultType, uint8_t reason, const char *text) const
+{
+    // code = <1 byte message type><4 bit result type><4 bit reason>
+    errorHandler.handleError(ErrorComponent::ControlI2c, (reason & 0x0f) | (((uint8_t)resultType << 4) & 0xf0) | ((uint8_t)messageType << 8), text);
 }

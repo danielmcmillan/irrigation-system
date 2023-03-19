@@ -32,11 +32,11 @@ bool WiFiManager::loop()
         }
         else if (WiFi.status() == WL_CONNECT_FAILED)
         {
-            LOG_ERROR("[WiFi] Connection failed");
+            errorHandler.handleError(ErrorComponent::Wifi, 1, "Connection failed");
             return false;
         }
     }
-    LOG_ERROR("[WiFi] Connection timed out");
+    errorHandler.handleError(ErrorComponent::Wifi, 2, "Connection timed out");
     return false;
 
     // Serial.printf("[WiFi] Connected to \"%s\". Local IP is %s. DNS IP is %s.\n", WiFi.SSID().c_str(), WiFi.localIP().toString().c_str(), WiFi.dnsIP().toString().c_str());

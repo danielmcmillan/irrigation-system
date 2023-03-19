@@ -14,12 +14,13 @@ MqttClient::MqttClient(const char *endpoint, int port, const char *clientId, con
     this->wifiClient.setPrivateKey(privateKey);
 
     mqttClient.begin(endpoint, port, this->wifiClient);
-    mqttClient.onMessageAdvanced([handler](MQTTClient *client, char topic[], char bytes[], int length)
+    mqttClient.onMessageAdvanced([handler, errorHandler](MQTTClient *client, char topic[], char bytes[], int length)
                                  {
                                     size_t prefixLength = sizeof(INCOMING_TOPIC_PREFIX) - sizeof(INCOMING_TOPIC_PREFIX[0]);
                                     if (strncmp(INCOMING_TOPIC_PREFIX, topic, prefixLength) != 0)
                                     {
-                                        LOG_ERROR("[MQTT] Message topic has unexpected prefix");
+                                        errorHandler.handleError(ErrorComponent::Mqtt, 1, "Message topic has unexpected prefix");
+                                        return;
                                     }
                                     char *segment = topic + prefixLength;
                                     IncomingMessageType type;
@@ -37,7 +38,7 @@ MqttClient::MqttClient(const char *endpoint, int port, const char *clientId, con
                                     }
                                     else
                                     {
-                                        LOG_ERROR("[MQTT] Message topic has unexpected suffix");
+                                        errorHandler.handleError(ErrorComponent::Mqtt, 2, "Message topic has unexpected suffix");
                                         return;
                                     }
                                     handler(type, (uint8_t *)bytes, length); });
@@ -66,7 +67,7 @@ bool MqttClient::loop()
         }
         if (!connected)
         {
-            LOG_ERROR("[MQTT] Connection failed"); // mqttClient.lastError()
+            errorHandler.handleError(ErrorComponent::Mqtt, 3 | ((uint8_t)(-mqttClient.lastError()) << 8), "Connection failed");
         }
     }
     if (connected && !subscribed)
@@ -84,13 +85,13 @@ bool MqttClient::loop()
         }
         if (!subscribed)
         {
-            LOG_ERROR("[MQTT] Subscribe failed"); // mqttClient.lastError()
+            errorHandler.handleError(ErrorComponent::Mqtt, 4 | ((uint8_t)(-mqttClient.lastError()) << 8), "Subscribe failed");
         }
     }
     return connected && subscribed;
 }
 
-bool MqttClient::publish(const char *topic, const uint8_t *payload, int length) const
+bool MqttClient::publish(const char *topic, const uint8_t *payload, int length, bool ignoreError) const
 {
     if (this->mqttClient.publish(topic, (char *)payload, length))
     {
@@ -98,7 +99,10 @@ bool MqttClient::publish(const char *topic, const uint8_t *payload, int length) 
     }
     else
     {
-        LOG_ERROR("[MQTT] Failed to publish");
+        if (!ignoreError)
+        {
+            errorHandler.handleError(ErrorComponent::Mqtt, 5 | ((uint8_t)(-mqttClient.lastError()) << 8), "Publish failed");
+        }
         return false;
     }
 }

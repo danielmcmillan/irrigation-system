@@ -26,9 +26,9 @@ private:
     uint8_t configData[CONFIG_MAX_SIZE];
     size_t configLength;
 
-    int readConfig();
-    int writeConfig();
-    int applyConfig();
+    bool readConfig();
+    bool writeConfig();
+    bool applyConfig();
 };
 
 #endif

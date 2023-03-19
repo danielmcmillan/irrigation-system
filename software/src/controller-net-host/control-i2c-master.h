@@ -9,23 +9,12 @@ using namespace IrrigationSystem;
 #define CONTROLLER_NET_HOST_I2C_SLAVE_ADDRESS 10
 #define CONTROLLER_NET_HOST_I2C_PACKET_BUFFER_SIZE 32
 
-enum class MessageResultType
+enum class MessageResultType : uint8_t
 {
     Success,
     SendFailed,
     ResponseInvalid,
     ResponseError
-};
-
-struct MessageResultInfo
-{
-    MessageResultType type;
-    /**
-     * SendFailed: see Wire.endTransmission
-     * ResponseInvalid: 1=Timeout, 2=InvalidResponseLength, 3=InvalidResponseType, 4=InvalidDataSize, 5=CrcError
-     * ResponseError: control processor error response
-     */
-    uint8_t reason;
 };
 
 class ControlI2cMaster
@@ -41,9 +30,17 @@ public:
 
 private:
     const ErrorHandler &errorHandler;
-    MessageResultInfo sendMessage(ControlProcessorPacket::MessageType type, const uint8_t *data, size_t dataSize, const uint8_t **responseOut, size_t *responseSizeOut) const;
+    bool sendMessage(ControlProcessorPacket::MessageType type, const uint8_t *data, size_t dataSize, const uint8_t **responseOut, size_t *responseSizeOut) const;
     ControlProcessorPacket packet;
     mutable uint8_t packetBuffer[CONTROLLER_NET_HOST_I2C_PACKET_BUFFER_SIZE];
+
+    /**
+     * @param reason
+     *   SendFailed: see Wire.endTransmission
+     *   ResponseInvalid: 1=Timeout, 2=InvalidResponseLength, 3=InvalidResponseType, 4=InvalidDataSize, 5=CrcError
+     *   ResponseError: control processor error response
+     */
+    void handleError(ControlProcessorPacket::MessageType messageType, MessageResultType resultType, uint8_t reason, const char *text) const;
 };
 
 #endif

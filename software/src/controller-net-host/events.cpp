@@ -32,16 +32,13 @@ bool Events::loop()
     uint16_t nextLastEvent = lastEvent;
     while (eventsSize + MAX_EVENT_SIZE < MAX_EVENT_BATCH_SIZE)
     {
-        int result = control.getNextEvent(nextLastEvent, &events[eventsSize], &eventSize);
-        if (result)
+        if (control.getNextEvent(nextLastEvent, &events[eventsSize], &eventSize))
         {
             nextLastEvent = read16LE(&events[eventsSize]);
             eventsSize += eventSize;
         }
         else
         {
-            // TODO handling no more events, but what about error?
-            // No more events
             break;
         }
     }
@@ -59,5 +56,5 @@ bool Events::loop()
     }
     return true;
 
-    // TODO do something when first event was not found (like trigger retrieving all properties)?
+    // TODO do something when first event was not found (trigger retrieving all properties)?
 }

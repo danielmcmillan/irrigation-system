@@ -16,7 +16,7 @@ class ErrorHandler
 {
 public:
     ErrorHandler(PublishErrorData publishErrorData);
-    void handleError(ErrorComponent component, uint8_t code, const char *text = nullptr) const;
+    void handleError(ErrorComponent component, uint16_t code, const char *text) const;
 
 private:
     PublishErrorData publishErrorData;

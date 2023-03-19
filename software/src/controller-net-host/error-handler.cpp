@@ -1,4 +1,5 @@
 #include "error-handler.h"
+#include "binary-util.h"
 
 #define MAX_ERROR_SIZE 128
 
@@ -23,7 +24,7 @@ ErrorHandler::ErrorHandler(PublishErrorData publishErrorData) : publishErrorData
 {
 }
 
-void ErrorHandler::handleError(ErrorComponent component, uint8_t code, const char *text) const
+void ErrorHandler::handleError(ErrorComponent component, uint16_t code, const char *text) const
 {
     uint8_t buffer[MAX_ERROR_SIZE];
     // Write to Serial
@@ -33,11 +34,11 @@ void ErrorHandler::handleError(ErrorComponent component, uint8_t code, const cha
 
     // Publish error data
     buffer[0] = (uint8_t)component;
-    buffer[1] = code;
-    size_t msgLength = 2;
+    IrrigationSystem::write16LE(&buffer[1], code);
+    size_t msgLength = 3;
     if (text != nullptr)
     {
-        msgLength = (uint8_t *)stpncpy((char *)&buffer[2], text, MAX_ERROR_SIZE - msgLength) - buffer;
+        msgLength = (uint8_t *)stpncpy((char *)&buffer[msgLength], text, MAX_ERROR_SIZE - msgLength) - buffer;
     }
 
     publishErrorData(buffer, msgLength);
