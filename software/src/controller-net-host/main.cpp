@@ -60,7 +60,6 @@ void loop()
 
 void handleMessage(IncomingMessageType type, const uint8_t *payload, int length)
 {
-    // Note: Do not use mqttClient here
     switch (type)
     {
     case IncomingMessageType::Config:
@@ -76,7 +75,7 @@ void handleMessage(IncomingMessageType type, const uint8_t *payload, int length)
 
 bool publishErrorData(const uint8_t *data, size_t size)
 {
-    return mqtt.publish(ERROR_TOPIC, data, size);
+    return mqtt.publish(ERROR_TOPIC, data, size, true);
 }
 
 bool publishEventData(const uint8_t *data, size_t size)

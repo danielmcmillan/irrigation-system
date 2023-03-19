@@ -5,11 +5,14 @@
 #include <MQTTClient.h>
 #include "error-handler.h"
 
+#define MESSAGE_QUEUE_SIZE 256
+
 enum class IncomingMessageType
 {
     Config,
     Retrieve,
-    Set
+    Set,
+    Invalid
 };
 typedef std::function<void(IncomingMessageType type, const uint8_t *payload, int length)> MqttClientMessageHandler;
 
@@ -23,6 +26,7 @@ public:
     bool publish(const char *topic, const uint8_t *payload, int length, bool ignoreError = false) const;
 
 private:
+    MqttClientMessageHandler handler;
     const ErrorHandler &errorHandler;
     WiFiClientSecure wifiClient;
     mutable MQTTClient mqttClient;
@@ -30,6 +34,11 @@ private:
     int port;
     const char *clientId;
     bool subscribed;
+
+    uint8_t messageQueue[MESSAGE_QUEUE_SIZE];
+    size_t messageQueueEnd;
+    bool messageQueueFull;
+    void queueMessage(MQTTClient *client, char topic[], char bytes[], int length);
 };
 
 #endif

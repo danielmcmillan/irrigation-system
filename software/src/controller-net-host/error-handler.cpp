@@ -8,9 +8,9 @@ const char *getErrorComponentString(ErrorComponent component)
     switch (component)
     {
     case ErrorComponent::Wifi:
-        return "Wifi";
+        return "WiFi";
     case ErrorComponent::Mqtt:
-        return "Mqtt";
+        return "MQTT";
     case ErrorComponent::Config:
         return "Config";
     case ErrorComponent::ControlI2c:
@@ -29,7 +29,7 @@ void ErrorHandler::handleError(ErrorComponent component, uint16_t code, const ch
     uint8_t buffer[MAX_ERROR_SIZE];
     // Write to Serial
     char *logBuffer = (char *)buffer;
-    snprintf(logBuffer, MAX_ERROR_SIZE, "ERROR [%s] %s (0x%02x)\n", getErrorComponentString(component), text, code);
+    snprintf(logBuffer, MAX_ERROR_SIZE, "ERROR [%s] %s (0x%04x)\n", getErrorComponentString(component), text, code);
     Serial.printf(logBuffer);
 
     // Publish error data

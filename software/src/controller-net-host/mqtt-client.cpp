@@ -6,7 +6,7 @@
 #define INCOMING_TOPIC_FILTER INCOMING_TOPIC_PREFIX "#"
 
 MqttClient::MqttClient(const char *endpoint, int port, const char *clientId, const char *caCertificate, const char *certificate, const char *privateKey, MqttClientMessageHandler handler, const ErrorHandler &errorHandler)
-    : wifiClient(), mqttClient(512), endpoint(endpoint), port(port), clientId(clientId), subscribed(false), errorHandler(errorHandler)
+    : handler(handler), errorHandler(errorHandler), wifiClient(), mqttClient(512), endpoint(endpoint), port(port), clientId(clientId), subscribed(false), messageQueue{0}, messageQueueEnd(0), messageQueueFull(false)
 {
     // Configure WiFiClientSecure to use the configured credentials
     this->wifiClient.setCACert(caCertificate);
@@ -14,34 +14,8 @@ MqttClient::MqttClient(const char *endpoint, int port, const char *clientId, con
     this->wifiClient.setPrivateKey(privateKey);
 
     mqttClient.begin(endpoint, port, this->wifiClient);
-    mqttClient.onMessageAdvanced([handler, errorHandler](MQTTClient *client, char topic[], char bytes[], int length)
-                                 {
-                                    size_t prefixLength = sizeof(INCOMING_TOPIC_PREFIX) - sizeof(INCOMING_TOPIC_PREFIX[0]);
-                                    if (strncmp(INCOMING_TOPIC_PREFIX, topic, prefixLength) != 0)
-                                    {
-                                        errorHandler.handleError(ErrorComponent::Mqtt, 1, "Message topic has unexpected prefix");
-                                        return;
-                                    }
-                                    char *segment = topic + prefixLength;
-                                    IncomingMessageType type;
-                                    if (strcmp(segment, "config") == 0)
-                                    {
-                                        type = IncomingMessageType::Config;
-                                    }
-                                    else if (strcmp(segment, "retrieve") == 0)
-                                    {
-                                        type = IncomingMessageType::Retrieve;
-                                    }
-                                    else if (strcmp(segment, "set") == 0)
-                                    {
-                                        type = IncomingMessageType::Set;
-                                    }
-                                    else
-                                    {
-                                        errorHandler.handleError(ErrorComponent::Mqtt, 2, "Message topic has unexpected suffix");
-                                        return;
-                                    }
-                                    handler(type, (uint8_t *)bytes, length); });
+    mqttClient.onMessageAdvanced([this](MQTTClient *client, char topic[], char bytes[], int length)
+                                 { this->queueMessage(client, topic, bytes, length); });
     // mqttClient.setKeepAlive() TODO
     // mqttClient.setWill("topic", "payload", retained, qos) TODO
 }
@@ -67,7 +41,7 @@ bool MqttClient::loop()
         }
         if (!connected)
         {
-            errorHandler.handleError(ErrorComponent::Mqtt, 3 | ((uint8_t)(-mqttClient.lastError()) << 8), "Connection failed");
+            errorHandler.handleError(ErrorComponent::Mqtt, 1 | ((uint8_t)(-mqttClient.lastError()) << 8), "Connection failed");
         }
     }
     if (connected && !subscribed)
@@ -85,9 +59,35 @@ bool MqttClient::loop()
         }
         if (!subscribed)
         {
-            errorHandler.handleError(ErrorComponent::Mqtt, 4 | ((uint8_t)(-mqttClient.lastError()) << 8), "Subscribe failed");
+            errorHandler.handleError(ErrorComponent::Mqtt, 2 | ((uint8_t)(-mqttClient.lastError()) << 8), "Subscribe failed");
         }
     }
+
+    // Call handler for any pending messages in queue
+    if (messageQueueEnd > 0)
+    {
+        for (int i = 0; i < messageQueueEnd;)
+        {
+            IncomingMessageType type = (IncomingMessageType)messageQueue[i];
+            if (type == IncomingMessageType::Invalid)
+            {
+                errorHandler.handleError(ErrorComponent::Mqtt, 3, "Unexpected message topic");
+            }
+            else
+            {
+                uint8_t length = messageQueue[i + 1];
+                handler(type, &messageQueue[i + 2], length);
+                i += length + 2;
+            }
+        }
+        messageQueueEnd = 0;
+    }
+    if (messageQueueFull)
+    {
+        errorHandler.handleError(ErrorComponent::Mqtt, 4, "Incoming message queue full");
+        messageQueueFull = false;
+    }
+
     return connected && subscribed;
 }
 
@@ -104,5 +104,49 @@ bool MqttClient::publish(const char *topic, const uint8_t *payload, int length, 
             errorHandler.handleError(ErrorComponent::Mqtt, 5 | ((uint8_t)(-mqttClient.lastError()) << 8), "Publish failed");
         }
         return false;
+    }
+}
+
+void MqttClient::queueMessage(MQTTClient *client, char topic[], char bytes[], int length)
+{
+    IncomingMessageType type;
+    size_t prefixLength = sizeof(INCOMING_TOPIC_PREFIX) - sizeof(INCOMING_TOPIC_PREFIX[0]);
+    if (strncmp(INCOMING_TOPIC_PREFIX, topic, prefixLength) != 0)
+    {
+        type = IncomingMessageType::Invalid;
+    }
+    else
+    {
+        char *segment = topic + prefixLength;
+        if (strcmp(segment, "config") == 0)
+        {
+            type = IncomingMessageType::Config;
+        }
+        else if (strcmp(segment, "retrieve") == 0)
+        {
+            type = IncomingMessageType::Retrieve;
+        }
+        else if (strcmp(segment, "set") == 0)
+        {
+            type = IncomingMessageType::Set;
+        }
+        else
+        {
+            type = IncomingMessageType::Invalid;
+        }
+    }
+
+    // Copies the message into a queue, since handling it may require further mqtt interaction which is not supported
+    if (MESSAGE_QUEUE_SIZE - messageQueueEnd >= length + 2)
+    {
+        messageQueue[messageQueueEnd] = (uint8_t)type;
+        messageQueue[messageQueueEnd + 1] = length;
+        messageQueueEnd += 2;
+        memcpy(&messageQueue[messageQueueEnd], bytes, length);
+        messageQueueEnd += length;
+    }
+    else
+    {
+        messageQueueFull = true;
     }
 }
