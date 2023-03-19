@@ -2,8 +2,8 @@
 #include <Arduino.h>
 #include "logging.h"
 
-Config::Config(const ControlI2cMaster &control, IrrigationSystem::ControllerDefinitionManager &definitions)
-    : control(control), definitions(definitions), pendingRead(true), pendingWrite(false), pendingApply(false), configData{0}, configLength(0)
+Config::Config(const ControlI2cMaster &control, IrrigationSystem::ControllerDefinitionManager &definitions, const ErrorHandler &errorHandler)
+    : control(control), definitions(definitions), pendingRead(true), pendingWrite(false), pendingApply(false), configData{0}, configLength(0), errorHandler(errorHandler)
 {
 }
 

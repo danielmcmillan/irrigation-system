@@ -10,16 +10,22 @@
 #include "mqtt-client.h"
 #include "events.h"
 #include "config.h"
+#include "error-handler.h"
+
+#define ERROR_TOPIC "icu-out/" MQTT_CLIENT_ID "/error"
 
 IrrigationSystem::ControllerDefinitionsBuilder definitionsBuilder;
 IrrigationSystem::ControllerDefinitionManager definitions = definitionsBuilder.buildManager();
 
-WiFiManager wifi(WIFI_SSID, WIFI_PASSWORD);
-ControlI2cMaster control(definitions);
+void publishErrorData(const uint8_t *data, size_t size);
 void handleMessage(IncomingMessageType type, const uint8_t *payload, int length);
-MqttClient mqtt(MQTT_BROKER_ENDPOINT, MQTT_BROKER_PORT, MQTT_CLIENT_ID, MQTT_BROKER_CA_CERT, MQTT_CLIENT_CERT, MQTT_CLIENT_KEY, handleMessage);
-Events events(control, mqtt);
-Config config(control, definitions);
+
+ErrorHandler errorHandler(publishErrorData);
+WiFiManager wifi(WIFI_SSID, WIFI_PASSWORD, errorHandler);
+ControlI2cMaster control(definitions, errorHandler);
+MqttClient mqtt(MQTT_BROKER_ENDPOINT, MQTT_BROKER_PORT, MQTT_CLIENT_ID, MQTT_BROKER_CA_CERT, MQTT_CLIENT_CERT, MQTT_CLIENT_KEY, handleMessage, errorHandler);
+Events events(control, mqtt, errorHandler);
+Config config(control, definitions, errorHandler);
 
 void setup()
 {
@@ -58,4 +64,9 @@ void handleMessage(IncomingMessageType type, const uint8_t *payload, int length)
     {
         config.setConfig(payload, length);
     }
+}
+
+void publishErrorData(const uint8_t *data, size_t size)
+{
+    mqtt.publish(ERROR_TOPIC, data, size);
 }

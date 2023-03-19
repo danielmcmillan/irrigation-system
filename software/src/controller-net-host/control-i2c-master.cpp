@@ -5,7 +5,7 @@
 // #include "crc16.h"
 #include "binary-util.h"
 
-ControlI2cMaster::ControlI2cMaster(const ControllerDefinitionProvider &controllers) : packet(controllers)
+ControlI2cMaster::ControlI2cMaster(const ControllerDefinitionProvider &controllers, const ErrorHandler &errorHandler) : packet(controllers), errorHandler(errorHandler)
 {
 }
 

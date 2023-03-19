@@ -8,7 +8,7 @@
 #define EVENT_TOPIC "icu-out/" MQTT_CLIENT_ID "/event"
 #define POLL_INTERVAL 2500
 
-Events::Events(const ControlI2cMaster &control, const MqttClient &mqtt) : control(control), mqtt(mqtt), lastEvent(0xffff), lastPollTime(0)
+Events::Events(const ControlI2cMaster &control, const MqttClient &mqtt, const ErrorHandler &errorHandler) : control(control), mqtt(mqtt), lastEvent(0xffff), lastPollTime(0), errorHandler(errorHandler)
 {
 }
 

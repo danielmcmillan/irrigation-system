@@ -2,6 +2,7 @@
 #define _CONTROLLER_NET_HOST_I2C_INTERFACE
 #include "controller-definition-provider.h"
 #include "control-processor-packet.h"
+#include "error-handler.h"
 
 using namespace IrrigationSystem;
 
@@ -30,7 +31,7 @@ struct MessageResultInfo
 class ControlI2cMaster
 {
 public:
-    ControlI2cMaster(const ControllerDefinitionProvider &controllers);
+    ControlI2cMaster(const ControllerDefinitionProvider &controllers, const ErrorHandler &errorHandler);
     void setup();
 
     bool getNextEvent(uint16_t lastEvent, uint8_t *eventOut, size_t *eventSizeOut) const;
@@ -39,6 +40,7 @@ public:
     bool configEnd() const;
 
 private:
+    const ErrorHandler &errorHandler;
     MessageResultInfo sendMessage(ControlProcessorPacket::MessageType type, const uint8_t *data, size_t dataSize, const uint8_t **responseOut, size_t *responseSizeOut) const;
     ControlProcessorPacket packet;
     mutable uint8_t packetBuffer[CONTROLLER_NET_HOST_I2C_PACKET_BUFFER_SIZE];

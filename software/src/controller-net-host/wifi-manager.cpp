@@ -2,7 +2,7 @@
 #include <WiFi.h>
 #include "logging.h"
 
-WiFiManager::WiFiManager(const char *ssid, const char *password) : ssid(ssid), password(password)
+WiFiManager::WiFiManager(const char *ssid, const char *password, const ErrorHandler &errorHandler) : ssid(ssid), password(password), errorHandler(errorHandler)
 {
     WiFi.mode(WIFI_STA);
     WiFi.setHostname("esp32-irrigation");
