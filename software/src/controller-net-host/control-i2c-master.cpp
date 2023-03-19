@@ -49,6 +49,11 @@ bool ControlI2cMaster::configEnd() const
     return sendMessage(ControlProcessorPacket::MessageType::ConfigEnd, nullptr, 0, nullptr, nullptr);
 }
 
+bool ControlI2cMaster::setPropertyValue(const uint8_t *data, size_t length) const
+{
+    return sendMessage(ControlProcessorPacket::MessageType::PropertySet, data, length, nullptr, nullptr);
+}
+
 bool ControlI2cMaster::sendMessage(ControlProcessorPacket::MessageType type, const uint8_t *data, size_t dataSize, const uint8_t **responseOut, size_t *responseSizeOut) const
 {
     if (responseSizeOut != nullptr)
@@ -124,3 +129,13 @@ void ControlI2cMaster::handleError(ControlProcessorPacket::MessageType messageTy
     // code = <1 byte message type><4 bit result type><4 bit reason>
     errorHandler.handleError(ErrorComponent::ControlI2c, (reason & 0x0f) | (((uint8_t)resultType << 4) & 0xf0) | ((uint8_t)messageType << 8), text);
 }
+
+// if (dataSize > 0)
+// {
+//     Serial.printf("Writing: 0x");
+//     for (int i = 0; i < dataSize; ++i)
+//     {
+//         Serial.printf("%02x", data[i]);
+//     }
+//     Serial.println();
+// }

@@ -63,4 +63,91 @@ namespace IrrigationSystem
             return true;
         }
     }
+
+#ifdef INCLUDE_CONTROLLER_METADATA
+    int Vacon100ControllerDefinition::getPropertyIndex(uint16_t id) const
+    {
+        for (int i = 0; i < sizeof(Vacon100ControllerProperties::propertyIds) / sizeof(Vacon100ControllerProperties::propertyIds[0]); ++i)
+        {
+            if (Vacon100ControllerProperties::propertyIds[i] == id)
+            {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    uint8_t Vacon100ControllerDefinition::getName(char *nameOut, uint8_t maxLen) const
+    {
+        return stpncpy(nameOut, "Vacon 100", maxLen) - nameOut;
+    }
+
+    uint8_t Vacon100ControllerDefinition::getPropertyObjectName(uint16_t id, char *nameOut, uint8_t maxLen) const
+    {
+        return getName(nameOut, maxLen);
+    }
+
+    uint8_t Vacon100ControllerDefinition::getPropertyName(uint16_t id, char *nameOut, uint8_t maxLen) const
+    {
+        static constexpr const char *propertyNames[] = {
+            "Available",
+            "Motor On",
+            "Ready|Run|Direction|Fault|Alarm|At Reference|Zero Speed|Flux Ready",
+            "Actual Speed",
+            "Output Frequency",
+            "Motor Speed",
+            "Motor Current",
+            "Motor Torque",
+            "Motor Power",
+            "Motor Voltage",
+            "DC Link Voltage",
+            "Active Fault Code",
+            "Feedback Pressure",
+            "Drive Temp",
+            "Motor Temp",
+            "Energy Used",
+            "Run Time"};
+        int index = getPropertyIndex(id);
+        if (index >= 0)
+        {
+            return stpncpy(nameOut, propertyNames[index], maxLen) - nameOut;
+        }
+        else
+        {
+            return 0;
+        }
+    }
+
+    PropertyFormat Vacon100ControllerDefinition::getPropertyFormat(uint16_t id) const
+    {
+        static constexpr PropertyFormat propertyFormats[] = {
+            {PropertyValueType::BooleanFlags, {.booleanCount = 1u}},   // available
+            {PropertyValueType::BooleanFlags, {.booleanCount = 1u}},   // motorOn
+            {PropertyValueType::BooleanFlags, {.booleanCount = 8u}},   // status
+            {PropertyValueType::UnsignedInt, {.mul = {10, -2}}, "%"},  // actualSpeed
+            {PropertyValueType::UnsignedInt, {.mul = {10, -2}}, "Hz"}, // outputFrequency
+            {PropertyValueType::UnsignedInt, {.mul = {1, 1}}, "rpm"},  // motorSpeed
+            {PropertyValueType::UnsignedInt, {.mul = {10, -1}}, "A"},  // motorCurrent
+            {PropertyValueType::UnsignedInt, {.mul = {10, -1}}, "%"},  // motorTorque
+            {PropertyValueType::UnsignedInt, {.mul = {10, -1}}, "%"},  // motorPower
+            {PropertyValueType::UnsignedInt, {.mul = {10, -1}}, "V"},  // motorVoltage
+            {PropertyValueType::UnsignedInt, {.mul = {1, 1}}, "V"},    // dcLinkVoltage
+            {PropertyValueType::UnsignedInt, {.mul = {1, 1}}},         // activeFaultCode
+            {PropertyValueType::UnsignedInt, {.mul = {1, 1}}},         // feedbackPressure
+            {PropertyValueType::SignedInt, {.mul = {10, -1}}, "C"},    // driveTemp
+            {PropertyValueType::UnsignedInt, {.mul = {10, -1}}, "%"},  // motorTemp
+            {PropertyValueType::UnsignedInt, {.mul = {1, 1}}, "kWh"},  // energyUsed
+            {PropertyValueType::UnsignedInt, {.mul = {60, -2}}, "h"}   // runTime
+        };
+        int index = getPropertyIndex(id);
+        if (index >= 0)
+        {
+            return propertyFormats[index];
+        }
+        else
+        {
+            return {};
+        }
+    }
+#endif
 }

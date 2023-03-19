@@ -1,4 +1,4 @@
-// Note: add the build flag '-include "src/lib_headers.h"'
+// Note: add the build flag '-include "src/control-processor/override-headers.h"'
 
 // Override the default TwoWire buffer sizes
 #define TWI_TX_BUFFER_LENGTH 20

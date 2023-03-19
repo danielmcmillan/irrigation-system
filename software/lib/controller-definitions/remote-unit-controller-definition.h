@@ -44,6 +44,13 @@ namespace IrrigationSystem
         unsigned int getPropertyLength(uint16_t id) const;
         bool getPropertyReadOnly(uint16_t id) const;
 
+#ifdef INCLUDE_CONTROLLER_METADATA
+        uint8_t getName(char *nameOut, uint8_t maxLen) const;
+        uint8_t getPropertyObjectName(uint16_t id, char *nameOut, uint8_t maxLen) const;
+        uint8_t getPropertyName(uint16_t id, char *nameOut, uint8_t maxLen) const;
+        PropertyFormat getPropertyFormat(uint16_t id) const;
+#endif
+
         uint8_t getRemoteUnitCount() const;
         const RemoteUnit &getRemoteUnitAt(int index) const;
         /** Get the index of the RemoteUnit definition with specified id, or -1 if it doesn't exist */

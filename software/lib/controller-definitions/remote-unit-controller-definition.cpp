@@ -91,6 +91,74 @@ namespace IrrigationSystem
         return (id >> 8) != RemoteUnitPropertyType::RemoteUnitSolenoidOn;
     }
 
+#ifdef INCLUDE_CONTROLLER_METADATA
+    uint8_t RemoteUnitControllerDefinition::getName(char *nameOut, uint8_t maxLen) const
+    {
+        return stpncpy(nameOut, "Remote Unit", maxLen) - nameOut;
+    }
+
+    uint8_t RemoteUnitControllerDefinition::getPropertyObjectName(uint16_t id, char *nameOut, uint8_t maxLen) const
+    {
+        RemoteUnitPropertyType type = (RemoteUnitPropertyType)(id >> 8);
+        uint8_t subId = id & 0xff;
+        int len;
+        if (type == RemoteUnitPropertyType::RemoteUnitSolenoidOn)
+        {
+            len = snprintf(nameOut, maxLen, "Solenoid|%u", subId);
+        }
+        else
+        {
+            len = snprintf(nameOut, maxLen, "Remote Unit|%u", subId);
+        }
+        if (len < maxLen)
+        {
+            return len;
+        }
+        else
+        {
+            return maxLen - 1;
+        }
+    }
+
+    uint8_t RemoteUnitControllerDefinition::getPropertyName(uint16_t id, char *nameOut, uint8_t maxLen) const
+    {
+        RemoteUnitPropertyType type = (RemoteUnitPropertyType)(id >> 8);
+        const char *result;
+        switch (type)
+        {
+        case RemoteUnitPropertyType::RemoteUnitAvailable:
+            result = "Available";
+        case RemoteUnitPropertyType::RemoteUnitBattery:
+            result = "Voltage";
+        case RemoteUnitPropertyType::RemoteUnitSolenoidOn:
+            result = "On";
+        default:
+            return 0;
+        }
+        return stpncpy(nameOut, result, maxLen) - nameOut;
+    }
+
+    PropertyFormat RemoteUnitControllerDefinition::getPropertyFormat(uint16_t id) const
+    {
+        RemoteUnitPropertyType type = (RemoteUnitPropertyType)(id >> 8);
+        switch (type)
+        {
+        case RemoteUnitPropertyType::RemoteUnitAvailable:
+            return {PropertyValueType::BooleanFlags, {.booleanCount = 1}};
+        case RemoteUnitPropertyType::RemoteUnitBattery:
+        {
+            // Won't allow returning initializer list directly. Compiler bug?
+            PropertyFormat format = {PropertyValueType::UnsignedInt, {.mul = {10, -1}}, "V"};
+            return format;
+        }
+        case RemoteUnitPropertyType::RemoteUnitSolenoidOn:
+            return {PropertyValueType::BooleanFlags, {.booleanCount = 1}};
+        default:
+            return {};
+        }
+    }
+#endif
+
     uint8_t RemoteUnitControllerDefinition::getRemoteUnitCount() const
     {
         return remoteUnitCount;

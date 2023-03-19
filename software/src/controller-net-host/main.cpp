@@ -61,9 +61,16 @@ void loop()
 void handleMessage(IncomingMessageType type, const uint8_t *payload, int length)
 {
     // Note: Do not use mqttClient here
-    if (type == IncomingMessageType::Config)
+    switch (type)
     {
+    case IncomingMessageType::Config:
         config.setConfig(payload, length);
+        break;
+    case IncomingMessageType::Retrieve:
+        break;
+    case IncomingMessageType::Set:
+        control.setPropertyValue(payload, length);
+        break;
     }
 }
 

@@ -27,6 +27,7 @@ public:
     bool configStart() const;
     bool configAdd(const uint8_t *data, size_t length) const;
     bool configEnd() const;
+    bool setPropertyValue(const uint8_t *data, size_t length) const;
 
 private:
     const ErrorHandler &errorHandler;

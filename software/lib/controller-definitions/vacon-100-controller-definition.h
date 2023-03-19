@@ -15,6 +15,14 @@ namespace IrrigationSystem
         uint16_t getPropertyIdAt(unsigned int index) const;
         unsigned int getPropertyLength(uint16_t id) const;
         bool getPropertyReadOnly(uint16_t id) const;
+
+#ifdef INCLUDE_CONTROLLER_METADATA
+        int getPropertyIndex(uint16_t id) const;
+        uint8_t getName(char *nameOut, uint8_t maxLen) const;
+        uint8_t getPropertyObjectName(uint16_t id, char *nameOut, uint8_t maxLen) const;
+        uint8_t getPropertyName(uint16_t id, char *nameOut, uint8_t maxLen) const;
+        PropertyFormat getPropertyFormat(uint16_t id) const;
+#endif
     };
 
     namespace Vacon100ControllerProperties
