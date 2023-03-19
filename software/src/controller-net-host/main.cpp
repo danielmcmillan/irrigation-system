@@ -17,6 +17,7 @@
 #define CONFIG_TOPIC "icu-out/%.*s/" MQTT_CLIENT_ID "/config"
 #define PROPERTIES_TOPIC "icu-out/%.*s/" MQTT_CLIENT_ID "/properties"
 #define TOPIC_CLIENT_MAX_LENGTH 20
+#define DISCONNECTED_RESET_TIME 120000 // 2 minutes
 
 IrrigationSystem::ControllerDefinitionsBuilder definitionsBuilder;
 IrrigationSystem::ControllerDefinitionManager definitions = definitionsBuilder.buildManager();
@@ -31,6 +32,8 @@ MqttClient mqtt(MQTT_BROKER_ENDPOINT, MQTT_BROKER_PORT, MQTT_CLIENT_ID, MQTT_BRO
 ControlI2cMaster control(definitions, errorHandler);
 Events events(control, publishEventData, errorHandler);
 Config config(control, definitions, errorHandler);
+
+unsigned long lastConnected = 0;
 
 void setup()
 {
@@ -48,9 +51,16 @@ void loop()
     }
     config.loop();
 
+    unsigned long now = millis();
     if (connected)
     {
+        lastConnected = now;
         events.loop();
+    }
+    else if ((now - lastConnected) > DISCONNECTED_RESET_TIME)
+    {
+        // Restart after prolonged period of connection failure
+        ESP.restart();
     }
 }
 
