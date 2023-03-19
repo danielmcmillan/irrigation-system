@@ -49,6 +49,21 @@ bool ControlI2cMaster::configEnd() const
     return sendMessage(ControlProcessorPacket::MessageType::ConfigEnd, nullptr, 0, nullptr, nullptr);
 }
 
+bool ControlI2cMaster::getPropertyValue(uint8_t controllerId, uint16_t propertyId, uint8_t *valuesOut) const
+{
+    uint8_t data[3];
+    data[0] = controllerId;
+    write16LE(&data[1], propertyId);
+    const uint8_t *response;
+    size_t responseSize;
+    if (sendMessage(ControlProcessorPacket::MessageType::PropertyRead, data, 3, &response, &responseSize))
+    {
+        memcpy(valuesOut, response, responseSize);
+        return true;
+    }
+    return false;
+}
+
 bool ControlI2cMaster::setPropertyValue(const uint8_t *data, size_t length) const
 {
     return sendMessage(ControlProcessorPacket::MessageType::PropertySet, data, length, nullptr, nullptr);

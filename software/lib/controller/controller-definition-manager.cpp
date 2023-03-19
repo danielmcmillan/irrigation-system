@@ -19,6 +19,20 @@ namespace IrrigationSystem
         return nullptr;
     }
 
+    unsigned int ControllerDefinitionManager::getControllerCount()
+    {
+        return numDefinitions;
+    }
+
+    uint8_t ControllerDefinitionManager::getControllerIdAt(uint8_t index)
+    {
+        if (index < numDefinitions)
+        {
+            return definitions[index].controllerId;
+        }
+        return 0;
+    }
+
     ControllerDefinition *ControllerDefinitionManager::getControllerDefinition(uint8_t controllerId)
     {
         return const_cast<ControllerDefinition *>(const_cast<const ControllerDefinitionManager *>(this)->getControllerDefinition(controllerId));

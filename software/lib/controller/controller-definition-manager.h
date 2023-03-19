@@ -17,6 +17,8 @@ namespace IrrigationSystem
         ControllerDefinitionManager(ControllerDefinitionRegistration *definitions, unsigned int num);
         ControllerDefinition *getControllerDefinition(uint8_t controllerId);
         const ControllerDefinition *getControllerDefinition(uint8_t controllerId) const override;
+        unsigned int getControllerCount();
+        uint8_t getControllerIdAt(uint8_t index);
         void resetControllerDefinitions();
 
     private:
