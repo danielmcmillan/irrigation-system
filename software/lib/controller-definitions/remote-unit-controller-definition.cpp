@@ -128,10 +128,13 @@ namespace IrrigationSystem
         {
         case RemoteUnitPropertyType::RemoteUnitAvailable:
             result = "Available";
+            break;
         case RemoteUnitPropertyType::RemoteUnitBattery:
             result = "Voltage";
+            break;
         case RemoteUnitPropertyType::RemoteUnitSolenoidOn:
-            result = "On";
+            result = "Open";
+            break;
         default:
             return 0;
         }
