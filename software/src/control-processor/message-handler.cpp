@@ -1,5 +1,6 @@
 #include "message-handler.h"
 #include "binary-util.h"
+#include <Arduino.h>
 
 using namespace IrrigationSystem;
 
@@ -20,7 +21,7 @@ int IrrigationSystem::ControlProcessorMessageHandler::configAdd(uint8_t controll
 {
     if (state.status != ControlProcessorStatus::Unconfigured)
     {
-        return 3;
+        return 1;
     }
     IrrigationSystem::Controller *controller = this->controllers.getController(controllerId);
     controller->configure(configType, configData);
@@ -31,7 +32,7 @@ int IrrigationSystem::ControlProcessorMessageHandler::configEnd() const
 {
     if (state.status != ControlProcessorStatus::Unconfigured)
     {
-        return 3;
+        return 1;
     }
     state.status = ControlProcessorStatus::Initializing;
     events.handleEvent(EventType::configured, 0, nullptr);
@@ -42,7 +43,7 @@ int ControlProcessorMessageHandler::propertyRead(uint8_t controllerId, uint16_t 
 {
     if (state.status == ControlProcessorStatus::Unconfigured)
     {
-        return 3;
+        return 1;
     }
     IrrigationSystem::Controller *controller = this->controllers.getController(controllerId);
     const IrrigationSystem::ControllerDefinition &definition = controller->getDefinition();
@@ -77,7 +78,7 @@ int ControlProcessorMessageHandler::propertyWrite(uint8_t controllerId, uint16_t
 {
     if (state.status == ControlProcessorStatus::Unconfigured)
     {
-        return 3;
+        return 1;
     }
     IrrigationSystem::Controller *controller = controllers.getController(controllerId);
     const IrrigationSystem::ControllerDefinition &definition = controller->getDefinition();
@@ -121,8 +122,54 @@ int ControlProcessorMessageHandler::eventGetNext(uint16_t afterId, uint8_t *resu
     return 0;
 }
 
-int IrrigationSystem::ControlProcessorMessageHandler::controllerCommand(uint16_t controllerId, const uint8_t *input, size_t inputSize, uint8_t *responseOut, size_t *responseSizeOut) const
+enum class ControllerCommandState
 {
-    *responseSizeOut = 0;
-    return controllers.getController(controllerId)->runCommand(input, inputSize, responseOut, responseSizeOut);
+    None,
+    Pending,
+    Complete
+} controllerCommandState;
+uint16_t nextCommandControllerId;
+uint8_t nextCommand[TWI_RX_BUFFER_LENGTH - 4];
+size_t nextCommandSize;
+// uint8_t nextCommandResult[20];
+size_t nextCommandResultSize;
+int nextCommandError;
+
+int IrrigationSystem::ControlProcessorMessageHandler::runControllerCommand(uint16_t controllerId, const uint8_t *input, size_t inputSize) const
+{
+    if (inputSize > sizeof(nextCommand))
+    {
+        controllerCommandState = ControllerCommandState::None;
+        return 1;
+    }
+    controllerCommandState = ControllerCommandState::Pending;
+    nextCommandControllerId = controllerId;
+    memcpy(nextCommand, input, inputSize);
+    nextCommandSize = inputSize;
+    return 0;
+}
+
+int IrrigationSystem::ControlProcessorMessageHandler::getControllerCommandResult(uint8_t *responseOut, size_t *responseSizeOut) const
+{
+    if (controllerCommandState != ControllerCommandState::Complete)
+    {
+        return 1;
+    }
+    if (nextCommandError != 0)
+    {
+        return 1 + nextCommandError;
+    }
+    memcpy(responseOut, nextCommand, nextCommandResultSize);
+    *responseSizeOut = nextCommandResultSize;
+    return 0;
+}
+
+void IrrigationSystem::ControlProcessorMessageHandler::runPendingControllerCommand() const
+{
+    if (controllerCommandState == ControllerCommandState::Pending)
+    {
+        nextCommandResultSize = 0;
+        nextCommandError = controllers.getController(nextCommandControllerId)->runCommand(nextCommand, nextCommandSize, nextCommand, &nextCommandResultSize);
+        controllerCommandState = ControllerCommandState::Complete;
+    }
 }

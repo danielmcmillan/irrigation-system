@@ -45,6 +45,11 @@ void ControlI2cSlave::handleRequest(uint8_t *input, uint8_t inputSize, uint8_t *
         const uint8_t *data;
         size_t dataSize = packet.getMessageData(input, inputSize, &data);
         result = this->handleMessage(type, data, dataSize, responseData, &responseDataSize);
+        if (result != 0)
+        {
+            // Failed to handle is represented by error > 2
+            result += 2;
+        }
     }
 
     if (result == 0)
@@ -88,8 +93,12 @@ int ControlI2cSlave::handleMessage(ControlProcessorPacket::MessageType type, con
             responseDataSizeOut);
         *responseDataSizeOut += 1;
         break;
-    case ControlProcessorPacket::MessageType::ControllerCommand:
-        return this->handler.controllerCommand(data[0], &data[1], dataSize - 1, responseDataOut, responseDataSizeOut);
+    case ControlProcessorPacket::MessageType::RunControllerCommand:
+        *responseDataSizeOut = 0;
+        return this->handler.runControllerCommand(data[0], &data[1], dataSize - 1);
+        break;
+    case ControlProcessorPacket::MessageType::GetControllerCommandResult:
+        return this->handler.getControllerCommandResult(responseDataOut, responseDataSizeOut);
         break;
     default:
         break;

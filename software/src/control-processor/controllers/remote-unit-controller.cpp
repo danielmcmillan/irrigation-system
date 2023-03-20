@@ -6,6 +6,7 @@ extern "C"
 #include "yl-800t.h"
 }
 #include "remote-unit-packet.h"
+#include "binary-util.h"
 
 #define RF_ENABLE_PIN 6
 #define RF_MODULE_RESPONSE_TIMEOUT 2000
@@ -13,7 +14,7 @@ extern "C"
 #define RF_TX_POWER 5
 
 // Time to wait for data on Serial after sending a request to a remote unit
-#define REMOTE_UNIT_TIMEOUT 5000
+#define REMOTE_UNIT_TIMEOUT 8000
 // Number of times to retry communication with a rmeote unit before considering it unavailable
 #define RETRY_COUNT 2
 // Time in 2^14 milliseconds between heartbeats for each remote units
@@ -21,7 +22,7 @@ extern "C"
 // Time in 2^14 milliseconds between heartbeats for remote units with active solenoids
 #define REMOTE_UNIT_ACTIVE_UPDATE_INTERVAL 11 // ~3 minutes
 
-#define PACKET_BUFFER_SIZE 24
+#define PACKET_BUFFER_SIZE 28
 // Flag indicating an indeterminate state of a remote unit's solenoids
 #define SOLENOID_ON_INDETERMINATE 0xff
 
@@ -181,7 +182,74 @@ namespace IrrigationSystem
 
     int RemoteUnitController::runCommand(const uint8_t *input, size_t inputSize, uint8_t *responseOut, size_t *responseSizeOut)
     {
-        return 0;
+        if (inputSize >= 4 && input[0] == 1)
+        {
+            // Request to send remote unit command
+            uint16_t nodeId = read16LE(&input[1]);
+            RemoteUnitPacket::RemoteUnitCommand command = (RemoteUnitPacket::RemoteUnitCommand)input[3];
+            const uint8_t *requestData = &input[4];
+            size_t requestDataSize = inputSize - 4;
+
+            // Build request packet
+            uint8_t buffer[PACKET_BUFFER_SIZE + 2];
+            uint8_t *packet = buffer + 2;
+            size_t packetSize = RemoteUnitPacket::createPacket(packet, PACKET_BUFFER_SIZE, nodeId);
+            uint8_t *packetData;
+            packetSize = RemoteUnitPacket::addCommandToPacket(packet, PACKET_BUFFER_SIZE, packetSize, command, &packetData);
+            memcpy(packetData, requestData, requestDataSize);
+            packetSize = RemoteUnitPacket::finalisePacket(packet, PACKET_BUFFER_SIZE, packetSize, false);
+            // Add big-endian node ID to initial bytes for LoRa module
+            buffer[0] = nodeId >> 8;
+            buffer[1] = nodeId;
+            packetSize += 2;
+
+            // Send request packet
+            if (Serial.write(buffer, packetSize) != packetSize)
+            {
+                return 2;
+            }
+
+            // Read response packet
+            Serial.setTimeout(REMOTE_UNIT_TIMEOUT);
+            size_t read = Serial.readBytes(buffer, 1);
+            if (read == 0)
+            {
+                return 3;
+            }
+            Serial.setTimeout(100);
+            read = Serial.readBytes(buffer + 1, PACKET_BUFFER_SIZE - 1);
+
+            // Handle response packet
+            packetSize = RemoteUnitPacket::getPacket(buffer, read + 1, &packet);
+            int result = IrrigationSystem::RemoteUnitPacket::validatePacket(packet, packetSize, true);
+            if (result < 0)
+            {
+                return 4 - result;
+            }
+            else if (result != 1)
+            {
+                return 4;
+            }
+            if (RemoteUnitPacket::getNodeId(packet) != nodeId)
+            {
+                return 7;
+            }
+            const uint8_t *responsePacketData;
+            size_t responsePacketDataSize = packetSize - 6; // data size excludes node id, command, end byte, crc
+            IrrigationSystem::RemoteUnitPacket::RemoteUnitCommand responseCommand = IrrigationSystem::RemoteUnitPacket::getCommandAtIndex(packet, 0, &responsePacketData);
+
+            // Write response
+            responseOut[0] = (uint8_t)responseCommand;
+            memcpy(&responseOut[1], responsePacketData, responsePacketDataSize);
+            *responseSizeOut = 1 + responsePacketDataSize;
+
+            Serial.flush();
+            return 0;
+        }
+        else
+        {
+            return 1;
+        }
     }
 
     void RemoteUnitController::update()

@@ -63,20 +63,27 @@ public:
             return 1;
         }
 
+        int code = 0;
         uint8_t responseLength = dataBuffer[0];
+        sprintf(logBuffer, "Response: %d/%d bytes", responseLength, bytesRead);
+        Serial.println(logBuffer);
         if (responseLength < 1 || responseLength > bytesRead)
         {
             LOG_ERROR("Response included invalid length");
-            return 2;
+            code = 2;
+            responseLength = bytesRead;
         }
 
         uint16_t responseCrc = CRC::crc16(dataBuffer + 1, responseLength - 1);
-        sprintf(logBuffer, "Response: %d/%d bytes. CRC: 0x%04x", responseLength, bytesRead, responseCrc);
+        sprintf(logBuffer, "CRC: 0x%04x", responseCrc);
         Serial.println(logBuffer);
         if (responseCrc != 0)
         {
             LOG_ERROR("Got a non-zero CRC");
-            return 3;
+            if (code == 0)
+            {
+                code = 3;
+            }
         }
 
         sprintf(logBuffer, "Finished sendRawData after %lu ms", millis() - startMillis);
@@ -88,9 +95,9 @@ public:
         if (dataBuffer[1] != ackMessageType)
         {
             LOG_ERROR("Response wasn't ACK");
-            return 4;
+            code = 4;
         }
-        return 0;
+        return code;
     }
 
     int getPropertyValue(uint8_t controllerId, uint16_t propertyId, uint8_t valueSize, bool readOnly, uint8_t *resultValue, uint8_t *resultDesiredValue)

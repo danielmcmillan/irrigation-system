@@ -95,6 +95,8 @@ namespace IrrigationSystem
          */
         int setSpeed(uint16_t value);
 
+        int writeRaw(uint16_t address, uint16_t value);
+
         /**
          * Set up the ID mapping.
          * This must be performed at least once for readInputRegisters to work.
@@ -107,6 +109,8 @@ namespace IrrigationSystem
          * Returns 0 on failure and sets errno.
          */
         int readInputRegisters(Vacon100Data *result);
+
+        uint16_t readRaw(uint16_t address);
 
         uint16_t getErrorCode();
         void printError();

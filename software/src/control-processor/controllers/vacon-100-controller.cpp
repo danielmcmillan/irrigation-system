@@ -2,6 +2,7 @@
 #include <errno.h>
 #include "vacon-100-controller.h"
 #include "logging.h"
+#include "binary-util.h"
 
 #define MAX485_RE A3
 #define MAX485_DE A2
@@ -139,7 +140,47 @@ namespace IrrigationSystem
 
     int Vacon100Controller::runCommand(const uint8_t *input, size_t inputSize, uint8_t *responseOut, size_t *responseSizeOut)
     {
-        return 0;
+        if (inputSize == 3 && input[0] == 1)
+        {
+            // Read value
+            uint16_t value = vacon.readRaw(read16LE(&input[1]));
+            uint16_t error = vacon.getErrorCode();
+
+            // Response is <is error><value | error num>
+            if (error == 0)
+            {
+                responseOut[0] = 0;
+                write16LE(&responseOut[1], value);
+            }
+            else
+            {
+                responseOut[0] = 1;
+                write16LE(&responseOut[1], error);
+            }
+            *responseSizeOut = 3;
+            return 0;
+        }
+        else if (inputSize == 5 && input[0] == 2)
+        {
+            // Write value
+            // Response is <is error><error num?>
+            if (vacon.writeRaw(read16LE(&input[1]), read16LE(&input[3])) == 0)
+            {
+                responseOut[0] = 0;
+                *responseSizeOut = 1;
+            }
+            else
+            {
+                responseOut[0] = 1;
+                write16LE(&responseOut[1], vacon.getErrorCode());
+                *responseSizeOut = 3;
+            }
+            return 0;
+        }
+        else
+        {
+            return 1;
+        }
     }
 
     void Vacon100Controller::update()

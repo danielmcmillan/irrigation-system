@@ -139,9 +139,15 @@ namespace IrrigationSystem
                 return 1;
             }
             break;
-        case MessageType::ControllerCommand:
+        case MessageType::RunControllerCommand:
             // Must include controller id in first byte
             if (dataSize < 1 || this->controllerDefinitions.getControllerDefinition(data[0]) == nullptr)
+            {
+                return 1;
+            }
+            break;
+        case MessageType::GetControllerCommandResult:
+            if (dataSize != 0)
             {
                 return 1;
             }

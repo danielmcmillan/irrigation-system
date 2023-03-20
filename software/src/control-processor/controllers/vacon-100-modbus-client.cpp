@@ -82,6 +82,17 @@ namespace IrrigationSystem
         return 1;
     }
 
+    int Vacon100Client::writeRaw(uint16_t address, uint16_t value)
+    {
+        errno = 0;
+        if (modbus_write_register(modbus, address, value) < 0)
+        {
+            return 0;
+        }
+
+        return 1;
+    }
+
     int Vacon100Client::initIdMapping()
     {
         errno = 0;
@@ -154,6 +165,17 @@ namespace IrrigationSystem
     uint16_t Vacon100Client::getErrorCode()
     {
         return errno;
+    }
+
+    uint16_t Vacon100Client::readRaw(uint16_t address)
+    {
+        errno = 0;
+        uint16_t result;
+        if (modbus_read_input_registers(modbus, address, 1, &result))
+        {
+            return result;
+        }
+        return 0;
     }
 
     void Vacon100Client::printError()

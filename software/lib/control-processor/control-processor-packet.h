@@ -29,7 +29,8 @@ namespace IrrigationSystem
             EventGetNext = 0x30,
 
             // Controller specific command
-            ControllerCommand = 0x40,
+            RunControllerCommand = 0x40,
+            GetControllerCommandResult = 0x41,
 
             // Response
             Ack = 0x61,

@@ -33,6 +33,7 @@ void loop()
     if (state.status == ControlProcessorStatus::Ready)
     {
         controllers.updateControllers();
+        handler.runPendingControllerCommand();
     }
     else if (state.status == ControlProcessorStatus::Initializing)
     {

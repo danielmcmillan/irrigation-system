@@ -55,7 +55,17 @@ namespace IrrigationSystem
     /**
      * Perform a controller specific command.
      */
-    int controllerCommand(uint16_t controllerId, const uint8_t *input, size_t inputSize, uint8_t *responseOut, size_t *responseSizeOut) const;
+    int runControllerCommand(uint16_t controllerId, const uint8_t *input, size_t inputSize) const;
+
+    /**
+     *
+     */
+    int getControllerCommandResult(uint8_t *responseOut, size_t *responseSizeOut) const;
+
+    /**
+     *
+     */
+    void runPendingControllerCommand() const;
   };
 }
 #endif
