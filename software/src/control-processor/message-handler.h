@@ -51,6 +51,11 @@ namespace IrrigationSystem
      * Returns 0.
      */
     int eventGetNext(uint16_t afterId, uint8_t *resultIndicatorOut, uint8_t *eventOut, size_t *eventSizeOut) const;
+
+    /**
+     * Perform a controller specific command.
+     */
+    int controllerCommand(uint16_t controllerId, const uint8_t *input, size_t inputSize, uint8_t *responseOut, size_t *responseSizeOut) const;
   };
 }
 #endif

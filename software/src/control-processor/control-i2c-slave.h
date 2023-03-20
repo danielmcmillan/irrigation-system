@@ -20,7 +20,7 @@ public:
 private:
     ControlI2cSlave(const ControllerManager &controllers, const ControlProcessorMessageHandler &handler);
     void handleRequest(uint8_t *input, uint8_t inputSize, uint8_t *output, uint8_t *outputSize);
-    int handleMessage(ControlProcessorPacket::MessageType type, const uint8_t *data, uint8_t *responseData, size_t *responseDataSize);
+    int handleMessage(ControlProcessorPacket::MessageType type, const uint8_t *data, size_t dataSize, uint8_t *responseData, size_t *responseDataSize);
 };
 
 #endif

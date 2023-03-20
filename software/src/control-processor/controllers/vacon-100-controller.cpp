@@ -137,6 +137,11 @@ namespace IrrigationSystem
         }
     }
 
+    int Vacon100Controller::runCommand(const uint8_t *input, size_t inputSize, uint8_t *responseOut, size_t *responseSizeOut)
+    {
+        return 0;
+    }
+
     void Vacon100Controller::update()
     {
         // Read values if update is due or current value doesn't match desired

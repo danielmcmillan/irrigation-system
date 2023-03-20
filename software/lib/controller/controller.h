@@ -40,6 +40,7 @@ namespace IrrigationSystem
         virtual uint32_t getPropertyValue(uint16_t id) const = 0;
         virtual uint32_t getPropertyDesiredValue(uint16_t id) const = 0;
         virtual void setPropertyDesiredValue(uint16_t id, uint32_t value) = 0;
+        virtual int runCommand(const uint8_t *input, size_t inputSize, uint8_t *responseOut, size_t *responseSizeOut) = 0;
 
         /** Update status and apply pending changes if necessary */
         virtual void update() = 0;

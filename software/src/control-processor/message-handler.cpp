@@ -120,3 +120,9 @@ int ControlProcessorMessageHandler::eventGetNext(uint16_t afterId, uint8_t *resu
 
     return 0;
 }
+
+int IrrigationSystem::ControlProcessorMessageHandler::controllerCommand(uint16_t controllerId, const uint8_t *input, size_t inputSize, uint8_t *responseOut, size_t *responseSizeOut) const
+{
+    *responseSizeOut = 0;
+    return controllers.getController(controllerId)->runCommand(input, inputSize, responseOut, responseSizeOut);
+}

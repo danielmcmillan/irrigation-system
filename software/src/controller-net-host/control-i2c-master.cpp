@@ -96,6 +96,7 @@ bool ControlI2cMaster::sendMessage(ControlProcessorPacket::MessageType type, con
     // Read response
     uint8_t bytesRead = Wire.requestFrom(CONTROLLER_NET_HOST_I2C_SLAVE_ADDRESS, CONTROLLER_NET_HOST_I2C_PACKET_BUFFER_SIZE);
     Wire.readBytes(packetBuffer, bytesRead);
+    uint8_t *responsePacket = packetBuffer + 1;
     if (bytesRead == 0)
     {
         handleError(type, MessageResultType::ResponseInvalid, 1, "Failed to receive any data from I2C");
@@ -109,15 +110,16 @@ bool ControlI2cMaster::sendMessage(ControlProcessorPacket::MessageType type, con
         handleError(type, MessageResultType::ResponseInvalid, 2, "Response included invalid length");
         return false;
     }
-    packetSize = responseLength - 1;
-    uint8_t responseValidateResult = packet.validatePacket(packetBuffer + 1, packetSize);
+    size_t responsePacketSize = responseLength - 1; // packet excludes length byte
+    uint8_t responseValidateResult = packet.validatePacket(responsePacket, responsePacketSize);
     if (responseValidateResult != 0)
     {
         handleError(type, MessageResultType::ResponseInvalid, (uint8_t)(responseValidateResult + 3u), "Response packet was invalid");
         return false;
     }
+    ControlProcessorPacket::MessageType responseType = packet.getMessageType(responsePacket);
     const uint8_t *responseData;
-    ControlProcessorPacket::MessageType responseType = packet.getMessageType(packetBuffer + 1, &responseData);
+    size_t responseDataSize = packet.getMessageData(responsePacket, responsePacketSize, &responseData);
     if (responseType == ControlProcessorPacket::MessageType::Err)
     {
         handleError(type, MessageResultType::ResponseError, *responseData, "Received error response");
@@ -129,12 +131,11 @@ bool ControlI2cMaster::sendMessage(ControlProcessorPacket::MessageType type, con
         return false;
     }
 
-    // TODO Packet lib should provide data length?
-    // Split the I2C part (send+read+response length) out into separate function?
+    // TODO Split the I2C part (send+read+response length) out into separate function?
     if (responseOut != nullptr)
     {
         *responseOut = responseData;
-        *responseSizeOut = responseLength - 3;
+        *responseSizeOut = responseDataSize;
     }
     return true;
 }

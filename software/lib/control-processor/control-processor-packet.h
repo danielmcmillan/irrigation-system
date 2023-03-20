@@ -28,6 +28,9 @@ namespace IrrigationSystem
             // Events
             EventGetNext = 0x30,
 
+            // Controller specific command
+            ControllerCommand = 0x40,
+
             // Response
             Ack = 0x61,
             Err = 0xe3
@@ -55,9 +58,15 @@ namespace IrrigationSystem
 
         /**
          * Get the message type from a packet.
-         * If `dataOut` is not null, then it will be set to point to the data portion of the message.
          */
-        MessageType getMessageType(const uint8_t *packet, const uint8_t **dataOut = nullptr) const;
+        MessageType getMessageType(const uint8_t *packet) const;
+
+        /**
+         * Get the data from a packet.
+         * `dataOut` will be set to point to the data portion of the message.
+         * Returns the data size.
+         */
+        size_t getMessageData(const uint8_t *packet, size_t packetSize, const uint8_t **dataOut) const;
 
         /**
          * Initialises a new data packet.

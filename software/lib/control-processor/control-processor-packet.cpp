@@ -18,18 +18,20 @@ namespace IrrigationSystem
         }
         // Check that data is valid, based on message type
         const uint8_t *data;
-        MessageType type = this->getMessageType(packet, &data);
-        return this->validateData(type, data, packetSize - 3);
+        MessageType type = this->getMessageType(packet);
+        size_t dataSize = this->getMessageData(packet, packetSize, &data);
+        return this->validateData(type, data, dataSize);
     }
 
-    ControlProcessorPacket::MessageType ControlProcessorPacket::getMessageType(const uint8_t *packet, const uint8_t **dataOut) const
+    ControlProcessorPacket::MessageType ControlProcessorPacket::getMessageType(const uint8_t *packet) const
     {
-        ControlProcessorPacket::MessageType messageType = (ControlProcessorPacket::MessageType)(packet[0]);
-        if (dataOut != nullptr)
-        {
-            *dataOut = &packet[1];
-        }
-        return messageType;
+        return (ControlProcessorPacket::MessageType)(packet[0]);
+    }
+
+    size_t ControlProcessorPacket::getMessageData(const uint8_t *packet, size_t packetSize, const uint8_t **dataOut) const
+    {
+        *dataOut = &packet[1];
+        return packetSize - 3; // Minus message type and CRC
     }
 
     void ControlProcessorPacket::createPacket(uint8_t *packetBuffer, MessageType **messageTypePtr, uint8_t **dataPtr) const
@@ -133,6 +135,13 @@ namespace IrrigationSystem
             break;
         case MessageType::EventGetNext:
             if (dataSize != 2)
+            {
+                return 1;
+            }
+            break;
+        case MessageType::ControllerCommand:
+            // Must include controller id in first byte
+            if (dataSize < 1 || this->controllerDefinitions.getControllerDefinition(data[0]) == nullptr)
             {
                 return 1;
             }

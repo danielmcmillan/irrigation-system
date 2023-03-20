@@ -41,9 +41,10 @@ void ControlI2cSlave::handleRequest(uint8_t *input, uint8_t inputSize, uint8_t *
     }
     else if (result == 0)
     {
+        ControlProcessorPacket::MessageType type = packet.getMessageType(input);
         const uint8_t *data;
-        ControlProcessorPacket::MessageType type = packet.getMessageType(input, &data);
-        result = this->handleMessage(type, data, responseData, &responseDataSize);
+        size_t dataSize = packet.getMessageData(input, inputSize, &data);
+        result = this->handleMessage(type, data, dataSize, responseData, &responseDataSize);
     }
 
     if (result == 0)
@@ -61,7 +62,7 @@ void ControlI2cSlave::handleRequest(uint8_t *input, uint8_t inputSize, uint8_t *
 }
 
 // Returns 0 on success, otherwise an error reason
-int ControlI2cSlave::handleMessage(ControlProcessorPacket::MessageType type, const uint8_t *data, uint8_t *responseDataOut, size_t *responseDataSizeOut)
+int ControlI2cSlave::handleMessage(ControlProcessorPacket::MessageType type, const uint8_t *data, size_t dataSize, uint8_t *responseDataOut, size_t *responseDataSizeOut)
 {
     switch (type)
     {
@@ -86,6 +87,9 @@ int ControlI2cSlave::handleMessage(ControlProcessorPacket::MessageType type, con
             responseDataOut + 1,
             responseDataSizeOut);
         *responseDataSizeOut += 1;
+        break;
+    case ControlProcessorPacket::MessageType::ControllerCommand:
+        return this->handler.controllerCommand(data[0], &data[1], dataSize - 1, responseDataOut, responseDataSizeOut);
         break;
     default:
         break;
