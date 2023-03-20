@@ -32,14 +32,17 @@ void loop()
 {
     if (state.status == ControlProcessorStatus::Ready)
     {
-        controllers.getController(0x02)->update();
-        controllers.getController(0x04)->update();
+        controllers.updateControllers();
     }
     else if (state.status == ControlProcessorStatus::Initializing)
     {
         if (controllers.beginControllers())
         {
             state.status = ControlProcessorStatus::Ready;
+        }
+        else
+        {
+            delay(10000);
         }
     }
     delay(3000);

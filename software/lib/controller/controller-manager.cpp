@@ -58,4 +58,12 @@ namespace IrrigationSystem
             controllers[i].controller->reset();
         }
     }
+
+    void ControllerManager::updateControllers()
+    {
+        for (unsigned int i = 0; i < numControllers; ++i)
+        {
+            controllers[i].controller->update();
+        }
+    }
 }

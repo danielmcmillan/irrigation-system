@@ -28,6 +28,10 @@ namespace IrrigationSystem
          * Reset all registered controllers.
          */
         void resetControllers();
+        /**
+         * Update all registered controllers.
+         */
+        void updateControllers();
 
     private:
         ControllerRegistration *controllers;
