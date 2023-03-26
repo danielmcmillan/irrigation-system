@@ -58,7 +58,6 @@ export class IrrigationStore {
       updateProperties: action,
       updatePropertyValue: action,
     });
-    console.log("store", this);
 
     Hub.listen("pubsub", (data: any) => {
       const { payload } = data;

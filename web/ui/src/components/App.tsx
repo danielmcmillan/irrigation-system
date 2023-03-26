@@ -263,7 +263,7 @@ const App = observer(({ icu }: { icu: IrrigationStore }) => {
   }, []);
 
   return (
-    <Tabs spacing="relative">
+    <Tabs spacing="relative" backgroundColor={tokens.colors.background.primary}>
       <TabItem title="Control">
         <PropertyControls icu={icu} />
       </TabItem>

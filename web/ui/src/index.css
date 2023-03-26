@@ -1,16 +1,8 @@
-body {
+html, body {
   margin: 0;
 }
 
-#root > div {
-  height: 100vh;
-  display: flex;
-  flex-direction: column;
-}
-
-#root > div > div[role=tabpanel] {
-  min-height: 0;
-  flex-basis: 0;
-  flex-grow: 1;
-  overflow: auto;
+#root > div > div[role=tablist] {
+  position: sticky;
+  top: 0;
 }
