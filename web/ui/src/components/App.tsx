@@ -1,168 +1,304 @@
-import React, { useEffect, useRef, useState } from "react";
-import ons from "onsenui";
-import {
-  Button,
-  Dialog,
-  Page,
-  List,
-  ListHeader,
-  ListItem,
-  ProgressCircular,
-  Tabbar,
-  Tab,
-} from "react-onsenui";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import "./App.css";
-// import { mqtt, iot, auth } from "aws-iot-device-sdk-v2";
-import { mqtt, iot, auth } from "aws-crt/dist.browser/browser";
-import { fromCognitoIdentityPool } from "@aws-sdk/credential-provider-cognito-identity";
-import { CognitoIdentityClient } from "@aws-sdk/client-cognito-identity";
+import { IrrigationStore } from "../irrigation/store";
+import { observer } from "mobx-react-lite";
+import {
+  Flex,
+  Button,
+  Collection,
+  Card,
+  useTheme,
+  Badge,
+  Text,
+  Tabs,
+  TabItem,
+  CheckboxField,
+  Table,
+  TableRow,
+  TableCell,
+  TableBody,
+  SwitchField,
+  Loader,
+  BadgeVariations,
+} from "@aws-amplify/ui-react";
+import {
+  getLogLevelString,
+  LogEntry,
+  LogLevel,
+  logLevels,
+} from "../irrigation/log";
 
-interface Event {
-  id: number;
-  type: number;
-  controllerId?: string;
-  propertyId?: string;
-  value?: number;
-  data?: string;
-}
-
-function PropertyList(props: {}) {
-  return (
-    <List
-      dataSource={["x"]}
-      renderHeader={() => <ListHeader>Properties</ListHeader>}
-      renderRow={(row, index) => <ListItem key={index}>{row}</ListItem>}
-    />
-  );
-}
-
-async function connectWebsocket() {
-  const region = "ap-southeast-2";
-  const provider = fromCognitoIdentityPool({
-    client: new CognitoIdentityClient({ region }),
-    identityPoolId: "",
-  });
-  class IotCredentialsProvider extends auth.CredentialsProvider {
-    credentials: auth.AWSCredentials | undefined;
-    getCredentials(): auth.AWSCredentials | undefined {
-      return this.credentials;
-    }
-    async refresh() {
-      const credentials = await provider();
-      this.credentials = {
-        aws_access_id: credentials.accessKeyId,
-        aws_secret_key: credentials.secretAccessKey,
-        aws_region: region,
-        aws_sts_token: credentials.sessionToken,
-      };
-    }
-  }
-  const iotProvider = new IotCredentialsProvider();
-  await iotProvider.refresh();
-  return new Promise<mqtt.MqttClientConnection>((resolve, reject) => {
-    let config =
-      iot.AwsIotMqttConnectionConfigBuilder.new_builder_for_websocket()
-        .with_clean_session(true)
-        .with_client_id(`pub_sub_sample(${new Date()})`)
-        .with_endpoint("")
-        .with_credential_provider(iotProvider)
-        .with_use_websockets()
-        .with_keep_alive_seconds(30)
-        .build();
-
-    console.log("Connecting websocket...");
-    const client = new mqtt.MqttClient();
-
-    const connection = client.new_connection(config);
-    connection.on("connect", (session_present) => {
-      resolve(connection);
-    });
-    connection.on("interrupt", (error) => {
-      console.log(`Connection interrupted: error=${error}`);
-    });
-    connection.on("resume", (return_code, session_present) => {
-      console.log(
-        `Resumed: rc: ${return_code} existing session: ${session_present}`
-      );
-    });
-    connection.on("disconnect", () => {
-      console.log("Disconnected");
-    });
-    connection.on("error", (error) => {
-      reject(error);
-    });
-    connection.connect();
-  });
-}
-let connection: mqtt.MqttClientConnection | undefined = undefined;
-async function test() {
-  if (!connection) {
-    connection = await connectWebsocket();
-    console.log("Got connection");
-    await connection.subscribe(
-      "test/sub",
-      0,
-      (
-        topic: string,
-        payload: ArrayBuffer,
-        dup: boolean,
-        qos: mqtt.QoS,
-        retain: boolean
-      ) => {
-        console.log(
-          `Got message on ${topic}: ${new TextDecoder().decode(payload)}`
-        );
-      }
+async function test(icu: IrrigationStore, type: number) {
+  if (type == 0) {
+    const configData = Uint8Array.from([
+      // Remote unit
+      6, 0x04, 0x01, 0x05, 0x01, 0x00,
+      // Solenoid
+      6, 0x04, 0x02, 0x09, 0x05, 0x00,
+    ]);
+    await icu.publish("icu-in/irrigation_test/setConfig", configData);
+    console.log("Published setConfig");
+  } else if (type == 1) {
+    await icu.publish(
+      "icu-in/irrigation_test/getProperties",
+      new TextEncoder().encode(icu.clientId)
     );
+    console.log("Published getProperties");
+  } else if (type == 2) {
+    await icu.publish(
+      "icu-in/irrigation_test/getConfig",
+      new TextEncoder().encode(icu.clientId)
+    );
+    console.log("Published getConfig");
   }
-  // const pub = await connection.publish("test/hello", "Hello there!", 0, false);
-  const configData = Uint8Array.from([
-    // Remote unit
-    6, 0x04, 0x01, 0x05, 0x01, 0x00,
-    // Solenoid
-    6, 0x04, 0x02, 0x09, 0x05, 0x00,
-  ]);
-  const pub = await connection.publish(
-    "icu-in/irrigation_test/config",
-    configData,
-    0,
-    false
-  );
-  console.log("Published", pub);
-  // await connection.disconnect();
 }
 
-function App() {
-  const [tabIndex, setTabIndex] = useState(0);
+const LogEntryCard = ({ entry }: { entry: LogEntry }) => {
+  const variation = (
+    {
+      [LogLevel.info]: "info",
+      [LogLevel.warn]: "warning",
+      [LogLevel.error]: "error",
+    } as Record<LogLevel, BadgeVariations>
+  )[entry.level];
+  const detail = Object.entries(entry.detail)
+    .map(([key, value]) => `${key}=${value}`)
+    .join(" ");
 
   return (
-    <Tabbar
-      onPreChange={({ index }) => setTabIndex(index)}
-      activeIndex={tabIndex}
-      renderTabs={(activeIndex, tabbar) => [
-        {
-          tab: <Tab key="Properties" label="Properties" icon="md-home" />,
-          content: (
-            <Page key="Properties" className="tab-page">
-              <PropertyList />
-            </Page>
-          ),
-        },
-        {
-          tab: <Tab key="Events" label="Events" icon="md-home" />,
-          content: <Page key="Events" className="tab-page"></Page>,
-        },
-        {
-          tab: <Tab key="Settings" label="Settings" icon="md-settings" />,
-          content: (
-            <Page key="Settings" className="tab-page">
-              <Button onClick={test}>Test</Button>
-            </Page>
-          ),
-        },
-      ]}
-    />
+    <Card variation="elevated">
+      <Flex direction="row" wrap="wrap" alignItems="baseline">
+        <Badge variation={variation}>{getLogLevelString(entry.level)}</Badge>
+        <Text>{entry.time.toLocaleTimeString()}</Text>
+        <Flex direction="column">
+          <Text>{entry.summary}</Text>
+          <Text>{detail}</Text>
+        </Flex>
+      </Flex>
+    </Card>
   );
-}
+};
+
+const LogEntries = observer(({ icu }: { icu: IrrigationStore }) => {
+  const showStates = Object.fromEntries(
+    logLevels.map((level) => [level, useState(true)])
+  );
+  const logs = useMemo(
+    () => icu.log.filter((entry) => showStates[entry.level][0]).reverse(),
+    [icu.log.at(-1)?.id, showStates[0][0], showStates[1][0], showStates[2][0]]
+  );
+
+  return (
+    <Flex direction="column">
+      <div />
+      <Flex direction="row" justifyContent="space-evenly">
+        {logLevels.map((level) => (
+          <CheckboxField
+            key={level}
+            label={getLogLevelString(level)}
+            checked={showStates[level][0]}
+            name={level.toString()}
+            value="yes"
+            onChange={(e) => {
+              showStates[level][1](e.target.checked);
+            }}
+          />
+        ))}
+      </Flex>
+      <Collection type="list" direction="column" items={logs}>
+        {(entry) => <LogEntryCard key={entry.id} entry={entry} />}
+      </Collection>
+    </Flex>
+  );
+});
+
+const PropertyBooleanControl = ({
+  desiredValue,
+  onDesiredValueChange,
+}: {
+  desiredValue: boolean;
+  onDesiredValueChange: (value: boolean) => unknown;
+}) => {
+  const [localValue, setLocalValue] = useState(desiredValue);
+  const handleChange = useCallback(
+    (e) => {
+      const newValue: boolean = e.target.checked;
+      if (desiredValue !== newValue) {
+        onDesiredValueChange(newValue);
+      }
+      // Optimistically update the local value
+      setLocalValue(newValue);
+    },
+    [setLocalValue, desiredValue, onDesiredValueChange]
+  );
+  const isChanging = desiredValue !== localValue;
+
+  // Reset local switch state when desiredValue changes
+  const [prevDesiredValue, setPrevDesiredValue] = useState(desiredValue);
+  if (desiredValue !== prevDesiredValue) {
+    setPrevDesiredValue(desiredValue);
+    if (localValue !== desiredValue) {
+      setLocalValue(desiredValue);
+    }
+  }
+
+  return (
+    <Flex direction="row" justifyContent="space-between">
+      <SwitchField label="" isChecked={localValue} onChange={handleChange} />
+      {isChanging && <Loader />}
+    </Flex>
+  );
+};
+
+const PropertyControls = observer(({ icu }: { icu: IrrigationStore }) => {
+  const groups = icu.groupedWriteableProperties;
+  const { tokens } = useTheme();
+
+  return (
+    <Table variation="bordered">
+      <TableBody>
+        {groups.flatMap(([group, properties]) => [
+          <TableRow
+            key={group}
+            backgroundColor={tokens.colors.background.tertiary}
+          >
+            <TableCell as="th" colSpan={3}>
+              {group}
+            </TableCell>
+          </TableRow>,
+          ...properties.map((prop) => {
+            const value = Array.isArray(prop.value) ? prop.value[0] : false;
+            const desiredValue = Array.isArray(prop.desiredValue)
+              ? prop.desiredValue[0]
+              : false;
+            return (
+              <TableRow key={`${prop.controllerId}${prop.propertyId}`}>
+                <TableCell as="th">
+                  {prop.propertyName.split("|").map((name) => (
+                    <Text key={name}>
+                      {prop.objectName.split("|").slice(1).join(" ")} {name}
+                    </Text>
+                  ))}
+                </TableCell>
+                <TableCell width="27%">
+                  <Flex direction="row" justifyContent="space-between">
+                    {value.toString()}
+                    {value !== desiredValue && <Loader />}
+                  </Flex>
+                </TableCell>
+                <TableCell width="33%">
+                  <PropertyBooleanControl
+                    desiredValue={desiredValue}
+                    onDesiredValueChange={(value) =>
+                      icu.requestPropertyValueUpdate(
+                        prop.controllerId,
+                        prop.propertyId,
+                        value
+                      )
+                    }
+                  />
+                </TableCell>
+              </TableRow>
+            );
+          }),
+        ])}
+      </TableBody>
+    </Table>
+  );
+});
+
+const PropertyMonitoring = observer(({ icu }: { icu: IrrigationStore }) => {
+  const groups = icu.groupedProperties;
+  const { tokens } = useTheme();
+
+  return (
+    <Table variation="bordered">
+      <TableBody>
+        {groups.flatMap(([group, properties]) => [
+          <TableRow
+            key={group}
+            backgroundColor={tokens.colors.background.tertiary}
+          >
+            <TableCell as="th" colSpan={2}>
+              {group}
+            </TableCell>
+          </TableRow>,
+          ...properties.map((prop) => (
+            <TableRow key={`${prop.controllerId}${prop.propertyId}`}>
+              <TableCell as="th">
+                {prop.propertyName.split("|").map((name, index) => (
+                  <Text key={index}>
+                    {prop.objectName.split("|").slice(1).join(" ")} {name}
+                  </Text>
+                ))}
+              </TableCell>
+              <TableCell>
+                {(Array.isArray(prop.value) ? prop.value : [prop.value]).map(
+                  (value, index) => (
+                    <Text key={index}>
+                      {value.toString()} {prop.format.unit}
+                    </Text>
+                  )
+                )}
+              </TableCell>
+            </TableRow>
+          )),
+        ])}
+      </TableBody>
+    </Table>
+  );
+});
+
+const App = observer(({ icu }: { icu: IrrigationStore }) => {
+  const { tokens } = useTheme();
+
+  useEffect(() => {
+    icu.start();
+    return () => {
+      icu.stop();
+    };
+  }, []);
+
+  return (
+    <Tabs spacing="relative">
+      <TabItem title="Control">
+        <PropertyControls icu={icu} />
+      </TabItem>
+      <TabItem title="Monitor">
+        <PropertyMonitoring icu={icu} />
+      </TabItem>
+      <TabItem
+        title={
+          <Flex direction="row" gap="0rem" justifyContent="center">
+            Log
+            {icu.errorLogCount > 0 && (
+              <>
+                {" "}
+                <Badge size="small" variation="error">
+                  {icu.errorLogCount}
+                </Badge>
+              </>
+            )}
+          </Flex>
+        }
+      >
+        <LogEntries icu={icu} />
+      </TabItem>
+      <TabItem title="Config">
+        <Flex
+          direction="column"
+          backgroundColor={tokens.colors.background.primary}
+        >
+          <p>
+            Connection status: {icu.connected ? "connected" : "disconnected"}
+          </p>
+          <Button onClick={() => test(icu, 2)}>Get Config</Button>
+          <Button onClick={() => test(icu, 0)}>Set Config</Button>
+          <Button onClick={() => test(icu, 1)}>Get Properties</Button>
+        </Flex>
+      </TabItem>
+    </Tabs>
+  );
+});
 
 export default App;

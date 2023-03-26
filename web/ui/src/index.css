@@ -1,8 +1,16 @@
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+}
+
+#root > div {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+#root > div > div[role=tabpanel] {
+  min-height: 0;
+  flex-basis: 0;
+  flex-grow: 1;
+  overflow: auto;
 }
