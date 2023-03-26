@@ -120,7 +120,7 @@ const PropertyBooleanControl = ({
   onDesiredValueChange: (value: boolean) => unknown;
 }) => {
   const [localValue, setLocalValue] = useState(desiredValue);
-  const handleChange = useCallback(
+  const handleChange: React.ChangeEventHandler<HTMLInputElement> = useCallback(
     (e) => {
       const newValue: boolean = e.target.checked;
       if (desiredValue !== newValue) {

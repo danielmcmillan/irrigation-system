@@ -4,26 +4,26 @@
 import * as Paho from "../paho-mqtt";
 import Observable, { ZenObservable } from "zen-observable-ts";
 
-import { AbstractPubSubProvider } from "@aws-amplify/pubsub/src/Providers/PubSubProvider";
+import { AbstractPubSubProvider } from "@aws-amplify/pubsub/lib/Providers/PubSubProvider";
 import {
   ConnectionState,
   PubSubContentObserver,
   PubSubContent,
-} from "@aws-amplify/pubsub/src/types/PubSub";
-import { ProviderOptions } from "@aws-amplify/pubsub/src/types/Provider";
+} from "@aws-amplify/pubsub/lib/types/PubSub";
+import { ProviderOptions } from "@aws-amplify/pubsub/lib/types/Provider";
 import { ConsoleLogger as Logger, Hub } from "@aws-amplify/core";
 import {
   ConnectionStateMonitor,
   CONNECTION_CHANGE,
-} from "@aws-amplify/pubsub/src/utils/ConnectionStateMonitor";
+} from "@aws-amplify/pubsub/lib/utils/ConnectionStateMonitor";
 import {
   ReconnectEvent,
   ReconnectionMonitor,
-} from "@aws-amplify/pubsub/src/utils/ReconnectionMonitor";
+} from "@aws-amplify/pubsub/lib/utils/ReconnectionMonitor";
 import {
   AMPLIFY_SYMBOL,
   CONNECTION_STATE_CHANGE,
-} from "@aws-amplify/pubsub/src/Providers/constants";
+} from "@aws-amplify/pubsub/lib/Providers/constants";
 
 const logger = new Logger("MqttOverWSProvider");
 
