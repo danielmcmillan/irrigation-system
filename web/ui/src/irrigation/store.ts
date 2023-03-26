@@ -53,6 +53,7 @@ export class IrrigationStore {
       properties: observable,
       errorLogCount: computed,
       groupedProperties: computed,
+      clearLog: action,
       addLogEntries: action,
       updateProperties: action,
       updatePropertyValue: action,
@@ -99,6 +100,10 @@ export class IrrigationStore {
   stop() {
     this.subscription?.unsubscribe();
     this.subscription = undefined;
+  }
+
+  clearLog() {
+    this.log.splice(0, this.log.length);
   }
 
   get errorLogCount(): number {

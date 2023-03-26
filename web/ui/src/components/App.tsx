@@ -104,6 +104,9 @@ const LogEntries = observer(({ icu }: { icu: IrrigationStore }) => {
             }}
           />
         ))}
+        <Button size="small" onClick={() => icu.clearLog()}>
+          Clear
+        </Button>
       </Flex>
       <Collection type="list" direction="column" items={logs}>
         {(entry) => <LogEntryCard key={entry.id} entry={entry} />}
