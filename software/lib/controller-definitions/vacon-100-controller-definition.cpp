@@ -128,8 +128,8 @@ namespace IrrigationSystem
             {PropertyValueType::UnsignedInt, {.mul = {10, -2}}, "Hz"}, // outputFrequency
             {PropertyValueType::UnsignedInt, {.mul = {1, 1}}, "rpm"},  // motorSpeed
             {PropertyValueType::UnsignedInt, {.mul = {10, -1}}, "A"},  // motorCurrent
-            {PropertyValueType::UnsignedInt, {.mul = {10, -1}}, "%"},  // motorTorque
-            {PropertyValueType::UnsignedInt, {.mul = {10, -1}}, "%"},  // motorPower
+            {PropertyValueType::UnsignedInt, {.mul = {10, -2}}, "%"},  // motorTorque
+            {PropertyValueType::UnsignedInt, {.mul = {10, -2}}, "%"},  // motorPower
             {PropertyValueType::UnsignedInt, {.mul = {10, -1}}, "V"},  // motorVoltage
             {PropertyValueType::UnsignedInt, {.mul = {1, 1}}, "V"},    // dcLinkVoltage
             {PropertyValueType::UnsignedInt, {.mul = {1, 1}}},         // activeFaultCode
