@@ -1470,9 +1470,9 @@ static int write_single(modbus_t *ctx, int function, int addr, int value)
     int rc;
     int req_length;
     // Request requires 8 (slave+func+address+value+crc)
-    // Response requires 8 (slave+func+address+value+crc), and first byte of response is retained for validation (slave)
-    uint8_t req[9];
-    uint8_t *rsp = req + 1;
+    // Response requires 8 (slave+func+address+value+crc), and 6 bytes of response is retained for validation (slave)
+    uint8_t req[14];
+    uint8_t *rsp = req + 6;
 
     if (ctx == NULL)
     {

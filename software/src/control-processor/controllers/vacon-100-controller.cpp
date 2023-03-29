@@ -56,7 +56,6 @@ namespace IrrigationSystem
         {
             notifyError(0x00);
             LOG_ERROR("Failed to start Vacon 100 client");
-            vacon.printError();
             return false;
         }
         if (!idMapUpdated)
@@ -65,7 +64,6 @@ namespace IrrigationSystem
             {
                 notifyError(0x01);
                 LOG_ERROR("Failed to set up Vacon 100 ID mappings");
-                vacon.printError();
                 return false;
             }
             idMapUpdated = true;
@@ -219,7 +217,7 @@ namespace IrrigationSystem
                 updateErrorCount(false);
                 notifyError(0x03);
                 LOG_ERROR("Failed to read from Vacon 100");
-                vacon.printError();
+                return;
             }
         }
 
@@ -239,7 +237,6 @@ namespace IrrigationSystem
                     updateErrorCount(false);
                     notifyError(0x02);
                     LOG_ERROR("Failed to write to Vacon 100");
-                    vacon.printError();
                 }
             }
             if (!successful)
