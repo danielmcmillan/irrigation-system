@@ -115,6 +115,29 @@ void update(modbus_mapping_t *mb_mapping)
     // Reset control word
     mb_mapping->tab_registers[controlWordRegister - 1] = 0xffff;
 
+    // Adjust values based on current status
+    bool running = (values[0] & 0x0002) > 0;
+    values[1] = running ? 9000 : 0; // FB Actual speed
+    values[2] = running ? 5000 : 0; // Output frequency
+    values[3] = running ? 1000 : 0; // Motor speed
+    values[4] = running ? 20 : 0;   // Motor current
+    values[5] = running ? 5000 : 0; // Motor torque
+    values[6] = running ? 6000 : 0; // Motor power
+    values[7] = running ? 2400 : 0; // Motor voltage
+    values[8] = running ? 100 : 0;  // DC link voltage
+    values[9] = running ? 0 : 0;    // Active fault code
+    values[10] = running ? 123 : 0; // Input pressure
+    values[11] = 0xed15;            // kWh low
+    values[12] = 0x0001;            // kWh high
+    values[13] = 0;                 // Motor run time years
+    values[14] = 5;                 // Motor run time days
+    values[15] = 14;                // Motor run time hours
+    values[16] = 34;                // Motor run time minutes
+    values[17] = 12;                // Motor run time seconds
+    values[18] = running ? 200 : 0; // Motor current 1 deci
+    values[19] = running ? 540 : 0; // Drive heatsink temperature
+    values[20] = running ? 450 : 0; // Motor temperature
+
     for (unsigned int i = 0; i < valueCount; ++i)
     {
         // Copy value based on register numbers
@@ -175,15 +198,25 @@ int vaconSim(int argc, char **argv)
     }
     if (access(deviceStr, F_OK) != 0)
     {
-        std::cerr << "device " << deviceStr << " does not exist\n";
+        fprintf(stderr, "Device %s does not exist\n", deviceStr);
         return 2;
     }
 
-    printf("Starting Modbus RTU slave\n");
+    printf("Starting Modbus RTU slave for device %s\n", deviceStr);
     // Start Modbus RTU Slave/Server
     modbus_t *ctx = modbus_new_rtu(deviceStr, 9600, 'N', 8, 1);
+    if (ctx == nullptr)
+    {
+        fprintf(stderr, "Failed to create Modbus RTU\n");
+        return 3;
+    }
+    if (modbus_connect(ctx) != 0)
+    {
+        fprintf(stderr, "Failed to connect Modbus RTU: %s\n", modbus_strerror(errno));
+        modbus_free(ctx);
+        return 4;
+    }
     modbus_set_slave(ctx, 1);
-    modbus_connect(ctx);
     // modbus_set_debug(ctx, TRUE);
 
     modbus_mapping_t *mb_mapping = modbus_mapping_new(0, 0, totalRegisterCount, totalRegisterCount);
