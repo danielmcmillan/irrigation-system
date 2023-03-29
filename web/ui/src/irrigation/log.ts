@@ -15,7 +15,7 @@ export interface LogEntry {
   source: LogSource;
   level: LogLevel;
   summary: string;
-  detail: Record<string, string>;
+  detail: Record<string, unknown>;
 }
 
 export const logLevels = [LogLevel.info, LogLevel.warn, LogLevel.error];

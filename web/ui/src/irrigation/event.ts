@@ -22,7 +22,7 @@ export interface IrrigationEventGeneral extends IrrigationEventCommon {
     | IrrigationEventType.GeneralInfo
     | IrrigationEventType.GeneralWarning
     | IrrigationEventType.GeneralError;
-  data: Uint8Array;
+  data: ArrayBuffer;
 }
 export interface IrrigationEventStarted extends IrrigationEventCommon {
   type: IrrigationEventType.Started;
@@ -47,13 +47,13 @@ export interface IrrigationEventPropertyDesiredValueChanged
 export interface IrrigationEventControllerError extends IrrigationEventCommon {
   type: IrrigationEventType.ControllerError;
   controllerId: number;
-  data: Uint8Array;
+  data: ArrayBuffer;
 }
 export interface IrrigationEventPropertyError extends IrrigationEventCommon {
   type: IrrigationEventType.PropertyError;
   controllerId: number;
   propertyId: number;
-  data: Uint8Array;
+  data: ArrayBuffer;
 }
 export type IrrigationEvent =
   | IrrigationEventGeneral
@@ -88,7 +88,7 @@ function getEventFromData(payload: ArrayBufferLike): IrrigationEvent {
         id,
         type,
         controllerId: view.getUint8(payloadStart),
-        data: new Uint8Array(payload.slice(payloadStart + 1)),
+        data: payload.slice(payloadStart + 1),
       };
     case IrrigationEventType.PropertyError:
       return {
@@ -96,7 +96,7 @@ function getEventFromData(payload: ArrayBufferLike): IrrigationEvent {
         type,
         controllerId: view.getUint8(payloadStart),
         propertyId: view.getUint16(payloadStart + 1, true),
-        data: new Uint8Array(payload.slice(payloadStart + 3)),
+        data: payload.slice(payloadStart + 3),
       };
     case IrrigationEventType.GeneralInfo:
     case IrrigationEventType.GeneralWarning:
@@ -105,7 +105,7 @@ function getEventFromData(payload: ArrayBufferLike): IrrigationEvent {
       return {
         id,
         type,
-        data: new Uint8Array(payload.slice(payloadStart, payloadEnd)),
+        data: payload.slice(payloadStart, payloadEnd),
       };
   }
 }
@@ -127,7 +127,78 @@ function getEventTypeString(eventType: IrrigationEventType): string {
   );
 }
 
-export function getEventDetail(event: IrrigationEvent): Record<string, string> {
+function getControllerErrorDetail(
+  controllerId: number,
+  errorData: ArrayBuffer
+): Record<string, unknown> {
+  const view = new DataView(errorData);
+  if (controllerId == 2 && errorData.byteLength === 3) {
+    const typeNum = view.getUint8(0);
+    const codeNum = view.getUint16(1, true);
+    const type =
+      {
+        0: "Start client",
+        1: "Configure ID mappings",
+        2: "Write",
+        3: "Read",
+      }[typeNum] ?? `Unknown (${typeNum})`;
+    const code =
+      {
+        5: "EIO: Input/output error",
+        22: "EINVAL: Invalid argument",
+        109: "ENOPROTOOPT: Protocol not available",
+        111: "ECONNREFUSED: Connection refused",
+        116: "ETIMEDOUT: Connection timed out",
+        134: "ENOTSUP: Operation not supported",
+        11235: "EMBXILFUN: Illegal function",
+        11236: "EMBXILADD: Illegal data address",
+        11237: "EMBXILVAL: Illegal data value",
+        11238: "EMBXSFAIL: Slave device or server failure",
+        11239: "EMBXACK: Acknowledge",
+        11240: "EMBXSBUSY: Slave device or server is busy",
+        11241: "EMBXNACK: Negative acknowledge",
+        11242: "EMBXMEMPAR: Memory parity error",
+        11244: "EMBXGPATH: Gateway path unavailable",
+        11245: "EMBXGTAR: Target device failed to respond",
+        11246: "EMBBADCRC: Invalid CRC",
+        11247: "EMBBADDATA: Invalid data",
+        11248: "EMBBADEXC: Invalid exception code",
+        11250: "EMBMDATA: Too many data",
+        11251: "EMBBADSLAVE: Response not from requested slave",
+      }[codeNum] ?? `Unknown (${codeNum})`;
+    // 112345678-11234
+    return { type, code };
+  } else if (controllerId === 4) {
+    const typeNum = view.getUint8(0);
+    const remoteUnitId = view.getUint8(1);
+    let type = {
+      1: "Failed to configure RF module",
+      2: "Failed to write to Serial",
+      3: "Timeout waiting for response on Serial",
+      4: "Remote unit response has invalid CRC",
+      5: "Remote unit response includes invalid commands or data",
+      6: "Remote unit response is valid but for unexpected node id",
+      7: "Remote unit response is for unexpected commands",
+    }[typeNum];
+    const result: Record<string, unknown> = {};
+    result.type = type ?? `Unknown (${typeNum})`;
+    if (remoteUnitId > 0) {
+      result.remoteUnitId = remoteUnitId;
+    }
+    if ((typeNum & 0x80) === 0x80) {
+      type = "Remote unit fault";
+      result.faultNum = typeNum & 0x0f;
+    }
+    return result;
+  }
+  return {
+    data: "0x" + binToHex(errorData),
+  };
+}
+
+export function getEventDetail(
+  event: IrrigationEvent
+): Record<string, unknown> {
   switch (event.type) {
     case IrrigationEventType.Started:
     case IrrigationEventType.Configured:
@@ -142,7 +213,7 @@ export function getEventDetail(event: IrrigationEvent): Record<string, string> {
     case IrrigationEventType.ControllerError:
       return {
         controller: event.controllerId.toString(),
-        data: "0x" + binToHex(event.data),
+        ...getControllerErrorDetail(event.controllerId, event.data),
       };
     case IrrigationEventType.PropertyError:
       return {
