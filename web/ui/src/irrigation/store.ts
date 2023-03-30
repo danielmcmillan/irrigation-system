@@ -20,7 +20,6 @@ import {
   getPropertiesFromData,
   getPropertyValue,
   IrrigationProperty,
-  IrrigationPropertyValue,
 } from "./property";
 
 export enum MqttMessageType {
@@ -31,16 +30,18 @@ export enum MqttMessageType {
 }
 
 const maxLogEntries = 100;
+const controlDeviceId = "irrigation_test";
 
 export class IrrigationStore {
   private subscription: ZenObservable.Subscription | undefined;
   private static topicRegex =
     /^icu-out\/(?<clients>[^/]+)\/(?<deviceId>[^/]+)\/(?<messageType>.+)$/;
 
-  connected: boolean = false;
   log: Array<LogEntry & { id: number }>;
   logId: number = 0;
+  connectionState: ConnectionState = ConnectionState.Disconnected;
   properties: IrrigationProperty[] = [];
+  // TODO add control device state
 
   constructor(public readonly clientId: string) {
     this.log = [];
@@ -48,9 +49,10 @@ export class IrrigationStore {
       this,
       "addLogEntries" | "updateProperties" | "updatePropertyValue"
     >(this, {
-      connected: observable,
+      connectionState: observable,
       log: observable,
       properties: observable,
+      connected: computed,
       errorLogCount: computed,
       groupedProperties: computed,
       clearLog: action,
@@ -62,19 +64,16 @@ export class IrrigationStore {
     Hub.listen("pubsub", (data: any) => {
       const { payload } = data;
       if (payload.event === CONNECTION_STATE_CHANGE) {
-        const connectionState = payload.data.connectionState as ConnectionState;
-        console.log(`MQTT connection state updated: ${connectionState}`);
         runInAction(() => {
-          this.connected = connectionState === ConnectionState.Connected;
+          this.connectionState = payload.data
+            .connectionState as ConnectionState;
         });
-        if (connectionState === ConnectionState.Connected) {
+        console.log(`MQTT connection state updated: ${this.connectionState}`);
+        if (this.connectionState === ConnectionState.Connected) {
           console.log(
             "Connection established, requesting current property state"
           );
-          this.publish(
-            "icu-in/irrigation_test/getProperties",
-            new TextEncoder().encode(this.clientId)
-          );
+          this.requestProperties();
         }
       }
     });
@@ -99,6 +98,10 @@ export class IrrigationStore {
   stop() {
     this.subscription?.unsubscribe();
     this.subscription = undefined;
+  }
+
+  get connected(): boolean {
+    return this.connectionState === ConnectionState.Connected;
   }
 
   clearLog() {
@@ -134,18 +137,21 @@ export class IrrigationStore {
     return Object.entries(properties);
   }
 
-  requestPropertyValueUpdate(
-    controllerId: number,
-    propertyId: number,
-    value: boolean
-  ) {
+  requestSetProperty(controllerId: number, propertyId: number, value: boolean) {
     const payload = new ArrayBuffer(4);
     const view = new DataView(payload);
     view.setUint8(0, controllerId);
     view.setUint16(1, propertyId, true);
     view.setUint8(3, value ? 1 : 0);
-    this.publish("icu-in/irrigation_test/setProperty", payload);
-    // TODO notify if it fails
+    this.publish(`icu-in/${controlDeviceId}/setProperty`, payload);
+    // TODO notify if publish fails
+  }
+
+  private requestProperties(): Promise<unknown> {
+    return this.publish(
+      `icu-in/${controlDeviceId}/getProperties`,
+      new TextEncoder().encode(this.clientId)
+    );
   }
 
   async publish(topic: string, payload: ArrayBufferLike): Promise<unknown> {
@@ -216,7 +222,7 @@ export class IrrigationStore {
     const match = topic.match(IrrigationStore.topicRegex);
     if (match?.groups) {
       const { clients, deviceId, messageType } = match.groups;
-      console.log(
+      console.debug(
         `MQTT message type ${messageType} for client ${clients} received from ${deviceId}`
       );
       if (messageType === MqttMessageType.Event) {
@@ -233,6 +239,14 @@ export class IrrigationStore {
               event.value,
               event.type === IrrigationEventType.PropertyDesiredValueChanged
             );
+          } else if (event.type === IrrigationEventType.Started) {
+            // TODO Set control device status
+          } else if (event.type === IrrigationEventType.Configured) {
+            // TODO Set control device status
+            console.log(
+              "Device reconfigured, requesting current property state"
+            );
+            await this.requestProperties();
           }
         }
       } else if (messageType === MqttMessageType.Error) {

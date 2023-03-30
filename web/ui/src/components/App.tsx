@@ -193,7 +193,7 @@ const PropertyControls = observer(({ icu }: { icu: IrrigationStore }) => {
                   <PropertyBooleanControl
                     desiredValue={desiredValue}
                     onDesiredValueChange={(value) =>
-                      icu.requestPropertyValueUpdate(
+                      icu.requestSetProperty(
                         prop.controllerId,
                         prop.propertyId,
                         value
