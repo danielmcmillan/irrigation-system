@@ -21,6 +21,11 @@ import {
   getPropertyValue,
   IrrigationProperty,
 } from "./property";
+import {
+  ConfigEntry,
+  deserializeConfigEntries,
+  serializeConfigEntries,
+} from "./config";
 
 export enum MqttMessageType {
   Event = "event",
@@ -41,6 +46,8 @@ export class IrrigationStore {
   logId: number = 0;
   connectionState: ConnectionState = ConnectionState.Disconnected;
   properties: IrrigationProperty[] = [];
+  config: ConfigEntry[] = [];
+  configLoaded = false;
   // TODO add control device state
 
   constructor(public readonly clientId: string) {
@@ -52,9 +59,10 @@ export class IrrigationStore {
       connectionState: observable,
       log: observable,
       properties: observable,
+      config: observable,
+      configLoaded: observable,
       connected: computed,
       errorLogCount: computed,
-      groupedProperties: computed,
       clearLog: action,
       addLogEntries: action,
       updateProperties: action,
@@ -115,28 +123,6 @@ export class IrrigationStore {
     );
   }
 
-  get groupedProperties(): [string, IrrigationProperty[]][] {
-    const properties: Record<string, IrrigationProperty[]> = {};
-    for (const property of this.properties) {
-      const group = property.objectName.split("|")[0];
-      properties[group] ??= [];
-      properties[group].push(property);
-    }
-    return Object.entries(properties);
-  }
-
-  get groupedWriteableProperties(): [string, IrrigationProperty[]][] {
-    const properties: Record<string, IrrigationProperty[]> = {};
-    for (const property of this.properties) {
-      if (!property.isReadOnly) {
-        const group = property.objectName.split("|")[0];
-        properties[group] ??= [];
-        properties[group].push(property);
-      }
-    }
-    return Object.entries(properties);
-  }
-
   requestSetProperty(controllerId: number, propertyId: number, value: boolean) {
     const payload = new ArrayBuffer(4);
     const view = new DataView(payload);
@@ -145,6 +131,26 @@ export class IrrigationStore {
     view.setUint8(3, value ? 1 : 0);
     this.publish(`icu-in/${controlDeviceId}/setProperty`, payload);
     // TODO notify if publish fails
+  }
+
+  requestConfig() {
+    runInAction(() => {
+      this.config = [];
+      this.configLoaded = false;
+    });
+    return this.publish(
+      `icu-in/${controlDeviceId}/getConfig`,
+      new TextEncoder().encode(this.clientId)
+    );
+  }
+
+  requestSetConfig() {
+    if (this.configLoaded) {
+      this.publish(
+        "icu-in/irrigation_test/setConfig",
+        serializeConfigEntries(this.config)
+      );
+    }
   }
 
   private requestProperties(): Promise<unknown> {
@@ -256,6 +262,12 @@ export class IrrigationStore {
       } else if (messageType === MqttMessageType.Properties) {
         const properties = getPropertiesFromData(buffer);
         this.updateProperties(properties);
+      } else if (messageType === MqttMessageType.Config) {
+        const config = deserializeConfigEntries(buffer);
+        runInAction(() => {
+          this.config = config;
+          this.configLoaded = true;
+        });
       } else {
         console.log("MQTT message payload", payload);
       }

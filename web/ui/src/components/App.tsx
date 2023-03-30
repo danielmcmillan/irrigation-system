@@ -20,6 +20,9 @@ import {
   SwitchField,
   Loader,
   BadgeVariations,
+  RadioGroupField,
+  Radio,
+  ButtonGroup,
 } from "@aws-amplify/ui-react";
 import {
   getLogLevelString,
@@ -27,31 +30,9 @@ import {
   LogLevel,
   logLevels,
 } from "../irrigation/log";
-
-async function test(icu: IrrigationStore, type: number) {
-  if (type == 0) {
-    const configData = Uint8Array.from([
-      // Remote unit
-      6, 0x04, 0x01, 0x05, 0x01, 0x00,
-      // Solenoid
-      6, 0x04, 0x02, 0x09, 0x05, 0x00,
-    ]);
-    await icu.publish("icu-in/irrigation_test/setConfig", configData);
-    console.log("Published setConfig");
-  } else if (type == 1) {
-    await icu.publish(
-      "icu-in/irrigation_test/getProperties",
-      new TextEncoder().encode(icu.clientId)
-    );
-    console.log("Published getProperties");
-  } else if (type == 2) {
-    await icu.publish(
-      "icu-in/irrigation_test/getConfig",
-      new TextEncoder().encode(icu.clientId)
-    );
-    console.log("Published getConfig");
-  }
-}
+import { IrrigationProperty } from "../irrigation/property";
+import { ConfigEditor } from "./ConfigEditor";
+import { runInAction } from "mobx";
 
 const LogEntryCard = ({ entry }: { entry: LogEntry }) => {
   const variation = (
@@ -154,106 +135,107 @@ const PropertyBooleanControl = ({
 };
 
 const PropertyControls = observer(({ icu }: { icu: IrrigationStore }) => {
-  const groups = icu.groupedWriteableProperties;
   const { tokens } = useTheme();
+  const [filter, setFilter] = useState("all");
+  const properties: Record<string, IrrigationProperty[]> = {};
+  for (const prop of icu.properties) {
+    const type = prop.isReadOnly ? "monitor" : "control";
+    if (filter === "all" || filter === type) {
+      const group = prop.objectName.split("|")[0];
+      properties[group] ??= [];
+      properties[group].push(prop);
+    }
+  }
+  const groups = Object.entries(properties);
 
   return (
-    <Table variation="bordered">
-      <TableBody>
-        {groups.flatMap(([group, properties]) => [
-          <TableRow
-            key={group}
-            backgroundColor={tokens.colors.background.tertiary}
-          >
-            <TableCell as="th" colSpan={3}>
-              {group}
-            </TableCell>
-          </TableRow>,
-          ...properties.map((prop) => {
-            const value = Array.isArray(prop.value) ? prop.value[0] : false;
-            const desiredValue = Array.isArray(prop.desiredValue)
-              ? prop.desiredValue[0]
-              : false;
-            return (
-              <TableRow key={`${prop.controllerId}${prop.propertyId}`}>
-                <TableCell as="th">
-                  {prop.propertyName.split("|").map((name) => (
-                    <Text key={name}>
-                      {prop.objectName.split("|").slice(1).join(" ")} {name}
-                    </Text>
-                  ))}
-                </TableCell>
-                <TableCell width="27%">
-                  <Flex direction="row" justifyContent="space-between">
-                    {value.toString()}
-                    {value !== desiredValue && <Loader />}
-                  </Flex>
-                </TableCell>
-                <TableCell width="33%">
-                  <PropertyBooleanControl
-                    desiredValue={desiredValue}
-                    onDesiredValueChange={(value) =>
-                      icu.requestSetProperty(
-                        prop.controllerId,
-                        prop.propertyId,
-                        value
-                      )
-                    }
-                  />
-                </TableCell>
-              </TableRow>
-            );
-          }),
-        ])}
-      </TableBody>
-    </Table>
-  );
-});
-
-const PropertyMonitoring = observer(({ icu }: { icu: IrrigationStore }) => {
-  const groups = icu.groupedProperties;
-  const { tokens } = useTheme();
-
-  return (
-    <Table variation="bordered">
-      <TableBody>
-        {groups.flatMap(([group, properties]) => [
-          <TableRow
-            key={group}
-            backgroundColor={tokens.colors.background.tertiary}
-          >
-            <TableCell as="th" colSpan={2}>
-              {group}
-            </TableCell>
-          </TableRow>,
-          ...properties.map((prop) => (
-            <TableRow key={`${prop.controllerId}${prop.propertyId}`}>
-              <TableCell as="th">
-                {prop.propertyName.split("|").map((name, index) => (
-                  <Text key={index}>
-                    {prop.objectName.split("|").slice(1).join(" ")} {name}
-                  </Text>
-                ))}
+    <Flex direction="column">
+      <div></div>
+      <Flex direction="row" justifyContent="space-evenly">
+        <RadioGroupField
+          label=""
+          name="filter"
+          direction="row"
+          value={filter}
+          onChange={(e) => setFilter(e.target.value)}
+        >
+          <Radio value="all">All</Radio>
+          <Radio value="control">Control</Radio>
+          <Radio value="monitor">Monitor</Radio>
+        </RadioGroupField>
+      </Flex>
+      <Table variation="bordered">
+        <TableBody>
+          {groups.flatMap(([group, properties]) => [
+            <TableRow
+              key={group}
+              backgroundColor={tokens.colors.background.tertiary}
+            >
+              <TableCell as="th" colSpan={3}>
+                {group}
               </TableCell>
-              <TableCell>
-                {(Array.isArray(prop.value) ? prop.value : [prop.value]).map(
-                  (value, index) => (
-                    <Text key={index}>
-                      {value.toString()} {prop.format.unit}
-                    </Text>
-                  )
-                )}
-              </TableCell>
-            </TableRow>
-          )),
-        ])}
-      </TableBody>
-    </Table>
+            </TableRow>,
+            ...properties.map((prop) => {
+              const value = Array.isArray(prop.value) ? prop.value[0] : false;
+              const desiredValue = Array.isArray(prop.desiredValue)
+                ? prop.desiredValue[0]
+                : false;
+              return (
+                <TableRow key={`${prop.controllerId}${prop.propertyId}`}>
+                  <TableCell as="th">
+                    {prop.propertyName.split("|").map((name) => (
+                      <Text key={name}>
+                        {prop.objectName.split("|").slice(1).join(" ")} {name}
+                      </Text>
+                    ))}
+                  </TableCell>
+                  {prop.isReadOnly && (
+                    <TableCell colSpan={2}>
+                      {(Array.isArray(prop.value)
+                        ? prop.value
+                        : [prop.value]
+                      ).map((value, index) => (
+                        <Text key={index}>
+                          {value.toString()} {prop.format.unit}
+                        </Text>
+                      ))}
+                    </TableCell>
+                  )}
+                  {!prop.isReadOnly && (
+                    <>
+                      <TableCell width="27%">
+                        <Flex direction="row" justifyContent="space-between">
+                          {value.toString()}
+                          {value !== desiredValue && <Loader />}
+                        </Flex>
+                      </TableCell>
+                      <TableCell width="33%">
+                        <PropertyBooleanControl
+                          desiredValue={desiredValue}
+                          onDesiredValueChange={(value) =>
+                            icu.requestSetProperty(
+                              prop.controllerId,
+                              prop.propertyId,
+                              value
+                            )
+                          }
+                        />
+                      </TableCell>
+                    </>
+                  )}
+                </TableRow>
+              );
+            }),
+          ])}
+        </TableBody>
+      </Table>
+    </Flex>
   );
 });
 
 const App = observer(({ icu }: { icu: IrrigationStore }) => {
   const { tokens } = useTheme();
+  const [tabIndex, setTabIndex] = useState(1);
 
   useEffect(() => {
     icu.start();
@@ -262,13 +244,37 @@ const App = observer(({ icu }: { icu: IrrigationStore }) => {
     };
   }, []);
 
+  const [configOpen, setConfigOpen] = useState(false);
+
+  if (configOpen) {
+    return (
+      <ConfigEditor
+        configEntries={icu.config}
+        loading={!icu.configLoaded}
+        onUpdate={(config) =>
+          runInAction(() => {
+            icu.config = config;
+          })
+        }
+        onCancel={() => setConfigOpen(false)}
+        onSave={() => {
+          icu.requestSetConfig();
+          setConfigOpen(false);
+        }}
+      />
+    );
+  }
+
   return (
-    <Tabs spacing="relative" backgroundColor={tokens.colors.background.primary}>
-      <TabItem title="Control">
+    <Tabs
+      spacing="relative"
+      backgroundColor={tokens.colors.background.primary}
+      currentIndex={tabIndex}
+      onChange={(index) => setTabIndex(Number(index))}
+    >
+      <TabItem title="Properties">
+        <Text>Connection state: {icu.connectionState}</Text>
         <PropertyControls icu={icu} />
-      </TabItem>
-      <TabItem title="Monitor">
-        <PropertyMonitoring icu={icu} />
       </TabItem>
       <TabItem
         title={
@@ -287,18 +293,17 @@ const App = observer(({ icu }: { icu: IrrigationStore }) => {
       >
         <LogEntries icu={icu} />
       </TabItem>
-      <TabItem title="Config">
-        <Flex
-          direction="column"
-          backgroundColor={tokens.colors.background.primary}
-        >
-          <p>
-            Connection status: {icu.connected ? "connected" : "disconnected"}
-          </p>
-          <Button onClick={() => test(icu, 2)}>Get Config</Button>
-          <Button onClick={() => test(icu, 0)}>Set Config</Button>
-          <Button onClick={() => test(icu, 1)}>Get Properties</Button>
-        </Flex>
+      <TabItem title="System">
+        <ButtonGroup direction="column" margin="1rem">
+          <Button
+            onClick={() => {
+              icu.requestConfig();
+              setConfigOpen(true);
+            }}
+          >
+            Configure devices
+          </Button>
+        </ButtonGroup>
       </TabItem>
     </Tabs>
   );
