@@ -24,7 +24,7 @@ interface ConfigEditorProps {
 export const ConfigEditor: React.FC<ConfigEditorProps> = observer(
   ({ configEntries, loading, onUpdate, onCancel, onSave }) => {
     const [editingEntry, setEditingEntry] = useState<ConfigEntry | null>(null);
-    const controllerId = 2;
+    const controllerId = 4;
     const [type, setType] = useState<ConfigType>(ConfigType.RemoteUnitNode);
     const [remoteUnitId, setRemoteUnitId] = useState<number>(0);
     const [solenoidId, setSolenoidId] = useState<number>(0);
@@ -157,13 +157,6 @@ export const ConfigEditor: React.FC<ConfigEditorProps> = observer(
         <Heading level={3}>{editingEntry ? "Edit Entry" : "Add Entry"}</Heading>
 
         <Flex direction="column">
-          <TextField
-            label="Controller ID"
-            type="number"
-            value={controllerId}
-            disabled={true}
-          />
-
           <RadioGroupField
             label="Type"
             name="type"
@@ -179,6 +172,13 @@ export const ConfigEditor: React.FC<ConfigEditorProps> = observer(
               Remote Unit Solenoid
             </Radio>
           </RadioGroupField>
+
+          <TextField
+            label="Controller ID"
+            type="number"
+            value={controllerId}
+            disabled={true}
+          />
 
           <TextField
             label="Remote Unit ID"
