@@ -10,6 +10,7 @@ import {
   Loader,
   ButtonGroup,
   Text,
+  StepperField,
 } from "@aws-amplify/ui-react";
 import { observer } from "mobx-react-lite";
 
@@ -180,36 +181,36 @@ export const ConfigEditor: React.FC<ConfigEditorProps> = observer(
             disabled={true}
           />
 
-          <TextField
+          <StepperField
             label="Remote Unit ID"
-            type="number"
+            step={1}
             value={remoteUnitId}
-            onChange={(e) => setRemoteUnitId(parseInt(e.target.value, 10))}
+            onStepChange={(value) => setRemoteUnitId(value)}
           />
 
           {type === ConfigType.RemoteUnitSolenoid && (
-            <TextField
+            <StepperField
               label="Solenoid ID"
-              type="number"
+              step={1}
               value={solenoidId}
-              onChange={(e) => setSolenoidId(parseInt(e.target.value, 10))}
+              onStepChange={(value) => setSolenoidId(value)}
             />
           )}
 
-          <TextField
+          <StepperField
             label={
               type === ConfigType.RemoteUnitNode
                 ? "Node Number"
                 : "Solenoid Number"
             }
-            type="number"
+            step={1}
             value={
               type === ConfigType.RemoteUnitNode ? nodeNumber : solenoidNumber
             }
-            onChange={(e) =>
+            onStepChange={(value) =>
               (type === ConfigType.RemoteUnitNode
                 ? setNodeNumber
-                : setSolenoidNumber)(parseInt(e.target.value, 10))
+                : setSolenoidNumber)(value)
             }
           />
 
