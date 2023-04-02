@@ -162,7 +162,7 @@ namespace IrrigationSystem
         {
             // Write value
             // Response is <is error><error num?>
-            if (vacon.writeRaw(read16LE(&input[1]), read16LE(&input[3])) == 0)
+            if (vacon.writeRaw(read16LE(&input[1]), read16LE(&input[3])))
             {
                 responseOut[0] = 0;
                 *responseSizeOut = 1;

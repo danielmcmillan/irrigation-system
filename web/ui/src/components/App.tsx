@@ -33,6 +33,7 @@ import {
 import { IrrigationProperty } from "../irrigation/property";
 import { ConfigEditor } from "./ConfigEditor";
 import { runInAction } from "mobx";
+import { Vacon100Tool } from "./Vacon100Tool";
 
 const LogEntryCard = ({ entry }: { entry: LogEntry }) => {
   const variation = (
@@ -244,9 +245,9 @@ const App = observer(({ icu }: { icu: IrrigationStore }) => {
     };
   }, []);
 
-  const [configOpen, setConfigOpen] = useState(false);
+  const [openPage, setOpenPage] = useState<"config" | "vaconTool" | null>(null);
 
-  if (configOpen) {
+  if (openPage === "config") {
     return (
       <ConfigEditor
         configEntries={icu.config}
@@ -256,11 +257,31 @@ const App = observer(({ icu }: { icu: IrrigationStore }) => {
             icu.config = config;
           })
         }
-        onCancel={() => setConfigOpen(false)}
+        onCancel={() => setOpenPage(null)}
         onSave={() => {
           icu.requestSetConfig();
-          setConfigOpen(false);
+          setOpenPage(null);
         }}
+      />
+    );
+  } else if (openPage === "vaconTool") {
+    return (
+      <Vacon100Tool
+        onRunRequest={(address, value) => {
+          const command =
+            value === undefined
+              ? new Uint8Array([1, address & 0xff, address >> 8])
+              : new Uint8Array([
+                  2,
+                  address & 0xff,
+                  address >> 8,
+                  value & 0xff,
+                  value >> 8,
+                ]);
+          icu.requestControllerCommand(2, command.buffer);
+        }}
+        onClose={() => setOpenPage(null)}
+        result={icu.controllerCommandResult}
       />
     );
   }
@@ -298,10 +319,20 @@ const App = observer(({ icu }: { icu: IrrigationStore }) => {
           <Button
             onClick={() => {
               icu.requestConfig();
-              setConfigOpen(true);
+              setOpenPage("config");
             }}
           >
             Configure devices
+          </Button>
+          <Button
+            onClick={() => {
+              runInAction(() => {
+                icu.controllerCommandResult = undefined;
+              });
+              setOpenPage("vaconTool");
+            }}
+          >
+            Vacon100 Tool
           </Button>
         </ButtonGroup>
       </TabItem>

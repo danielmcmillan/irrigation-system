@@ -33,6 +33,7 @@ export enum MqttMessageType {
   Config = "config",
   Properties = "properties",
   Error = "error",
+  CommandResult = "commandResult",
 }
 
 const maxLogEntries = 100;
@@ -49,6 +50,7 @@ export class IrrigationStore {
   properties: IrrigationProperty[] = [];
   config: ConfigEntry[] = [];
   configLoaded = false;
+  controllerCommandResult: ArrayBuffer | undefined = undefined;
   // TODO add control device state
 
   constructor(public readonly clientId: string) {
@@ -62,6 +64,7 @@ export class IrrigationStore {
       properties: observable,
       config: observable,
       configLoaded: observable,
+      controllerCommandResult: observable,
       connected: computed,
       errorLogCount: computed,
       clearLog: action,
@@ -155,6 +158,9 @@ export class IrrigationStore {
   }
 
   requestControllerCommand(controllerId: number, commandData: ArrayBuffer) {
+    runInAction(() => {
+      this.controllerCommandResult = undefined;
+    });
     const payload = new Uint8Array(1 + commandData.byteLength);
     payload[0] = controllerId;
     payload.set(new Uint8Array(commandData), 1);
@@ -276,6 +282,10 @@ export class IrrigationStore {
         runInAction(() => {
           this.config = config;
           this.configLoaded = true;
+        });
+      } else if (messageType === MqttMessageType.CommandResult) {
+        runInAction(() => {
+          this.controllerCommandResult = buffer;
         });
       } else {
         console.log("MQTT message payload", payload);

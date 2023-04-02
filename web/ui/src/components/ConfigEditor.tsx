@@ -29,7 +29,7 @@ export const ConfigEditor: React.FC<ConfigEditorProps> = observer(
     const [type, setType] = useState<ConfigType>(ConfigType.RemoteUnitNode);
     const [remoteUnitId, setRemoteUnitId] = useState<number>(0);
     const [solenoidId, setSolenoidId] = useState<number>(0);
-    const [nodeNumber, setNodeNumber] = useState<number>(0);
+    const [nodeNumber, setNodeNumber] = useState<number>(1);
     const [solenoidNumber, setSolenoidNumber] = useState<number>(0);
 
     const startEditing = useCallback((entry: ConfigEntry | null) => {
@@ -47,7 +47,7 @@ export const ConfigEditor: React.FC<ConfigEditorProps> = observer(
         setType(ConfigType.RemoteUnitNode);
         setRemoteUnitId(0);
         setSolenoidId(0);
-        setNodeNumber(0);
+        setNodeNumber(1);
         setSolenoidNumber(0);
       }
     }, []);
@@ -184,35 +184,44 @@ export const ConfigEditor: React.FC<ConfigEditorProps> = observer(
           <StepperField
             label="Remote Unit ID"
             step={1}
+            min={0}
+            max={255}
             value={remoteUnitId}
-            onStepChange={(value) => setRemoteUnitId(value)}
+            onStepChange={setRemoteUnitId}
           />
 
           {type === ConfigType.RemoteUnitSolenoid && (
             <StepperField
               label="Solenoid ID"
               step={1}
+              min={0}
+              max={255}
               value={solenoidId}
-              onStepChange={(value) => setSolenoidId(value)}
+              onStepChange={setSolenoidId}
             />
           )}
 
-          <StepperField
-            label={
-              type === ConfigType.RemoteUnitNode
-                ? "Node Number"
-                : "Solenoid Number"
-            }
-            step={1}
-            value={
-              type === ConfigType.RemoteUnitNode ? nodeNumber : solenoidNumber
-            }
-            onStepChange={(value) =>
-              (type === ConfigType.RemoteUnitNode
-                ? setNodeNumber
-                : setSolenoidNumber)(value)
-            }
-          />
+          {type === ConfigType.RemoteUnitNode && (
+            <StepperField
+              label="Node Number"
+              step={1}
+              min={1}
+              max={65535}
+              value={nodeNumber}
+              onStepChange={setNodeNumber}
+            />
+          )}
+
+          {type === ConfigType.RemoteUnitSolenoid && (
+            <StepperField
+              label="Solenoid Number"
+              step={1}
+              min={0}
+              max={255}
+              value={solenoidNumber}
+              onStepChange={setSolenoidNumber}
+            />
+          )}
 
           <Button onClick={editingEntry ? handleUpdateEntry : handleAddEntry}>
             {editingEntry ? "Update Entry" : "Add Entry"}
