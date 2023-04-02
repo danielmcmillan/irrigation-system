@@ -69,7 +69,17 @@ bool ControlI2cMaster::setPropertyValue(const uint8_t *data, size_t length) cons
     return sendMessage(ControlProcessorPacket::MessageType::PropertySet, data, length, nullptr, nullptr);
 }
 
-bool ControlI2cMaster::sendMessage(ControlProcessorPacket::MessageType type, const uint8_t *data, size_t dataSize, const uint8_t **responseOut, size_t *responseSizeOut) const
+bool ControlI2cMaster::runControllerCommand(const uint8_t *data, size_t length) const
+{
+    return sendMessage(ControlProcessorPacket::MessageType::RunControllerCommand, data, length, nullptr, nullptr);
+}
+
+bool ControlI2cMaster::getControllerCommandResult(const uint8_t **responseOut, size_t *responseSizeOut) const
+{
+    return sendMessage(ControlProcessorPacket::MessageType::GetControllerCommandResult, nullptr, 0, responseOut, responseSizeOut, true);
+}
+
+bool ControlI2cMaster::sendMessage(ControlProcessorPacket::MessageType type, const uint8_t *data, size_t dataSize, const uint8_t **responseOut, size_t *responseSizeOut, bool expectErrorResponse) const
 {
     if (responseSizeOut != nullptr)
     {
@@ -122,7 +132,10 @@ bool ControlI2cMaster::sendMessage(ControlProcessorPacket::MessageType type, con
     size_t responseDataSize = packet.getMessageData(responsePacket, responsePacketSize, &responseData);
     if (responseType == ControlProcessorPacket::MessageType::Err)
     {
-        handleError(type, MessageResultType::ResponseError, *responseData, "Received error response");
+        if (!expectErrorResponse)
+        {
+            handleError(type, MessageResultType::ResponseError, *responseData, "Received error response");
+        }
         return false;
     }
     else if (responseType != ControlProcessorPacket::MessageType::Ack)

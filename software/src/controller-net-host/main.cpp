@@ -14,6 +14,7 @@
 
 #define EVENT_TOPIC "icu-out/all/" MQTT_CLIENT_ID "/event"
 #define ERROR_TOPIC "icu-out/all/" MQTT_CLIENT_ID "/error"
+#define COMMAND_RESULT_TOPIC "icu-out/all/" MQTT_CLIENT_ID "/commandResult"
 #define CONFIG_TOPIC "icu-out/%.*s/" MQTT_CLIENT_ID "/config"
 #define PROPERTIES_TOPIC "icu-out/%.*s/" MQTT_CLIENT_ID "/properties"
 #define TOPIC_CLIENT_MAX_LENGTH 20
@@ -25,6 +26,7 @@ IrrigationSystem::ControllerDefinitionManager definitions = definitionsBuilder.b
 bool publishErrorData(const uint8_t *data, size_t size);
 bool publishEventData(const uint8_t *data, size_t size);
 void handleMessage(IncomingMessageType type, const uint8_t *payload, int length);
+void sendCommandResults();
 
 ErrorHandler errorHandler(publishErrorData);
 WiFiManager wifi(WIFI_SSID, WIFI_PASSWORD, errorHandler);
@@ -56,11 +58,38 @@ void loop()
     {
         lastConnected = now;
         events.loop();
+
+        sendCommandResults();
     }
     else if ((now - lastConnected) > DISCONNECTED_RESET_TIME)
     {
         // Restart after prolonged period of connection failure
         ESP.restart();
+    }
+}
+
+#define COMMAND_RESULT_REQUEST_INTERVAL 2000
+#define COMMAND_RESULT_REQUEST_COUNT 6
+unsigned long lastCommandResultRequest = 0;
+uint8_t commandResultRequestCount = COMMAND_RESULT_REQUEST_COUNT;
+void sendCommandResults()
+{
+    unsigned int now = millis();
+    if (commandResultRequestCount < COMMAND_RESULT_REQUEST_COUNT && (now - lastCommandResultRequest) > COMMAND_RESULT_REQUEST_INTERVAL)
+    {
+        lastCommandResultRequest = now;
+        const uint8_t *response;
+        size_t responseSize;
+        if (control.getControllerCommandResult(&response, &responseSize))
+        {
+            mqtt.publish(COMMAND_RESULT_TOPIC, response, responseSize);
+            commandResultRequestCount = COMMAND_RESULT_REQUEST_COUNT;
+        }
+        else if (commandResultRequestCount == COMMAND_RESULT_REQUEST_COUNT - 1)
+        {
+            mqtt.publish(COMMAND_RESULT_TOPIC, nullptr, 0);
+            ++commandResultRequestCount;
+        }
     }
 }
 
@@ -176,6 +205,13 @@ void handleMessage(IncomingMessageType type, const uint8_t *payload, int length)
         break;
     case IncomingMessageType::SetProperty:
         control.setPropertyValue(payload, length);
+        break;
+    case IncomingMessageType::Command:
+        if (control.runControllerCommand(payload, length))
+        {
+            commandResultRequestCount = 0;
+            lastCommandResultRequest = 0;
+        }
         break;
     }
 }

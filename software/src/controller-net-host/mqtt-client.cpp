@@ -134,6 +134,10 @@ void MqttClient::queueMessage(MQTTClient *client, char topic[], char bytes[], in
         {
             type = IncomingMessageType::SetProperty;
         }
+        else if (strcmp(segment, "command") == 0)
+        {
+            type = IncomingMessageType::Command;
+        }
         else
         {
             type = IncomingMessageType::Invalid;

@@ -26,6 +26,7 @@ import {
   deserializeConfigEntries,
   serializeConfigEntries,
 } from "./config";
+import { binToHex } from "./util";
 
 export enum MqttMessageType {
   Event = "event",
@@ -147,10 +148,18 @@ export class IrrigationStore {
   requestSetConfig() {
     if (this.configLoaded) {
       this.publish(
-        "icu-in/irrigation_test/setConfig",
+        `icu-in/${controlDeviceId}/setConfig`,
         serializeConfigEntries(this.config)
       );
     }
+  }
+
+  requestControllerCommand(controllerId: number, commandData: ArrayBuffer) {
+    const payload = new Uint8Array(1 + commandData.byteLength);
+    payload[0] = controllerId;
+    payload.set(new Uint8Array(commandData), 1);
+    console.log("Command request", binToHex(payload.buffer));
+    this.publish(`icu-in/${controlDeviceId}/command`, payload.buffer);
   }
 
   private requestProperties(): Promise<unknown> {

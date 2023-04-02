@@ -29,10 +29,12 @@ public:
     bool configEnd() const;
     bool getPropertyValue(uint8_t controllerId, uint16_t propertyId, uint8_t *valuesOut) const;
     bool setPropertyValue(const uint8_t *data, size_t length) const;
+    bool runControllerCommand(const uint8_t *data, size_t length) const;
+    bool getControllerCommandResult(const uint8_t **responseOut, size_t *responseSizeOut) const;
 
 private:
     const ErrorHandler &errorHandler;
-    bool sendMessage(ControlProcessorPacket::MessageType type, const uint8_t *data, size_t dataSize, const uint8_t **responseOut, size_t *responseSizeOut) const;
+    bool sendMessage(ControlProcessorPacket::MessageType type, const uint8_t *data, size_t dataSize, const uint8_t **responseOut, size_t *responseSizeOut, bool expectErrorResponse = false) const;
     ControlProcessorPacket packet;
     mutable uint8_t packetBuffer[CONTROLLER_NET_HOST_I2C_PACKET_BUFFER_SIZE];
 

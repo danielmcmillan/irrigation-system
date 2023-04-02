@@ -13,6 +13,7 @@ enum class IncomingMessageType
     GetConfig,
     GetProperties,
     SetProperty,
+    Command,
     Invalid
 };
 typedef std::function<void(IncomingMessageType type, const uint8_t *payload, int length)> MqttClientMessageHandler;
