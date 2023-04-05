@@ -37,7 +37,6 @@ export enum MqttMessageType {
 }
 
 const maxLogEntries = 100;
-const controlDeviceId = "icu-1";
 
 export class IrrigationStore {
   private subscription: ZenObservable.Subscription | undefined;
@@ -53,7 +52,10 @@ export class IrrigationStore {
   controllerCommandResult: ArrayBuffer | undefined = undefined;
   // TODO add control device state
 
-  constructor(public readonly clientId: string) {
+  constructor(
+    public readonly clientId: string,
+    public readonly controlDeviceId: string
+  ) {
     this.log = [];
     makeObservable<
       this,
@@ -80,11 +82,7 @@ export class IrrigationStore {
           this.connectionState = payload.data
             .connectionState as ConnectionState;
         });
-        console.log(`MQTT connection state updated: ${this.connectionState}`);
         if (this.connectionState === ConnectionState.Connected) {
-          console.log(
-            "Connection established, requesting current property state"
-          );
           this.requestProperties();
         }
       }
@@ -133,7 +131,7 @@ export class IrrigationStore {
     view.setUint8(0, controllerId);
     view.setUint16(1, propertyId, true);
     view.setUint8(3, value ? 1 : 0);
-    this.publish(`icu-in/${controlDeviceId}/setProperty`, payload);
+    this.publish(`icu-in/${this.controlDeviceId}/setProperty`, payload);
     // TODO notify if publish fails
   }
 
@@ -143,7 +141,7 @@ export class IrrigationStore {
       this.configLoaded = false;
     });
     return this.publish(
-      `icu-in/${controlDeviceId}/getConfig`,
+      `icu-in/${this.controlDeviceId}/getConfig`,
       new TextEncoder().encode(this.clientId)
     );
   }
@@ -151,7 +149,7 @@ export class IrrigationStore {
   requestSetConfig() {
     if (this.configLoaded) {
       this.publish(
-        `icu-in/${controlDeviceId}/setConfig`,
+        `icu-in/${this.controlDeviceId}/setConfig`,
         serializeConfigEntries(this.config)
       );
     }
@@ -165,14 +163,13 @@ export class IrrigationStore {
     payload[0] = controllerId;
     payload.set(new Uint8Array(commandData), 1);
     console.log("Command request", binToHex(payload.buffer));
-    this.publish(`icu-in/${controlDeviceId}/command`, payload.buffer);
+    this.publish(`icu-in/${this.controlDeviceId}/command`, payload.buffer);
   }
 
   private requestProperties(): Promise<unknown> {
-    return this.publish(
-      `icu-in/${controlDeviceId}/getProperties`,
-      new TextEncoder().encode(this.clientId)
-    );
+    const topic = `icu-in/${this.controlDeviceId}/getProperties`;
+    console.log(`Requesting current property state with topic "${topic}"`);
+    return this.publish(topic, new TextEncoder().encode(this.clientId));
   }
 
   async publish(topic: string, payload: ArrayBufferLike): Promise<unknown> {
@@ -264,16 +261,12 @@ export class IrrigationStore {
             // TODO Set control device status
           } else if (event.type === IrrigationEventType.Configured) {
             // TODO Set control device status
-            console.log(
-              "Device reconfigured, requesting current property state"
-            );
             await this.requestProperties();
           }
         }
       } else if (messageType === MqttMessageType.Error) {
         const error = getErrorFromData(buffer);
         this.addLogEntries([getLogFromError(error)]);
-        console.log(getLogFromError(error), this.log);
       } else if (messageType === MqttMessageType.Properties) {
         const properties = getPropertiesFromData(buffer);
         this.updateProperties(properties);
@@ -288,7 +281,10 @@ export class IrrigationStore {
           this.controllerCommandResult = buffer;
         });
       } else {
-        console.log("MQTT message payload", payload);
+        console.warn(
+          `MQTT message payload for unknown type ${messageType}`,
+          payload
+        );
       }
     } else {
       console.error(

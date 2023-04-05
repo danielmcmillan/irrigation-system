@@ -13,10 +13,12 @@ const config = {
   identityPoolId: import.meta.env.VITE_IDENTITY_POOL_ID,
   // @ts-ignore
   mqttEndpoint: import.meta.env.VITE_MQTT_ENDPOINT,
+  // @ts-ignore
+  deviceId: import.meta.env.VITE_DEVICE_ID,
 };
 
 const clientId = configureAmplify(config);
-const icu = new IrrigationStore(clientId);
+const icu = new IrrigationStore(clientId, config.deviceId);
 
 const root = ReactDOM.createRoot(
   document.getElementById("root") as HTMLElement
