@@ -48,6 +48,7 @@
         "cinttypes": "cpp",
         "typeinfo": "cpp",
         "ctime": "cpp",
-        "iomanip": "cpp"
+        "iomanip": "cpp",
+        "arduino.h": "c"
     }
 }
