@@ -37,7 +37,7 @@ export enum MqttMessageType {
 }
 
 const maxLogEntries = 100;
-const controlDeviceId = "irrigation_test";
+const controlDeviceId = "icu-1";
 
 export class IrrigationStore {
   private subscription: ZenObservable.Subscription | undefined;

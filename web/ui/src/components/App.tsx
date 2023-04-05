@@ -236,7 +236,7 @@ const PropertyControls = observer(({ icu }: { icu: IrrigationStore }) => {
 
 const App = observer(({ icu }: { icu: IrrigationStore }) => {
   const { tokens } = useTheme();
-  const [tabIndex, setTabIndex] = useState(1);
+  const [tabIndex, setTabIndex] = useState(0);
 
   useEffect(() => {
     icu.start();

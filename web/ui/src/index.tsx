@@ -5,9 +5,15 @@ import "@aws-amplify/ui-react/styles.css";
 import { configureAmplify } from "./amplify";
 import App from "./components/App";
 import { IrrigationStore } from "./irrigation/store";
-import { config } from "./config";
-// import "onsenui/css/onsenui.css";
-// import "onsenui/css/onsen-css-components.css";
+
+const config = {
+  // @ts-ignore
+  region: import.meta.env.VITE_REGION,
+  // @ts-ignore
+  identityPoolId: import.meta.env.VITE_IDENTITY_POOL_ID,
+  // @ts-ignore
+  mqttEndpoint: import.meta.env.VITE_MQTT_ENDPOINT,
+};
 
 const clientId = configureAmplify(config);
 const icu = new IrrigationStore(clientId);
