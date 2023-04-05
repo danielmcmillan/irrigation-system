@@ -108,7 +108,7 @@ namespace IrrigationSystem
         }
         else
         {
-            len = snprintf(nameOut, maxLen, "Remote Unit|%u", subId);
+            len = snprintf(nameOut, maxLen, "RemoteUnit|%u", subId);
         }
         if (len < maxLen)
         {

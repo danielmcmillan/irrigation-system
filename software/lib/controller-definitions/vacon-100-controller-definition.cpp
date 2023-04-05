@@ -79,7 +79,7 @@ namespace IrrigationSystem
 
     uint8_t Vacon100ControllerDefinition::getName(char *nameOut, uint8_t maxLen) const
     {
-        return stpncpy(nameOut, "Vacon 100", maxLen) - nameOut;
+        return stpncpy(nameOut, "Vacon100", maxLen) - nameOut;
     }
 
     uint8_t Vacon100ControllerDefinition::getPropertyObjectName(uint16_t id, char *nameOut, uint8_t maxLen) const
@@ -91,22 +91,22 @@ namespace IrrigationSystem
     {
         static constexpr const char *propertyNames[] = {
             "Available",
-            "Motor On",
-            "Ready|Run|Direction|Fault|Alarm|At Reference|Zero Speed|Flux Ready",
-            "Actual Speed",
-            "Output Frequency",
-            "Motor Speed",
-            "Motor Current",
-            "Motor Torque",
-            "Motor Power",
-            "Motor Voltage",
-            "DC Link Voltage",
-            "Active Fault Code",
-            "Feedback Pressure",
-            "Drive Temp",
-            "Motor Temp",
-            "Energy Used",
-            "Run Time"};
+            "MotorOn",
+            "Ready|Run|Direction|Fault|Alarm|AtReference|ZeroSpeed|FluxReady",
+            "ActualSpeed",
+            "OutputFrequency",
+            "MotorSpeed",
+            "MotorCurrent",
+            "MotorTorque",
+            "MotorPower",
+            "MotorVoltage",
+            "DCLinkVoltage",
+            "ActiveFaultCode",
+            "FeedbackPressure",
+            "DriveTemp",
+            "MotorTemp",
+            "EnergyUsed",
+            "RunTime"};
         int index = getPropertyIndex(id);
         if (index >= 0)
         {
