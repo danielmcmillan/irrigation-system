@@ -43,10 +43,10 @@ int RemoteUnitConfig::load()
   this->config[9] = 135;                      // Lower battery voltage threshold
   this->config[10] = 132;                     // Maintain battery voltage threshold
   this->config[11] = 105;                     // Minimum voltage for solenoid operation
-  this->config[12] = 50;                      // Solenoid A on pulse width 100 ms
-  this->config[13] = 50;                      // Solenoid A off pulse width 100 ms
-  this->config[14] = 50;                      // Solenoid B on pulse width 100 ms
-  this->config[15] = 50;                      // Solenoid B off pulse width 100 ms
+  this->config[12] = 50;                      // Solenoid A on pulse width * 2 ms
+  this->config[13] = 50;                      // Solenoid A off pulse width * 2 ms
+  this->config[14] = 50;                      // Solenoid B on pulse width * 2 ms
+  this->config[15] = 50;                      // Solenoid B off pulse width * 2 ms
 
   return 1;
 }

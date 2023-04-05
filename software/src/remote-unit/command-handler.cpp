@@ -51,8 +51,8 @@ int RemoteUnitCommandHandler::getFaults(uint8_t *faultsOut) const
 
 int RemoteUnitCommandHandler::clearFaults(uint8_t *faultsOut) const
 {
+    *faultsOut = this->faults.getFaults();
     this->faults.clear();
-    *faultsOut = 0x00;
     return 0;
 }
 

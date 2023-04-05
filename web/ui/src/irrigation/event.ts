@@ -181,7 +181,6 @@ function getControllerErrorDetail(
       7: "Remote unit response is for unexpected commands",
     }[typeNum];
     const result: Record<string, unknown> = {};
-    result.type = type ?? `Unknown (${typeNum})`;
     if (remoteUnitId > 0) {
       result.remoteUnitId = remoteUnitId;
     }
@@ -189,6 +188,7 @@ function getControllerErrorDetail(
       type = "Remote unit fault";
       result.faultNum = typeNum & 0x0f;
     }
+    result.type = type ?? `Unknown (${typeNum})`;
     return result;
   }
   return {
