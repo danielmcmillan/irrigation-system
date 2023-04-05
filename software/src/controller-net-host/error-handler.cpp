@@ -2,6 +2,8 @@
 #include "binary-util.h"
 
 #define MAX_ERROR_SIZE 128
+// Only re-publish the same error after 2 minutes
+#define PUBLISH_REPEAT_INTERVAL 120000
 
 const char *getErrorComponentString(ErrorComponent component)
 {
@@ -32,14 +34,36 @@ void ErrorHandler::handleError(ErrorComponent component, uint16_t code, const ch
     snprintf(logBuffer, MAX_ERROR_SIZE, "ERROR [%s] %s (0x%04x)\n", getErrorComponentString(component), text, code);
     Serial.printf(logBuffer);
 
-    // Publish error data
-    buffer[0] = (uint8_t)component;
-    IrrigationSystem::write16LE(&buffer[1], code);
-    size_t msgLength = 3;
-    if (text != nullptr)
+    if (shouldPublish(component, code))
     {
-        msgLength = (uint8_t *)stpncpy((char *)&buffer[msgLength], text, MAX_ERROR_SIZE - msgLength) - buffer;
-    }
+        // Publish error data
+        buffer[0] = (uint8_t)component;
+        IrrigationSystem::write16LE(&buffer[1], code);
+        size_t msgLength = 3;
+        if (text != nullptr)
+        {
+            msgLength = (uint8_t *)stpncpy((char *)&buffer[msgLength], text, MAX_ERROR_SIZE - msgLength) - buffer;
+        }
 
-    publishErrorData(buffer, msgLength);
+        publishErrorData(buffer, msgLength);
+    }
+}
+
+bool ErrorHandler::shouldPublish(ErrorComponent component, uint16_t code) const
+{
+    unsigned long now = millis();
+    if (lastPublishedError.time == 0 ||
+        lastPublishedError.component != component ||
+        lastPublishedError.code != code ||
+        (now - lastPublishedError.time) > PUBLISH_REPEAT_INTERVAL)
+    {
+        lastPublishedError.time = now;
+        lastPublishedError.component = component;
+        lastPublishedError.code = code;
+        return true;
+    }
+    else
+    {
+        return false;
+    }
 }

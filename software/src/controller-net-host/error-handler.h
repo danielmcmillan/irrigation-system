@@ -20,6 +20,14 @@ public:
 
 private:
     PublishErrorData publishErrorData;
+    mutable struct
+    {
+        unsigned long time;
+        ErrorComponent component;
+        uint16_t code;
+    } lastPublishedError;
+
+    bool shouldPublish(ErrorComponent component, uint16_t code) const;
 };
 
 #endif
