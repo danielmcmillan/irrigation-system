@@ -5,6 +5,7 @@ export enum IrrigationEventType {
   GeneralInfo = 0x40,
   Started = 0x41,
   Configured = 0x42,
+  Ready = 0x43,
   PropertyValueChanged = 0x48,
   PropertyDesiredValueChanged = 0x49,
   GeneralWarning = 0x80,
@@ -24,11 +25,11 @@ export interface IrrigationEventGeneral extends IrrigationEventCommon {
     | IrrigationEventType.GeneralError;
   data: ArrayBuffer;
 }
-export interface IrrigationEventStarted extends IrrigationEventCommon {
-  type: IrrigationEventType.Started;
-}
-export interface IrrigationEventConfigured extends IrrigationEventCommon {
-  type: IrrigationEventType.Configured;
+export interface IrrigationEventNotice extends IrrigationEventCommon {
+  type:
+    | IrrigationEventType.Started
+    | IrrigationEventType.Configured
+    | IrrigationEventType.Ready;
 }
 export interface IrrigationEventPropertyValueChanged
   extends IrrigationEventCommon {
@@ -57,8 +58,7 @@ export interface IrrigationEventPropertyError extends IrrigationEventCommon {
 }
 export type IrrigationEvent =
   | IrrigationEventGeneral
-  | IrrigationEventStarted
-  | IrrigationEventConfigured
+  | IrrigationEventNotice
   | IrrigationEventPropertyValueChanged
   | IrrigationEventPropertyDesiredValueChanged
   | IrrigationEventControllerError
@@ -73,6 +73,7 @@ function getEventFromData(payload: ArrayBufferLike): IrrigationEvent {
   switch (type) {
     case IrrigationEventType.Started:
     case IrrigationEventType.Configured:
+    case IrrigationEventType.Ready:
       return { id, type };
     case IrrigationEventType.PropertyValueChanged:
     case IrrigationEventType.PropertyDesiredValueChanged:
@@ -202,6 +203,7 @@ export function getEventDetail(
   switch (event.type) {
     case IrrigationEventType.Started:
     case IrrigationEventType.Configured:
+    case IrrigationEventType.Ready:
       return {};
     case IrrigationEventType.PropertyValueChanged:
     case IrrigationEventType.PropertyDesiredValueChanged:
@@ -236,6 +238,7 @@ export function getLogFromEvent(event: IrrigationEvent): LogEntry {
     [IrrigationEventType.GeneralInfo]: LogLevel.info,
     [IrrigationEventType.Started]: LogLevel.info,
     [IrrigationEventType.Configured]: LogLevel.info,
+    [IrrigationEventType.Ready]: LogLevel.info,
     [IrrigationEventType.PropertyValueChanged]: LogLevel.info,
     [IrrigationEventType.PropertyDesiredValueChanged]: LogLevel.info,
     [IrrigationEventType.GeneralWarning]: LogLevel.warn,
@@ -246,7 +249,7 @@ export function getLogFromEvent(event: IrrigationEvent): LogEntry {
   return {
     time: new Date(),
     source: LogSource.ControlUnitEvent,
-    level: levels[event.type],
+    level: levels[event.type] ?? LogLevel.warn,
     summary: `Event ${event.id
       .toString()
       .padStart(5, "0")} ${getEventTypeString(event.type)}`,

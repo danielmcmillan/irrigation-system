@@ -17,16 +17,28 @@ enum class MessageResultType : uint8_t
     ResponseError
 };
 
+enum class ControlProcessorStatus
+{
+    Unconfigured,
+    Initializing,
+    Ready
+};
+
 class ControlI2cMaster
 {
 public:
     ControlI2cMaster(const ControllerDefinitionProvider &controllers, const ErrorHandler &errorHandler);
     void setup();
+    bool loop();
+    ControlProcessorStatus getLastStatus() const;
+    void resetController() const;
 
+    // I2C commands
     bool getNextEvent(uint16_t lastEvent, uint8_t *eventOut, size_t *eventSizeOut) const;
     bool configStart() const;
     bool configAdd(const uint8_t *data, size_t length) const;
     bool configEnd() const;
+    bool getState(ControlProcessorStatus *statusOut) const;
     bool getPropertyValue(uint8_t controllerId, uint16_t propertyId, uint8_t *valuesOut) const;
     bool setPropertyValue(const uint8_t *data, size_t length) const;
     bool runControllerCommand(const uint8_t *data, size_t length) const;
@@ -36,6 +48,9 @@ private:
     const ErrorHandler &errorHandler;
     bool sendMessage(ControlProcessorPacket::MessageType type, const uint8_t *data, size_t dataSize, const uint8_t **responseOut, size_t *responseSizeOut, bool expectErrorResponse = false) const;
     ControlProcessorPacket packet;
+    bool available;
+    ControlProcessorStatus lastStatus;
+    unsigned long lastStatusPollTime;
     mutable uint8_t packetBuffer[CONTROLLER_NET_HOST_I2C_PACKET_BUFFER_SIZE];
 
     /**

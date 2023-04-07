@@ -32,6 +32,10 @@ size_t Config::getConfig(uint8_t *dataOut) const
 
 bool Config::loop()
 {
+    if (control.getLastStatus() == ControlProcessorStatus::Unconfigured)
+    {
+        pendingApply = true;
+    }
     unsigned long now = millis();
     if ((now - lastAttempt) < CONFIG_MIN_ATTEMPT_DELAY)
     {

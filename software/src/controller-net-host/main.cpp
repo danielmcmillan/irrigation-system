@@ -1,6 +1,5 @@
 #include <Arduino.h>
 #include "crc16.h"
-#include <Wire.h>
 #include "logging.h"
 #include "controller-definitions-builder.h"
 #include "http.h"
@@ -41,6 +40,7 @@ void setup()
 {
     Serial.begin(9600);
 
+    control.setup();
     setupHttp(definitions);
 }
 
@@ -51,15 +51,22 @@ void loop()
     {
         connected = mqtt.loop();
     }
-    config.loop();
+    bool controlProcessorAvailable = control.loop();
+    if (controlProcessorAvailable)
+    {
+        config.loop();
+    }
 
     unsigned long now = millis();
     if (connected)
     {
         lastConnected = now;
-        events.loop();
 
-        sendCommandResults();
+        if (controlProcessorAvailable)
+        {
+            events.loop();
+            sendCommandResults();
+        }
     }
     else if ((now - lastConnected) > DISCONNECTED_RESET_TIME)
     {
@@ -188,6 +195,9 @@ void handleMessage(IncomingMessageType type, const uint8_t *payload, int length)
 {
     switch (type)
     {
+    case IncomingMessageType::ResetController:
+        control.resetController();
+        break;
     case IncomingMessageType::SetConfig:
         config.setConfig(payload, length);
         break;

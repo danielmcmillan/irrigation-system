@@ -28,10 +28,10 @@ class ControlI2CHost
 public:
     void begin()
     {
-        if (!Wire.begin())
-        {
-            Serial.println("Failed to begin I2C");
-        }
+        // if (!Wire.begin())
+        // {
+        //     Serial.println("Failed to begin I2C");
+        // }
     }
 
     int sendRawData(const uint8_t *data, size_t size, size_t *resultLength, uint8_t *result)

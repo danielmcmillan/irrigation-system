@@ -2,19 +2,62 @@
 #include <Arduino.h>
 #include <Wire.h>
 #include "logging.h"
-// #include "crc16.h"
 #include "binary-util.h"
 
-ControlI2cMaster::ControlI2cMaster(const ControllerDefinitionProvider &controllers, const ErrorHandler &errorHandler) : packet(controllers), errorHandler(errorHandler)
+#define STATE_POLL_INTERVAL 10000
+#define STATE_RETRY_COUNT 3
+#define RESET_PIN 23
+
+ControlI2cMaster::ControlI2cMaster(const ControllerDefinitionProvider &controllers, const ErrorHandler &errorHandler)
+    : packet(controllers), available(false), lastStatus(ControlProcessorStatus::Unconfigured), lastStatusPollTime(0), errorHandler(errorHandler)
 {
 }
 
 void ControlI2cMaster::setup()
 {
+    digitalWrite(RESET_PIN, HIGH);
+    pinMode(RESET_PIN, OUTPUT);
     if (!Wire.begin())
     {
         LOG_ERROR("[Control] Failed to begin I2C");
     }
+}
+
+bool ControlI2cMaster::loop()
+{
+    unsigned long now = millis();
+    // Update status periodically. Always update if unconfigured to avoid applying config repeatedly.
+    if ((now - lastStatusPollTime) > STATE_POLL_INTERVAL || (available && lastStatus == ControlProcessorStatus::Unconfigured))
+    {
+        lastStatusPollTime = now;
+        for (int i = 0; i < STATE_RETRY_COUNT; ++i)
+        {
+            if (getState(&this->lastStatus))
+            {
+                available = true;
+                return true;
+            }
+            delay(10);
+        }
+        // Controller seems to be not responding, restart it
+        available = false;
+        lastStatus = ControlProcessorStatus::Unconfigured;
+        resetController();
+        errorHandler.handleError(ErrorComponent::ControlI2c, 1, "Forcing reset of control processor");
+    }
+    return available;
+}
+
+ControlProcessorStatus ControlI2cMaster::getLastStatus() const
+{
+    return lastStatus;
+}
+
+void ControlI2cMaster::resetController() const
+{
+    digitalWrite(RESET_PIN, LOW);
+    delay(10);
+    digitalWrite(RESET_PIN, HIGH);
 }
 
 bool ControlI2cMaster::getNextEvent(uint16_t lastEvent, uint8_t *eventOut, size_t *eventSizeOut) const
@@ -47,6 +90,18 @@ bool ControlI2cMaster::configAdd(const uint8_t *data, size_t length) const
 bool ControlI2cMaster::configEnd() const
 {
     return sendMessage(ControlProcessorPacket::MessageType::ConfigEnd, nullptr, 0, nullptr, nullptr);
+}
+
+bool ControlI2cMaster::getState(ControlProcessorStatus *statusOut) const
+{
+    const uint8_t *responseOut;
+    size_t responseSizeOut;
+    if (sendMessage(ControlProcessorPacket::MessageType::GetState, nullptr, 0, &responseOut, &responseSizeOut) && responseSizeOut == 1)
+    {
+        *statusOut = (ControlProcessorStatus)*responseOut;
+        return true;
+    }
+    return false;
 }
 
 bool ControlI2cMaster::getPropertyValue(uint8_t controllerId, uint16_t propertyId, uint8_t *valuesOut) const
