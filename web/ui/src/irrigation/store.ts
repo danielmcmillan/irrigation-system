@@ -95,8 +95,8 @@ export class IrrigationStore {
       return;
     }
     this.subscription = PubSub.subscribe([
-      "icu-out/all/#",
-      `icu-out/${this.clientId}/#`,
+      `icu-out/all/${this.controlDeviceId}/#`,
+      `icu-out/${this.clientId}/${this.controlDeviceId}/#`,
     ]).subscribe({
       next: (msg: any) =>
         this.handleMessage(msg.value.topicSymbol, msg.value.bytes),
