@@ -121,23 +121,23 @@ namespace IrrigationSystem
     PropertyFormat Vacon100ControllerDefinition::getPropertyFormat(uint16_t id) const
     {
         static constexpr PropertyFormat propertyFormats[] = {
-            {PropertyValueType::BooleanFlags, {.booleanCount = 1u}},   // available
-            {PropertyValueType::BooleanFlags, {.booleanCount = 1u}},   // motorOn
-            {PropertyValueType::BooleanFlags, {.booleanCount = 8u}},   // status
-            {PropertyValueType::UnsignedInt, {.mul = {10, -2}}, "%"},  // actualSpeed
-            {PropertyValueType::UnsignedInt, {.mul = {10, -2}}, "Hz"}, // outputFrequency
-            {PropertyValueType::UnsignedInt, {.mul = {1, 1}}, "rpm"},  // motorSpeed
-            {PropertyValueType::UnsignedInt, {.mul = {10, -1}}, "A"},  // motorCurrent
-            {PropertyValueType::UnsignedInt, {.mul = {10, -2}}, "%"},  // motorTorque
-            {PropertyValueType::UnsignedInt, {.mul = {10, -2}}, "%"},  // motorPower
-            {PropertyValueType::UnsignedInt, {.mul = {10, -1}}, "V"},  // motorVoltage
-            {PropertyValueType::UnsignedInt, {.mul = {1, 1}}, "V"},    // dcLinkVoltage
-            {PropertyValueType::UnsignedInt, {.mul = {1, 1}}},         // activeFaultCode
-            {PropertyValueType::UnsignedInt, {.mul = {1, 1}}},         // feedbackPressure
-            {PropertyValueType::SignedInt, {.mul = {10, -1}}, "C"},    // driveTemp
-            {PropertyValueType::UnsignedInt, {.mul = {10, -1}}, "%"},  // motorTemp
-            {PropertyValueType::UnsignedInt, {.mul = {1, 1}}, "kWh"},  // energyUsed
-            {PropertyValueType::UnsignedInt, {.mul = {60, -2}}, "h"}   // runTime
+            {PropertyValueType::BooleanFlags, {.booleanCount = 1u}},    // available
+            {PropertyValueType::BooleanFlags, {.booleanCount = 1u}},    // motorOn
+            {PropertyValueType::BooleanFlags, {.booleanCount = 8u}},    // status
+            {PropertyValueType::UnsignedInt, {.mul = {10, -2}}, "%"},   // actualSpeed
+            {PropertyValueType::UnsignedInt, {.mul = {10, -2}}, "Hz"},  // outputFrequency
+            {PropertyValueType::UnsignedInt, {.mul = {1, 1}}, "rpm"},   // motorSpeed
+            {PropertyValueType::UnsignedInt, {.mul = {10, -1}}, "A"},   // motorCurrent
+            {PropertyValueType::UnsignedInt, {.mul = {10, -2}}, "%"},   // motorTorque
+            {PropertyValueType::UnsignedInt, {.mul = {10, -2}}, "%"},   // motorPower
+            {PropertyValueType::UnsignedInt, {.mul = {10, -1}}, "V"},   // motorVoltage
+            {PropertyValueType::UnsignedInt, {.mul = {1, 1}}, "V"},     // dcLinkVoltage
+            {PropertyValueType::UnsignedInt, {.mul = {1, 1}}},          // activeFaultCode
+            {PropertyValueType::UnsignedInt, {.mul = {10, -2}}, "kPa"}, // feedbackPressure
+            {PropertyValueType::SignedInt, {.mul = {10, -1}}, "C"},     // driveTemp
+            {PropertyValueType::UnsignedInt, {.mul = {10, -1}}, "%"},   // motorTemp
+            {PropertyValueType::UnsignedInt, {.mul = {1, 1}}, "kWh"},   // energyUsed
+            {PropertyValueType::UnsignedInt, {.mul = {60, -2}}, "h"}    // runTime
         };
         int index = getPropertyIndex(id);
         if (index >= 0)
