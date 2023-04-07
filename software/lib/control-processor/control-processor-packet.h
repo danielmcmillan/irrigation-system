@@ -21,6 +21,8 @@ namespace IrrigationSystem
             ConfigAdd = 0x11,
             ConfigEnd = 0x12,
 
+            GetState = 0x15,
+
             // Properties
             PropertyRead = 0x20,
             PropertySet = 0x21,

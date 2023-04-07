@@ -4,7 +4,7 @@
 #include <inttypes.h>
 #include "controller-manager.h"
 #include "events/event-history.h"
-#include "state.h"
+#include "control-processor-state.h"
 
 namespace IrrigationSystem
 {
@@ -32,6 +32,11 @@ namespace IrrigationSystem
      * Complete configuration and start the controller.
      */
     int configEnd() const;
+
+    /**
+     * Get the current state of the control processor.
+     */
+    int getState(uint8_t *valueOut, size_t *valueSizeOut) const;
 
     /**
      * Read the value of a property.

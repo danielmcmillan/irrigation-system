@@ -4,7 +4,7 @@
 #include "controllers/controller-builder.h"
 #include "control-i2c-slave.h"
 #include "message-handler.h"
-#include "state.h"
+#include "control-processor-state.h"
 
 using namespace IrrigationSystem;
 
@@ -40,6 +40,7 @@ void loop()
         if (controllers.beginControllers())
         {
             state.status = ControlProcessorStatus::Ready;
+            events.handleEvent(EventType::ready, 0, nullptr);
         }
         else
         {

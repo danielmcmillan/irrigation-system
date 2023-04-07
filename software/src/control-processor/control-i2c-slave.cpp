@@ -80,6 +80,8 @@ int ControlI2cSlave::handleMessage(ControlProcessorPacket::MessageType type, con
     case ControlProcessorPacket::MessageType::ConfigAdd:
         *responseDataSizeOut = 0;
         return this->handler.configAdd(data[0], data[1], &data[2]);
+    case ControlProcessorPacket::MessageType::GetState:
+        return this->handler.getState(responseDataOut, responseDataSizeOut);
     case ControlProcessorPacket::MessageType::PropertyRead:
         return this->handler.propertyRead(data[0], read16LE(&data[1]), responseDataOut, responseDataSizeOut);
     case ControlProcessorPacket::MessageType::PropertySet:

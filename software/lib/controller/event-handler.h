@@ -12,6 +12,7 @@ namespace IrrigationSystem
             generalInfo = 0x40,
             started = 0x41,
             configured = 0x42,
+            ready = 0x43,
             propertyValueChanged = 0x48,
             propertyDesiredValueChanged = 0x49,
             generalWarning = 0x80,

@@ -39,6 +39,13 @@ int IrrigationSystem::ControlProcessorMessageHandler::configEnd() const
     return 0;
 }
 
+int IrrigationSystem::ControlProcessorMessageHandler::getState(uint8_t *valueOut, size_t *valueSizeOut) const
+{
+    valueOut[0] = (uint8_t)state.status;
+    *valueSizeOut = 1;
+    return 0;
+}
+
 int ControlProcessorMessageHandler::propertyRead(uint8_t controllerId, uint16_t propertyId, uint8_t *valueOut, size_t *valueSizeOut) const
 {
     if (state.status == ControlProcessorStatus::Unconfigured)

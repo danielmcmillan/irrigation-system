@@ -126,6 +126,7 @@ namespace IrrigationSystem
         {
         case MessageType::ConfigStart:
         case MessageType::ConfigEnd:
+        case MessageType::GetState:
             if (dataSize != 0)
             {
                 return 1;
