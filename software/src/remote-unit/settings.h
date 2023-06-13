@@ -7,4 +7,4 @@
  * Unique 16 bit identifier for a remote unit.
  * Each remote unit should have a unique value.
  */
-#define NODE_ID 0x00ff
+#define NODE_ID 0x0013

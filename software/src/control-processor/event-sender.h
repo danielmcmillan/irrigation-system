@@ -1,20 +1,21 @@
-#ifndef _CONTROL_NET_HOST_EVENTS
-#define _CONTROL_NET_HOST_EVENTS
-#include "control-i2c-master.h"
+#ifndef _CONTROL_PROCESSOR_EVENT_SENDER
+#define _CONTROL_PROCESSOR_EVENT_SENDER
+#include "events/event-history.h"
 #include "mqtt-client.h"
 #include "error-handler.h"
+#include "controllers.h"
 
 typedef std::function<bool(const uint8_t *data, size_t size)> PublishEventData;
 
-class Events
+class EventSender
 {
 public:
-    Events(const ControlI2cMaster &control, PublishEventData publishEventData, const ErrorHandler &errorHandler);
+    EventSender(const EventHistory &events, PublishEventData publishEventData, const ErrorHandler &errorHandler);
     void reset();
     bool loop();
 
 private:
-    const ControlI2cMaster &control;
+    const EventHistory &events;
     PublishEventData publishEventData;
     const ErrorHandler &errorHandler;
     uint16_t lastEvent;

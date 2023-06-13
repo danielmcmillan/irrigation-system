@@ -31,6 +31,20 @@ namespace IrrigationSystem
         return nullptr;
     }
 
+    unsigned int ControllerManager::getControllerCount() const
+    {
+        return numControllers;
+    }
+
+    uint8_t ControllerManager::getControllerIdAt(uint8_t index) const
+    {
+        if (index < numControllers)
+        {
+            return controllers[index].controllerId;
+        }
+        return 0;
+    }
+
     void ControllerManager::setEventHandler(EventHandler &handler)
     {
         for (unsigned int i = 0; i < numControllers; ++i)

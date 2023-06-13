@@ -4,8 +4,8 @@
 #include <EEPROM.h>
 #include "crc16.h"
 
-Config::Config(const ControlI2cMaster &control, IrrigationSystem::ControllerDefinitionManager &definitions, const ErrorHandler &errorHandler)
-    : control(control), definitions(definitions), errorHandler(errorHandler), pendingRead(true), pendingWrite(false), pendingApply(false), configData{0}, configLength(0), lastAttempt(0)
+Config::Config(Controllers &control, const ErrorHandler &errorHandler)
+    : control(control), errorHandler(errorHandler), pendingRead(true), pendingWrite(false), pendingApply(false), configData{0}, configLength(0), lastAttempt(0)
 {
 }
 
@@ -32,7 +32,7 @@ size_t Config::getConfig(uint8_t *dataOut) const
 
 bool Config::loop()
 {
-    if (control.getLastStatus() == ControlProcessorStatus::Unconfigured)
+    if (control.getStatus() == ControllersStatus::Unconfigured)
     {
         pendingApply = true;
     }
@@ -124,13 +124,12 @@ bool Config::writeConfig()
 bool Config::applyConfig()
 {
     LOG_INFO("[Config] Applying");
-    // Reset control processor and local definitions
+    // Reset controllers
     if (!control.configStart())
     {
         return false;
     }
-    definitions.resetControllerDefinitions();
-    // Apply each value from configData to control processor and local definitions
+    // Apply each value from configData to controllers
     for (int i = 0; i < configLength;)
     {
         uint8_t nextLength = configData[i];
@@ -141,20 +140,20 @@ bool Config::applyConfig()
         }
         uint8_t controllerId = configData[i + 1];
         uint8_t configType = configData[i + 2];
-        IrrigationSystem::ControllerDefinition *definition = definitions.getControllerDefinition(controllerId);
-        if (definition->getConfigLength(configType) != nextLength - 3)
-        {
-            errorHandler.handleError(ErrorComponent::Config, 3, "Config data length doesn't match config type");
-            return false;
-        }
+        // TODO validate in configAdd function?
+        // const IrrigationSystem::ControllerDefinition *definition = control.getDefinitions().getControllerDefinition(controllerId);
+        // if (definition->getConfigLength(configType) != nextLength - 3)
+        // {
+        //     errorHandler.handleError(ErrorComponent::Config, 3, "Config data length doesn't match config type");
+        //     return false;
+        // }
         if (!control.configAdd(&configData[i + 1], nextLength - 1))
         {
             return false;
         }
-        definition->configure(configType, &configData[i + 3]);
         i += nextLength;
     }
-    // Tell control processor to start with the provided configuration
+    // Tell controllers to start with the provided configuration
     if (!control.configEnd())
     {
         return false;

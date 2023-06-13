@@ -8,10 +8,13 @@ extern "C"
 #include "remote-unit-packet.h"
 #include "binary-util.h"
 
-#define RF_ENABLE_PIN 6
+#define SERIAL_OBJ Serial1
+#define SERIAL_RX 18 // UART RX
+#define SERIAL_TX 19 // UART TX
+#define RF_ENABLE_PIN 5
 #define RF_MODULE_RESPONSE_TIMEOUT 2000
 #define RF_FREQUENCY (434l * 1l << 14) // 434 MHz
-#define RF_TX_POWER 5
+#define RF_TX_POWER 7
 
 // Time to wait for data on Serial after sending a request to a remote unit
 #define REMOTE_UNIT_TIMEOUT 8000
@@ -47,6 +50,7 @@ namespace IrrigationSystem
 
     bool RemoteUnitController::begin()
     {
+        SERIAL_OBJ.begin(9600, SERIAL_8N1, SERIAL_RX, SERIAL_TX);
         // Enable RF module
         pinMode(RF_ENABLE_PIN, OUTPUT);
         digitalWrite(RF_ENABLE_PIN, LOW);
@@ -204,20 +208,20 @@ namespace IrrigationSystem
             packetSize += 2;
 
             // Send request packet
-            if (Serial.write(buffer, packetSize) != packetSize)
+            if (SERIAL_OBJ.write(buffer, packetSize) != packetSize)
             {
                 return 2;
             }
 
             // Read response packet
-            Serial.setTimeout(REMOTE_UNIT_TIMEOUT);
-            size_t read = Serial.readBytes(buffer, 1);
+            SERIAL_OBJ.setTimeout(REMOTE_UNIT_TIMEOUT);
+            size_t read = SERIAL_OBJ.readBytes(buffer, 1);
             if (read == 0)
             {
                 return 3;
             }
-            Serial.setTimeout(100);
-            read = Serial.readBytes(buffer + 1, PACKET_BUFFER_SIZE - 1);
+            SERIAL_OBJ.setTimeout(100);
+            read = SERIAL_OBJ.readBytes(buffer + 1, PACKET_BUFFER_SIZE - 1);
 
             // Handle response packet
             packetSize = RemoteUnitPacket::getPacket(buffer, read + 1, &packet);
@@ -243,7 +247,7 @@ namespace IrrigationSystem
             memcpy(&responseOut[1], responsePacketData, responsePacketDataSize);
             *responseSizeOut = 1 + responsePacketDataSize;
 
-            Serial.flush();
+            SERIAL_OBJ.flush();
             return 0;
         }
         else
@@ -320,7 +324,7 @@ namespace IrrigationSystem
 
     bool RemoteUnitController::applyRfConfig()
     {
-        Serial.setTimeout(RF_MODULE_RESPONSE_TIMEOUT);
+        SERIAL_OBJ.setTimeout(RF_MODULE_RESPONSE_TIMEOUT);
         YL800TReadWriteAllParameters params = {
             .serialBaudRate = YL_800T_BAUD_RATE_9600,
             .serialParity = YL_800T_PARITY_NONE,
@@ -335,13 +339,13 @@ namespace IrrigationSystem
             .breathTime = YL_800T_BREATH_TIME_32MS};
         uint8_t message[25] = {0};
         uint8_t length = yl800tSendWriteAllParameters(&params, message);
-        while (Serial.available())
+        while (SERIAL_OBJ.available())
         {
-            Serial.read();
+            SERIAL_OBJ.read();
         }
-        Serial.write(message, length);
-        Serial.flush();
-        Serial.readBytes(message, 25);
+        SERIAL_OBJ.write(message, length);
+        SERIAL_OBJ.flush();
+        SERIAL_OBJ.readBytes(message, 25);
         return yl800tReceiveWriteAllParameters(message) == 0;
     }
 
@@ -386,7 +390,7 @@ namespace IrrigationSystem
         packetSize += 2;
 
         // Send request packet
-        if (Serial.write(buffer, packetSize) != packetSize)
+        if (SERIAL_OBJ.write(buffer, packetSize) != packetSize)
         {
             notifyError(0x02, remoteUnit.id);
             LOG_ERROR("Failed to write to Serial");
@@ -395,16 +399,16 @@ namespace IrrigationSystem
 
         // Read response packet
         // All of the data should arrive at once, so apply timeout only to first byte
-        Serial.setTimeout(REMOTE_UNIT_TIMEOUT);
-        size_t read = Serial.readBytes(buffer, 1);
+        SERIAL_OBJ.setTimeout(REMOTE_UNIT_TIMEOUT);
+        size_t read = SERIAL_OBJ.readBytes(buffer, 1);
         if (read == 0)
         {
             notifyError(0x03, remoteUnit.id);
             LOG_ERROR("Timeout waiting for response on Serial");
             return false;
         }
-        Serial.setTimeout(100);
-        read = Serial.readBytes(buffer + 1, PACKET_BUFFER_SIZE - 1);
+        SERIAL_OBJ.setTimeout(100);
+        read = SERIAL_OBJ.readBytes(buffer + 1, PACKET_BUFFER_SIZE - 1);
 
         // Handle response packet
         packetSize = RemoteUnitPacket::getPacket(buffer, read + 1, &packet);
@@ -437,7 +441,7 @@ namespace IrrigationSystem
             return false;
         }
 
-        Serial.flush();
+        SERIAL_OBJ.flush();
         return true;
     }
 

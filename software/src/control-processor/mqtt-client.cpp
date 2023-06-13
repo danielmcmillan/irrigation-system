@@ -118,11 +118,12 @@ void MqttClient::queueMessage(MQTTClient *client, char topic[], char bytes[], in
     else
     {
         char *segment = topic + prefixLength;
-        if (strcmp(segment, "resetController") == 0)
-        {
-            type = IncomingMessageType::ResetController;
-        }
-        else if (strcmp(segment, "setConfig") == 0)
+        // if (strcmp(segment, "resetController") == 0)
+        // {
+        //     type = IncomingMessageType::ResetController;
+        // }
+        // else
+        if (strcmp(segment, "setConfig") == 0)
         {
             type = IncomingMessageType::SetConfig;
         }

@@ -13,6 +13,9 @@ namespace IrrigationSystem
          * Returns nullptr if there is no such controller definition.
          */
         virtual const ControllerDefinition *getControllerDefinition(uint8_t controllerId) const = 0;
+
+        virtual unsigned int getControllerCount() const = 0;
+        virtual uint8_t getControllerIdAt(uint8_t index) const = 0;
     };
 }
 

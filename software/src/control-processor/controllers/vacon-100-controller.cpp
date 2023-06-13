@@ -4,10 +4,11 @@
 #include "logging.h"
 #include "binary-util.h"
 
-#define MAX485_RE A3
-#define MAX485_DE A2
-#define MAX485_RO 9
-#define MAX485_DI 8
+#define SERIAL_OBJ Serial2
+#define MAX485_RE 2
+#define MAX485_DE 4
+#define MAX485_RO 16 // UART RX
+#define MAX485_DI 17 // UART TX
 // Number of consecutive errors beyond which connection to Vacon is considered unavailable
 #define MAX_ERROR_COUNT 2
 
@@ -22,13 +23,11 @@ namespace IrrigationSystem
 {
     Vacon100Controller::Vacon100Controller(uint8_t controllerId) : controllerId(controllerId),
                                                                    definition(),
-                                                                   serial(MAX485_RO, MAX485_DI),
-                                                                   vacon(serial, MAX485_RE, MAX485_DE, MAX485_DI),
+                                                                   vacon(SERIAL_OBJ, MAX485_RE, MAX485_DE, MAX485_DI),
                                                                    values(),
                                                                    desiredMotorOn(false),
                                                                    desiredMotorOnIndeterminate(false),
                                                                    lastUpdateTime(0),
-                                                                   serialStarted(false),
                                                                    idMapUpdated(false),
                                                                    errorCount(255),
                                                                    eventHandler(nullptr)
@@ -47,11 +46,7 @@ namespace IrrigationSystem
 
     bool Vacon100Controller::begin()
     {
-        if (!serialStarted)
-        {
-            serial.begin(9600);
-            serialStarted = true;
-        }
+        SERIAL_OBJ.begin(9600, SERIAL_8N1, MAX485_RO, MAX485_DI);
         if (!vacon.begin())
         {
             notifyError(0x00);
@@ -75,11 +70,7 @@ namespace IrrigationSystem
     {
         vacon.end();
         idMapUpdated = false;
-        if (serialStarted)
-        {
-            serial.end();
-            serialStarted = false;
-        }
+        SERIAL_OBJ.end();
         definition.reset();
 
         desiredMotorOn = false;

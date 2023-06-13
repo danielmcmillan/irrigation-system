@@ -9,7 +9,6 @@
 
 enum class IncomingMessageType
 {
-    ResetController,
     SetConfig,
     GetConfig,
     GetProperties,

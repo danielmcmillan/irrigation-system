@@ -19,12 +19,12 @@ namespace IrrigationSystem
         return nullptr;
     }
 
-    unsigned int ControllerDefinitionManager::getControllerCount()
+    unsigned int ControllerDefinitionManager::getControllerCount() const
     {
         return numDefinitions;
     }
 
-    uint8_t ControllerDefinitionManager::getControllerIdAt(uint8_t index)
+    uint8_t ControllerDefinitionManager::getControllerIdAt(uint8_t index) const
     {
         if (index < numDefinitions)
         {

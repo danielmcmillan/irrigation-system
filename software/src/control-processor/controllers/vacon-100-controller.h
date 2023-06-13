@@ -4,7 +4,6 @@
 #include "controller-definition.h"
 #include "vacon-100-modbus-client.h"
 #include "vacon-100-controller-definition.h"
-#include <NeoSWSerial.h>
 
 namespace IrrigationSystem
 {
@@ -29,14 +28,12 @@ namespace IrrigationSystem
     private:
         uint8_t controllerId;
         Vacon100ControllerDefinition definition;
-        NeoSWSerial serial;
         Vacon100Client vacon;
         Vacon100Data values;
         bool desiredMotorOn;
         bool desiredMotorOnIndeterminate;
         uint8_t lastUpdateTime;
 
-        bool serialStarted;
         bool idMapUpdated;
         uint8_t errorCount;
         EventHandler *eventHandler;

@@ -15,8 +15,8 @@ const char *getErrorComponentString(ErrorComponent component)
         return "MQTT";
     case ErrorComponent::Config:
         return "Config";
-    case ErrorComponent::ControlI2c:
-        return "ControlI2c";
+    case ErrorComponent::Controller:
+        return "Controller";
     default:
         return "";
     }
