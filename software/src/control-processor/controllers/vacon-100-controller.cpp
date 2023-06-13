@@ -12,6 +12,8 @@
 // Number of consecutive errors beyond which connection to Vacon is considered unavailable
 #define MAX_ERROR_COUNT 2
 
+// Time in 2^14 milliseconds between writing ID map
+#define VACON_ID_MAP_UPDATE_INTERVAL 40 // ~11 minutes
 // Time in 2^14 milliseconds between reading values
 #define VACON_UPDATE_INTERVAL 4 // ~1 minute
 // Whether to start with initial determinate state of off
@@ -30,6 +32,7 @@ namespace IrrigationSystem
                                                                    desiredMotorOn(false),
                                                                    motorRelayOn(false),
                                                                    desiredMotorOnIndeterminate(false),
+                                                                   lastIdMapUpdate(0),
                                                                    lastUpdateTime(0),
                                                                    idMapUpdated(false),
                                                                    errorCount(255),
@@ -56,16 +59,6 @@ namespace IrrigationSystem
             LOG_ERROR("Failed to start Vacon 100 client");
             return false;
         }
-        if (!idMapUpdated)
-        {
-            if (!vacon.initIdMapping())
-            {
-                notifyError(0x01);
-                LOG_ERROR("Failed to set up Vacon 100 ID mappings");
-                return false;
-            }
-            idMapUpdated = true;
-        }
 #ifdef VACON_RELAY_CONTROL_PIN
         pinMode(VACON_RELAY_CONTROL_PIN, OUTPUT);
 #endif
@@ -81,6 +74,7 @@ namespace IrrigationSystem
 
         desiredMotorOn = motorRelayOn;
         desiredMotorOnIndeterminate = !VACON_OFF_ON_STARTUP;
+        lastIdMapUpdate = -VACON_ID_MAP_UPDATE_INTERVAL - 1;
         lastUpdateTime = -VACON_UPDATE_INTERVAL - 1;
         errorCount = 255;
         values = {};
@@ -187,11 +181,25 @@ namespace IrrigationSystem
 
     void Vacon100Controller::update()
     {
-        // Read values if update is due or current value doesn't match desired
         uint8_t now = millis() >> 14;
-        if (
-            (!desiredMotorOnIndeterminate && getPropertyValue(Vacon100ControllerProperties::motorOn) != desiredMotorOn) ||
-            (uint8_t)(now - lastUpdateTime) > VACON_UPDATE_INTERVAL)
+        // Set Vacon ID map periodically
+        if ((uint8_t)(now - lastIdMapUpdate) > VACON_ID_MAP_UPDATE_INTERVAL)
+        {
+            lastIdMapUpdate = now;
+            if (vacon.initIdMapping())
+            {
+                idMapUpdated = true;
+            }
+            else
+            {
+                notifyError(0x01);
+                LOG_ERROR("Failed to set up Vacon 100 ID mappings");
+            }
+        }
+
+        // Read values if update is due or current value doesn't match desired
+        if (idMapUpdated && ((!desiredMotorOnIndeterminate && getPropertyValue(Vacon100ControllerProperties::motorOn) != desiredMotorOn) ||
+                             (uint8_t)(now - lastUpdateTime) > VACON_UPDATE_INTERVAL))
         {
             Vacon100Data oldValues = values;
             if (vacon.readInputRegisters(&values))
@@ -235,7 +243,7 @@ namespace IrrigationSystem
         }
 #else
         // Write value if current value doesn't match desired
-        if (!desiredMotorOnIndeterminate && getPropertyValue(Vacon100ControllerProperties::motorOn) != desiredMotorOn)
+        if (idMapUpdated && !desiredMotorOnIndeterminate && getPropertyValue(Vacon100ControllerProperties::motorOn) != desiredMotorOn)
         {
             bool successful = false;
             for (int attempt = 0; attempt <= MAX_ERROR_COUNT; ++attempt)

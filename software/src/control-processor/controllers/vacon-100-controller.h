@@ -33,6 +33,7 @@ namespace IrrigationSystem
         bool desiredMotorOn;
         bool motorRelayOn;
         bool desiredMotorOnIndeterminate;
+        uint8_t lastIdMapUpdate;
         uint8_t lastUpdateTime;
 
         bool idMapUpdated;
