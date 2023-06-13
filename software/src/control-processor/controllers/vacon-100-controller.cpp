@@ -18,6 +18,8 @@
 #define VACON_OFF_ON_STARTUP true
 // Whether to force control when Fieldbus is not the configured control place
 #define VACON_FORCE_CONTROL false
+// Defined if motor run state should be controlled via relay rather than Modbus
+#define VACON_RELAY_CONTROL_PIN 23
 
 namespace IrrigationSystem
 {
@@ -26,6 +28,7 @@ namespace IrrigationSystem
                                                                    vacon(SERIAL_OBJ, MAX485_RE, MAX485_DE, MAX485_DI),
                                                                    values(),
                                                                    desiredMotorOn(false),
+                                                                   motorRelayOn(false),
                                                                    desiredMotorOnIndeterminate(false),
                                                                    lastUpdateTime(0),
                                                                    idMapUpdated(false),
@@ -63,6 +66,9 @@ namespace IrrigationSystem
             }
             idMapUpdated = true;
         }
+#ifdef VACON_RELAY_CONTROL_PIN
+        pinMode(VACON_RELAY_CONTROL_PIN, OUTPUT);
+#endif
         return true;
     }
 
@@ -73,7 +79,7 @@ namespace IrrigationSystem
         SERIAL_OBJ.end();
         definition.reset();
 
-        desiredMotorOn = false;
+        desiredMotorOn = motorRelayOn;
         desiredMotorOnIndeterminate = !VACON_OFF_ON_STARTUP;
         lastUpdateTime = -VACON_UPDATE_INTERVAL - 1;
         errorCount = 255;
@@ -93,6 +99,13 @@ namespace IrrigationSystem
         }
         else
         {
+#ifdef VACON_RELAY_CONTROL_PIN
+            // Motor run value reflects current state of relay rather than value reported from modbus
+            if (id == Vacon100ControllerProperties::motorOn)
+            {
+                return motorRelayOn;
+            }
+#endif
             return this->getPropertyValueFromValues(values, id);
         }
     }
@@ -212,6 +225,15 @@ namespace IrrigationSystem
             }
         }
 
+#ifdef VACON_RELAY_CONTROL_PIN
+        digitalWrite(VACON_RELAY_CONTROL_PIN, desiredMotorOn);
+        if (desiredMotorOn != motorRelayOn)
+        {
+            motorRelayOn = desiredMotorOn;
+            // Motor run value reflects current state of relay rather than value reported from modbus
+            eventHandler->handlePropertyValueChanged(controllerId, Vacon100ControllerProperties::motorOn, 1, motorRelayOn);
+        }
+#else
         // Write value if current value doesn't match desired
         if (!desiredMotorOnIndeterminate && getPropertyValue(Vacon100ControllerProperties::motorOn) != desiredMotorOn)
         {
@@ -241,6 +263,7 @@ namespace IrrigationSystem
                 }
             }
         }
+#endif
     }
 
     uint32_t Vacon100Controller::getPropertyValueFromValues(const Vacon100Data &values, uint16_t id) const

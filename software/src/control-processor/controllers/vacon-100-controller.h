@@ -31,6 +31,7 @@ namespace IrrigationSystem
         Vacon100Client vacon;
         Vacon100Data values;
         bool desiredMotorOn;
+        bool motorRelayOn;
         bool desiredMotorOnIndeterminate;
         uint8_t lastUpdateTime;
 
