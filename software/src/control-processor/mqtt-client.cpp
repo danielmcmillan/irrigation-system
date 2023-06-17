@@ -143,6 +143,10 @@ void MqttClient::queueMessage(MQTTClient *client, char topic[], char bytes[], in
         {
             type = IncomingMessageType::Command;
         }
+        else if (strcmp(segment, "update") == 0)
+        {
+            type = IncomingMessageType::Update;
+        }
         else
         {
             type = IncomingMessageType::Invalid;

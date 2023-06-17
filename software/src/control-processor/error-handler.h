@@ -7,7 +7,8 @@ enum class ErrorComponent : uint8_t
     Wifi,
     Mqtt,
     Config,
-    Controller
+    Controller,
+    Update
 };
 
 typedef std::function<bool(const uint8_t *data, size_t size)> PublishErrorData;

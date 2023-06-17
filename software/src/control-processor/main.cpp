@@ -2,7 +2,6 @@
 #include "logging.h"
 #include "events/event-history.h"
 #include "controllers.h"
-
 #include "crc16.h"
 #include "binary-util.h"
 #include "controller-definitions-builder.h"
@@ -13,6 +12,7 @@
 #include "config.h"
 #include "error-handler.h"
 #include "controllers/controller-builder.h"
+#include "firmware-update.h"
 
 /**
  * Software revision number.
@@ -203,7 +203,7 @@ void handleMessage(IncomingMessageType type, const uint8_t *payload, int length)
         break;
     case IncomingMessageType::GetConfig:
     {
-        char topic[64];
+        char topic[128];
         sprintf(topic, CONFIG_TOPIC, length < TOPIC_CLIENT_MAX_LENGTH ? length : TOPIC_CLIENT_MAX_LENGTH, payload);
         uint8_t configData[CONFIG_MAX_SIZE];
         size_t configLength = config.getConfig(configData);
@@ -217,7 +217,8 @@ void handleMessage(IncomingMessageType type, const uint8_t *payload, int length)
         controllers.setPropertyValue(payload, length);
         break;
     case IncomingMessageType::Command:
-        uint8_t commandResponse[32]; // TODO properly define max command payload sizes
+    {
+        uint8_t commandResponse[128]; // TODO properly define max command payload sizes
         size_t responseSize = 0;
         if (controllers.runControllerCommand(payload, length, commandResponse, &responseSize))
         {
@@ -228,6 +229,18 @@ void handleMessage(IncomingMessageType type, const uint8_t *payload, int length)
         mqtt.publish(COMMAND_RESULT_TOPIC, commandResponse, responseSize);
 
         break;
+    }
+    case IncomingMessageType::Update:
+    {
+        char url[128];
+        if (length > 0)
+        {
+            memcpy(url, payload, length);
+            url[length] = 0;
+            updateFirmware(url, errorHandler);
+        }
+        break;
+    }
     }
 }
 
