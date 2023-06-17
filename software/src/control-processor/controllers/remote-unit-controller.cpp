@@ -18,8 +18,8 @@ extern "C"
 
 // Time to wait for data on Serial after sending a request to a remote unit
 #define REMOTE_UNIT_TIMEOUT 8000
-// Number of times to retry communication with a rmeote unit before considering it unavailable
-#define RETRY_COUNT 2
+// Number of times to retry communication with a remote unit before considering it unavailable
+#define RETRY_COUNT 1
 // Time in 2^14 milliseconds between heartbeats for each remote units
 #define REMOTE_UNIT_UPDATE_INTERVAL 73 // ~20 minutes
 // Time in 2^14 milliseconds between heartbeats for remote units with active solenoids
@@ -295,7 +295,7 @@ namespace IrrigationSystem
         for (int i = 0; i < definition.getRemoteUnitCount(); ++i)
         {
             uint8_t updateInterval = remoteUnits[i].solenoidOn == 0 ? REMOTE_UNIT_UPDATE_INTERVAL : REMOTE_UNIT_ACTIVE_UPDATE_INTERVAL;
-            // Correctly handle overflow of the time values
+            // Compare time since last updated, correctly handling overflow of the time values
             if ((uint8_t)(now - remoteUnits[i].lastUpdated) > updateInterval)
             {
                 bool succeeded = false;
@@ -309,6 +309,8 @@ namespace IrrigationSystem
                 }
                 setRemoteUnitAvailable(i, succeeded);
                 remoteUnits[i].lastUpdated = millis() >> 14;
+                // Leave other remote units for next update interval
+                break;
             }
         }
     }
