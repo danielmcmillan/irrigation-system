@@ -34,6 +34,7 @@ import { IrrigationProperty } from "../irrigation/property";
 import { ConfigEditor } from "./ConfigEditor";
 import { runInAction } from "mobx";
 import { Vacon100Tool } from "./Vacon100Tool";
+import { RemoteUnitTool } from "./RemoteUnitTool";
 
 const LogEntryCard = ({ entry }: { entry: LogEntry }) => {
   const variation = (
@@ -245,7 +246,9 @@ const App = observer(({ icu }: { icu: IrrigationStore }) => {
     };
   }, []);
 
-  const [openPage, setOpenPage] = useState<"config" | "vaconTool" | null>(null);
+  const [openPage, setOpenPage] = useState<
+    "config" | "vaconTool" | "remoteUnitTool" | null
+  >(null);
 
   if (openPage === "config") {
     return (
@@ -279,6 +282,16 @@ const App = observer(({ icu }: { icu: IrrigationStore }) => {
                   value >> 8,
                 ]);
           icu.requestControllerCommand(2, command.buffer);
+        }}
+        onClose={() => setOpenPage(null)}
+        result={icu.controllerCommandResult}
+      />
+    );
+  } else if (openPage === "remoteUnitTool") {
+    return (
+      <RemoteUnitTool
+        onRunRequest={(commandData) => {
+          icu.requestControllerCommand(4, commandData);
         }}
         onClose={() => setOpenPage(null)}
         result={icu.controllerCommandResult}
@@ -333,6 +346,16 @@ const App = observer(({ icu }: { icu: IrrigationStore }) => {
             }}
           >
             Vacon100 Tool
+          </Button>
+          <Button
+            onClick={() => {
+              runInAction(() => {
+                icu.controllerCommandResult = undefined;
+              });
+              setOpenPage("remoteUnitTool");
+            }}
+          >
+            Remote Unit Tool
           </Button>
         </ButtonGroup>
       </TabItem>
