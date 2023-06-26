@@ -1,0 +1,97 @@
+service: irrigation
+frameworkVersion: "3"
+
+provider:
+  name: aws
+  versionFunctions: false
+  runtime: nodejs18.x
+  region: ap-southeast-2
+  stackTags:
+    project: irrigation
+  environment:
+    NODE_OPTIONS: "--enable-source-maps"
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action: sqs:SendMessage
+          Resource: !GetAtt StorageQueue.Arn
+
+plugins:
+  - serverless-esbuild
+
+custom:
+  esbuild:
+    bundle: true
+    minify: true
+    sourcemap: linked
+
+functions:
+  IotListener:
+    handler: src/index.handler
+    environment:
+      STORAGE_QUEUE_URL: !Ref StorageQueue
+
+resources:
+  Parameters:
+    ErrorTopicName:
+      Type: String
+      Default: general-alarms
+
+  Resources:
+    IoTRule:
+      Type: AWS::IoT::TopicRule
+      Properties:
+        RuleName: "IrrigationOutput_${sls:stage}"
+        TopicRulePayload:
+          AwsIotSqlVersion: "2016-03-23"
+          Sql: "SELECT encode(*, 'base64') as data, timestamp() as time, topic(2) as clientId, topic(3) as deviceId, topic(4) as type FROM 'icu-out/#'"
+          Actions:
+            - Lambda:
+                FunctionArn: !GetAtt IotListenerLambdaFunction.Arn
+          ErrorAction:
+            Sns:
+              TargetArn: !Sub "arn:aws:sns:${AWS::Region}:${AWS::AccountId}:${ErrorTopicName}"
+              RoleArn: !GetAtt ErrorActionRole.Arn
+              MessageFormat: RAW
+
+    IoTLambdaPermission:
+      Type: AWS::Lambda::Permission
+      Properties:
+        Action: lambda:InvokeFunction
+        FunctionName: !Ref IotListenerLambdaFunction
+        Principal: iot.amazonaws.com
+
+    ErrorActionRole:
+      Type: AWS::IAM::Role
+      Properties:
+        RoleName: irrigation-${sls:stage}-ErrorNotifyRole
+        AssumeRolePolicyDocument:
+          Version: "2012-10-17"
+          Statement:
+            Effect: Allow
+            Principal:
+              Service: iot.amazonaws.com
+            Action: sts:AssumeRole
+        Policies:
+          - PolicyName: PublishToErrorTopic
+            PolicyDocument:
+              Version: "2012-10-17"
+              Statement:
+                - Effect: Allow
+                  Action: sns:Publish
+                  Resource: !Sub "arn:aws:sns:${AWS::Region}:${AWS::AccountId}:${ErrorTopicName}"
+
+    StorageQueue:
+      Type: AWS::SQS::Queue
+      Properties:
+        QueueName: irrigation-${sls:stage}-StorageQueue
+        MessageRetentionPeriod: 1209600
+# resources not included:
+
+# thing https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-iot-thing.html
+# thing policy: permission to connect, publish, subscribe and receive
+# certificate attached to the thing
+
+# identity pool
+# role with policy allowing publish/subscribe
