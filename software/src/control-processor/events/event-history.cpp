@@ -25,7 +25,8 @@ void EventHistory::handleEvent(uint8_t type, uint8_t payloadSize, const uint8_t 
     }
 
     // Write the event data
-    write16LE(&this->eventHistory[(this->historyStartIndex + this->historyActualSize) % EVENT_HISTORY_SIZE], eventId);
+    this->eventHistory[(this->historyStartIndex + this->historyActualSize) % EVENT_HISTORY_SIZE] = (uint8_t)eventId;
+    this->eventHistory[(this->historyStartIndex + this->historyActualSize + 1) % EVENT_HISTORY_SIZE] = (uint8_t)(eventId >> 8);
     this->eventHistory[(this->historyStartIndex + this->historyActualSize + 2) % EVENT_HISTORY_SIZE] = type;
     this->eventHistory[(this->historyStartIndex + this->historyActualSize + 3) % EVENT_HISTORY_SIZE] = payloadSize;
     // Write payload data
