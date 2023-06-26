@@ -3,8 +3,8 @@ import {
   ConfigEntry,
   ConfigEntryRemoteUnitNode,
   ConfigEntryRemoteUnitSolenoid,
-  serializeConfigEntries,
-  deserializeConfigEntries,
+  serializeConfigEntriesToBinary,
+  deserializeConfigEntriesFromBinary,
 } from "./config";
 
 describe("serializeConfigEntries and deserializeConfigEntries", () => {
@@ -25,15 +25,15 @@ describe("serializeConfigEntries and deserializeConfigEntries", () => {
   ];
 
   test("serializeConfigEntries and deserializeConfigEntries should be inverses", () => {
-    const serialized = serializeConfigEntries(testEntries);
-    const deserialized = deserializeConfigEntries(serialized);
+    const serialized = serializeConfigEntriesToBinary(testEntries);
+    const deserialized = deserializeConfigEntriesFromBinary(serialized);
 
     expect(deserialized).toEqual(testEntries);
   });
 
   test("deserializeConfigEntries should return an empty array for an empty buffer", () => {
     const emptyBuffer = new ArrayBuffer(0);
-    const deserialized = deserializeConfigEntries(emptyBuffer);
+    const deserialized = deserializeConfigEntriesFromBinary(emptyBuffer);
 
     expect(deserialized).toEqual([]);
   });
@@ -44,7 +44,7 @@ describe("serializeConfigEntries and deserializeConfigEntries", () => {
     ]).buffer;
 
     expect(() => {
-      deserializeConfigEntries(invalidLengthData);
+      deserializeConfigEntriesFromBinary(invalidLengthData);
     }).toThrowError("Invalid entry length: 7");
   });
 
@@ -53,7 +53,7 @@ describe("serializeConfigEntries and deserializeConfigEntries", () => {
       .buffer;
 
     expect(() => {
-      deserializeConfigEntries(invalidTypeData);
+      deserializeConfigEntriesFromBinary(invalidTypeData);
     }).toThrowError("Invalid config type: 3");
   });
 });

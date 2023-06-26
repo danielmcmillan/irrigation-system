@@ -1,3 +1,5 @@
+import { ConfigIniParser } from "config-ini-parser";
+
 export enum ConfigType {
   RemoteUnitNode = 0x01,
   RemoteUnitSolenoid = 0x02,
@@ -19,7 +21,9 @@ export type ConfigEntry =
   | ConfigEntryRemoteUnitNode
   | ConfigEntryRemoteUnitSolenoid;
 
-export function serializeConfigEntries(entries: ConfigEntry[]): ArrayBuffer {
+export function serializeConfigEntriesToBinary(
+  entries: ConfigEntry[]
+): ArrayBuffer {
   const buffers: ArrayBuffer[] = [];
 
   for (const entry of entries) {
@@ -59,7 +63,9 @@ export function serializeConfigEntries(entries: ConfigEntry[]): ArrayBuffer {
   return result.buffer;
 }
 
-export function deserializeConfigEntries(data: ArrayBuffer): ConfigEntry[] {
+export function deserializeConfigEntriesFromBinary(
+  data: ArrayBuffer
+): ConfigEntry[] {
   const entries: ConfigEntry[] = [];
   const view = new DataView(data);
   let idx = 0;
@@ -102,6 +108,81 @@ export function deserializeConfigEntries(data: ArrayBuffer): ConfigEntry[] {
     } else {
       throw new Error(`Invalid entry length: ${length}`);
     }
+  }
+
+  return entries;
+}
+
+export function serializeConfigEntriesToIni(entries: ConfigEntry[]): string {
+  const ini = new ConfigIniParser("\n");
+  ini.addSection("Zones");
+
+  for (const entry of entries) {
+    switch (entry.type) {
+      case ConfigType.RemoteUnitNode: {
+        // Ini format assumes Remote Unit ID and node number are equal.
+        break;
+      }
+      case ConfigType.RemoteUnitSolenoid: {
+        ini.set(
+          "Zones",
+          `Z${entry.solenoidId}`,
+          `${entry.remoteUnitId}${String.fromCharCode(
+            65 + entry.solenoidNumber
+          )}`
+        );
+        break;
+      }
+    }
+  }
+
+  return ini.stringify();
+}
+
+export function deserializeConfigEntriesFromIni(
+  iniConfig: string
+): ConfigEntry[] {
+  const ini = new ConfigIniParser("\n");
+  ini.parse(iniConfig);
+
+  const entries: ConfigEntry[] = [];
+  const remoteUnitIds = new Set<number>();
+
+  for (const [key, value] of ini.items("Zones")) {
+    const solenoidId = Number(key.match(/^\s*[zZ]*(\d+)\s*$/)?.at(1));
+    const matchNodeSolenoidSpecifier = value.match(
+      /^\s*(\d+)\s*([a-zA-Z])?\s*$/
+    );
+    const remoteUnitId = Number(matchNodeSolenoidSpecifier?.at(1));
+    const solenoidString =
+      matchNodeSolenoidSpecifier?.at(2)?.toUpperCase() ?? "A";
+    const solenoidNumber = solenoidString.charCodeAt(0) - 65;
+
+    if (
+      Number.isNaN(solenoidId) ||
+      Number.isNaN(remoteUnitId) ||
+      solenoidNumber < 0 ||
+      solenoidNumber > 7
+    ) {
+      throw new Error(`Invalid zone config entry: ${key} = ${value}`);
+    }
+
+    entries.push({
+      controllerId: 4,
+      type: ConfigType.RemoteUnitSolenoid,
+      solenoidId,
+      remoteUnitId,
+      solenoidNumber,
+    });
+    remoteUnitIds.add(remoteUnitId);
+  }
+  for (const remoteUnitId of remoteUnitIds) {
+    entries.push({
+      controllerId: 4,
+      type: ConfigType.RemoteUnitNode,
+      remoteUnitId,
+      nodeNumber: Number.parseInt(remoteUnitId.toString(10), 16), // workaround for nodes being accidentally programmed with hex values
+    });
   }
 
   return entries;

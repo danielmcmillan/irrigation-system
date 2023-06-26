@@ -31,7 +31,7 @@ import {
   logLevels,
 } from "../irrigation/log";
 import { IrrigationProperty } from "../irrigation/property";
-import { ConfigEditor } from "./ConfigEditor";
+import { IniConfigEditor } from "./IniConfigEditor";
 import { runInAction } from "mobx";
 import { Vacon100Tool } from "./Vacon100Tool";
 import { RemoteUnitTool } from "./RemoteUnitTool";
@@ -252,12 +252,12 @@ const App = observer(({ icu }: { icu: IrrigationStore }) => {
 
   if (openPage === "config") {
     return (
-      <ConfigEditor
-        configEntries={icu.config}
+      <IniConfigEditor
+        configIni={icu.configIni}
         loading={!icu.configLoaded}
-        onUpdate={(config) =>
+        onUpdate={(configIni) =>
           runInAction(() => {
-            icu.config = config;
+            icu.configIni = configIni;
           })
         }
         onCancel={() => setOpenPage(null)}

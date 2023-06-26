@@ -23,8 +23,10 @@ import {
 } from "./property";
 import {
   ConfigEntry,
-  deserializeConfigEntries,
-  serializeConfigEntries,
+  deserializeConfigEntriesFromBinary,
+  deserializeConfigEntriesFromIni,
+  serializeConfigEntriesToBinary,
+  serializeConfigEntriesToIni,
 } from "./config";
 import { binToHex } from "./util";
 
@@ -47,7 +49,7 @@ export class IrrigationStore {
   logId: number = 0;
   connectionState: ConnectionState = ConnectionState.Disconnected;
   properties: IrrigationProperty[] = [];
-  config: ConfigEntry[] = [];
+  configIni: string = "";
   configLoaded = false;
   controllerCommandResult: ArrayBuffer | undefined = undefined;
   // TODO add control device state
@@ -64,7 +66,7 @@ export class IrrigationStore {
       connectionState: observable,
       log: observable,
       properties: observable,
-      config: observable,
+      configIni: observable,
       configLoaded: observable,
       controllerCommandResult: observable,
       connected: computed,
@@ -137,7 +139,7 @@ export class IrrigationStore {
 
   requestConfig() {
     runInAction(() => {
-      this.config = [];
+      this.configIni = "";
       this.configLoaded = false;
     });
     return this.publish(
@@ -150,7 +152,9 @@ export class IrrigationStore {
     if (this.configLoaded) {
       this.publish(
         `icu-in/${this.controlDeviceId}/setConfig`,
-        serializeConfigEntries(this.config)
+        serializeConfigEntriesToBinary(
+          deserializeConfigEntriesFromIni(this.configIni)
+        )
       );
     }
   }
@@ -271,9 +275,11 @@ export class IrrigationStore {
         const properties = getPropertiesFromData(buffer);
         this.updateProperties(properties);
       } else if (messageType === MqttMessageType.Config) {
-        const config = deserializeConfigEntries(buffer);
+        const configIni = serializeConfigEntriesToIni(
+          deserializeConfigEntriesFromBinary(buffer)
+        );
         runInAction(() => {
-          this.config = config;
+          this.configIni = configIni;
           this.configLoaded = true;
         });
       } else if (messageType === MqttMessageType.CommandResult) {
