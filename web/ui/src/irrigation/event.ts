@@ -187,7 +187,15 @@ function getControllerErrorDetail(
     }
     if ((typeNum & 0x80) === 0x80) {
       type = "Remote unit fault";
-      result.faultNum = typeNum & 0x0f;
+      const faultNum = typeNum & 0x0f;
+      result.fault =
+        {
+          0: "SolenoidTimeoutOccurred",
+          1: "SolenoidNotActivated",
+          2: "BatteryVoltageError",
+          3: "ConfigReadFailed",
+          4: "ConfigureRfModuleFailed",
+        }[faultNum] ?? `Unknown (${faultNum})`;
     }
     result.type = type ?? `Unknown (${typeNum})`;
     return result;
