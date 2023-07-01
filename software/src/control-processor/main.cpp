@@ -17,7 +17,7 @@
 /**
  * Software revision number.
  */
-#define CONTROL_PROCESSOR_REVISION 4
+#define CONTROL_PROCESSOR_REVISION 5
 
 using namespace IrrigationSystem;
 

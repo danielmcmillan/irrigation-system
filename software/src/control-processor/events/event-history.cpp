@@ -88,7 +88,9 @@ bool EventHistory::getNextEvent(uint16_t afterId, bool *idMatched, EventHistoryR
 
 void EventHistory::getEventAtOffset(unsigned int offsetFromStart, EventHistoryRecord *eventOut) const
 {
-    eventOut->id = read16LE(&this->eventHistory[(this->historyStartIndex + offsetFromStart) % EVENT_HISTORY_SIZE]);
+    eventOut->id = 0;
+    eventOut->id |= this->eventHistory[(this->historyStartIndex + offsetFromStart) % EVENT_HISTORY_SIZE];
+    eventOut->id |= (this->eventHistory[(this->historyStartIndex + offsetFromStart + 1) % EVENT_HISTORY_SIZE]) << 8;
     eventOut->type = this->eventHistory[(this->historyStartIndex + offsetFromStart + 2) % EVENT_HISTORY_SIZE];
     eventOut->payloadSize = this->eventHistory[(this->historyStartIndex + offsetFromStart + 3) % EVENT_HISTORY_SIZE];
     for (int i = 0; i < eventOut->payloadSize; ++i)
