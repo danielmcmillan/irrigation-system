@@ -4,6 +4,11 @@
 
 namespace IrrigationSystem
 {
+    enum Vacon100ConfigType : uint8_t
+    {
+        EnableModbus = 0x01,
+    };
+
     class Vacon100ControllerDefinition : public IrrigationSystem::ControllerDefinition
     {
     public:
@@ -23,13 +28,15 @@ namespace IrrigationSystem
         uint8_t getPropertyName(uint16_t id, char *nameOut, uint8_t maxLen) const;
         PropertyFormat getPropertyFormat(uint16_t id) const;
 #endif
+
+        bool enableModbus;
     };
 
     namespace Vacon100ControllerProperties
     {
         constexpr uint8_t propertyIds[] = {
-            0x01, // available
-            0x02, // motorOn
+            0x01, // motorOn
+            0x02, // available
             0x10, // status
             0x11, // actualSpeed
             0x12, // outputFrequency
@@ -48,8 +55,8 @@ namespace IrrigationSystem
         };
         enum : uint8_t
         {
-            available = propertyIds[0],
-            motorOn = propertyIds[1],
+            motorOn = propertyIds[0],
+            available = propertyIds[1],
             status = propertyIds[2],
             actualSpeed = propertyIds[3],
             outputFrequency = propertyIds[4],

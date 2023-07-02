@@ -23,6 +23,11 @@
 // Defined if motor run state should be controlled via relay rather than Modbus
 #define VACON_RELAY_CONTROL_PIN 23
 
+#ifdef VACON_RELAY_CONTROL_PIN
+// Indeterminate state on startup not supported when using relay
+static_assert(VACON_OFF_ON_STARTUP);
+#endif
+
 namespace IrrigationSystem
 {
     Vacon100Controller::Vacon100Controller(uint8_t controllerId) : controllerId(controllerId),
@@ -53,7 +58,7 @@ namespace IrrigationSystem
     bool Vacon100Controller::begin()
     {
         SERIAL_OBJ.begin(9600, SERIAL_8N1, MAX485_RO, MAX485_DI);
-        if (!vacon.begin())
+        if (definition.enableModbus && !vacon.begin())
         {
             notifyError(0x00);
             LOG_ERROR("Failed to start Vacon 100 client");
@@ -183,7 +188,7 @@ namespace IrrigationSystem
     {
         uint8_t now = millis() >> 14;
         // Set Vacon ID map periodically
-        if ((uint8_t)(now - lastIdMapUpdate) > VACON_ID_MAP_UPDATE_INTERVAL)
+        if (definition.enableModbus && (uint8_t)(now - lastIdMapUpdate) > VACON_ID_MAP_UPDATE_INTERVAL)
         {
             lastIdMapUpdate = now;
             if (vacon.initIdMapping())

@@ -5,18 +5,37 @@ namespace IrrigationSystem
 {
     void Vacon100ControllerDefinition::reset()
     {
+        enableModbus = false;
     }
 
-    void Vacon100ControllerDefinition::configure(uint8_t type, const uint8_t *data) {}
+    void Vacon100ControllerDefinition::configure(uint8_t type, const uint8_t *data)
+    {
+        switch (type)
+        {
+        case Vacon100ConfigType::EnableModbus:
+            enableModbus = data[0] > 0;
+            break;
+        default:
+            break;
+        }
+    }
 
     unsigned int Vacon100ControllerDefinition::getConfigLength(uint8_t type) const
     {
-        return 0;
+        switch (type)
+        {
+        case Vacon100ConfigType::EnableModbus:
+            return 1;
+        default:
+            return 0;
+        }
     }
 
     unsigned int Vacon100ControllerDefinition::getPropertyCount() const
     {
-        return (sizeof Vacon100ControllerProperties::propertyIds) / (sizeof Vacon100ControllerProperties::propertyIds[0]);
+        return enableModbus
+                   ? (sizeof Vacon100ControllerProperties::propertyIds) / (sizeof Vacon100ControllerProperties::propertyIds[0])
+                   : 1;
     }
 
     uint16_t Vacon100ControllerDefinition::getPropertyIdAt(unsigned int index) const
@@ -90,8 +109,8 @@ namespace IrrigationSystem
     uint8_t Vacon100ControllerDefinition::getPropertyName(uint16_t id, char *nameOut, uint8_t maxLen) const
     {
         static constexpr const char *propertyNames[] = {
-            "Available",
             "MotorOn",
+            "Available",
             "Ready|Run|Direction|Fault|Alarm|AtReference|ZeroSpeed|FluxReady",
             "ActualSpeed",
             "OutputFrequency",
@@ -121,8 +140,8 @@ namespace IrrigationSystem
     PropertyFormat Vacon100ControllerDefinition::getPropertyFormat(uint16_t id) const
     {
         static constexpr PropertyFormat propertyFormats[] = {
-            {PropertyValueType::BooleanFlags, {.booleanCount = 1u}},    // available
             {PropertyValueType::BooleanFlags, {.booleanCount = 1u}},    // motorOn
+            {PropertyValueType::BooleanFlags, {.booleanCount = 1u}},    // available
             {PropertyValueType::BooleanFlags, {.booleanCount = 8u}},    // status
             {PropertyValueType::UnsignedInt, {.mul = {10, -2}}, "%"},   // actualSpeed
             {PropertyValueType::UnsignedInt, {.mul = {10, -2}}, "Hz"},  // outputFrequency
