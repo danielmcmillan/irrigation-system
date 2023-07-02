@@ -23,6 +23,7 @@ import {
   RadioGroupField,
   Radio,
   ButtonGroup,
+  Alert,
 } from "@aws-amplify/ui-react";
 import {
   getLogLevelString,
@@ -99,9 +100,11 @@ const LogEntries = observer(({ icu }: { icu: IrrigationStore }) => {
 });
 
 const PropertyBooleanControl = ({
+  disabled,
   desiredValue,
   onDesiredValueChange,
 }: {
+  disabled?: boolean;
   desiredValue: boolean;
   onDesiredValueChange: (value: boolean) => unknown;
 }) => {
@@ -130,7 +133,12 @@ const PropertyBooleanControl = ({
 
   return (
     <Flex direction="row" justifyContent="space-between">
-      <SwitchField label="" isChecked={localValue} onChange={handleChange} />
+      <SwitchField
+        isDisabled={disabled}
+        label=""
+        isChecked={localValue}
+        onChange={handleChange}
+      />
       {isChanging && <Loader />}
     </Flex>
   );
@@ -213,6 +221,7 @@ const PropertyControls = observer(({ icu }: { icu: IrrigationStore }) => {
                       </TableCell>
                       <TableCell width="33%">
                         <PropertyBooleanControl
+                          disabled={!icu.ready}
                           desiredValue={desiredValue}
                           onDesiredValueChange={(value) =>
                             icu.requestSetProperty(
@@ -307,7 +316,9 @@ const App = observer(({ icu }: { icu: IrrigationStore }) => {
       onChange={(index) => setTabIndex(Number(index))}
     >
       <TabItem title="Properties">
-        <Text>Connection state: {icu.connectionState}</Text>
+        <Alert variation={icu.ready ? "info" : "error"}>
+          Browser: {icu.connectionState}. Controller: {icu.controllerStatus}
+        </Alert>
         <PropertyControls icu={icu} />
       </TabItem>
       <TabItem

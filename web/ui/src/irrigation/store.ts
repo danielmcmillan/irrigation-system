@@ -38,6 +38,13 @@ export enum MqttMessageType {
   CommandResult = "commandResult",
 }
 
+export enum ControllerStatus {
+  Ready = "Ready",
+  LoadingProperties = "Loading Properties...",
+  Unconfigured = "Starting...",
+  Unknown = "Unknown",
+}
+
 const maxLogEntries = 100;
 
 export class IrrigationStore {
@@ -52,7 +59,7 @@ export class IrrigationStore {
   configIni: string = "";
   configLoaded = false;
   controllerCommandResult: ArrayBuffer | undefined = undefined;
-  // TODO add control device state
+  controllerStatus: ControllerStatus = ControllerStatus.Unknown;
 
   constructor(
     public readonly clientId: string,
@@ -69,7 +76,8 @@ export class IrrigationStore {
       configIni: observable,
       configLoaded: observable,
       controllerCommandResult: observable,
-      connected: computed,
+      controllerStatus: observable,
+      ready: computed,
       errorLogCount: computed,
       clearLog: action,
       addLogEntries: action,
@@ -83,6 +91,9 @@ export class IrrigationStore {
         runInAction(() => {
           this.connectionState = payload.data
             .connectionState as ConnectionState;
+          if (this.connectionState !== ConnectionState.Connected) {
+            this.controllerStatus = ControllerStatus.Unknown;
+          }
         });
         if (this.connectionState === ConnectionState.Connected) {
           this.requestProperties();
@@ -112,8 +123,11 @@ export class IrrigationStore {
     this.subscription = undefined;
   }
 
-  get connected(): boolean {
-    return this.connectionState === ConnectionState.Connected;
+  get ready(): boolean {
+    return (
+      this.connectionState === ConnectionState.Connected &&
+      this.controllerStatus === ControllerStatus.Ready
+    );
   }
 
   clearLog() {
@@ -210,6 +224,7 @@ export class IrrigationStore {
         this.properties.push(prop);
       }
     }
+    this.controllerStatus = ControllerStatus.Ready;
   }
 
   private updatePropertyValue(
@@ -262,10 +277,14 @@ export class IrrigationStore {
               event.type === IrrigationEventType.PropertyDesiredValueChanged
             );
           } else if (event.type === IrrigationEventType.Started) {
-            // TODO Set control device status
+            runInAction(() => {
+              this.controllerStatus = ControllerStatus.Unconfigured;
+            });
           } else if (event.type === IrrigationEventType.Configured) {
-            // TODO Set control device status
             await this.requestProperties();
+            runInAction(() => {
+              this.controllerStatus = ControllerStatus.LoadingProperties;
+            });
           }
         }
       } else if (messageType === MqttMessageType.Error) {
