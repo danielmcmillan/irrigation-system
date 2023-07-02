@@ -32,7 +32,7 @@ int RemoteUnitConfig::load()
   // EEPROM data is not valid, load default values
   uint32_t rfFreq = 434l * 1l << 14;          // 434 MHz
   this->config[0] = 122;                      // battery multiplier 0.0149
-  this->config[1] = 32;                       // solenoid timeout ~280 seconds
+  this->config[1] = 96;                       // solenoid timeout ~840 seconds
   this->config[2] = rfFreq >> 16;             // Rf freq
   this->config[3] = rfFreq >> 8;              // Rf freq
   this->config[4] = rfFreq;                   // Rf freq
