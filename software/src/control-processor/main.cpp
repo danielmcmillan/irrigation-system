@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include "logging.h"
-#include "events/event-history.h"
+#include "event-buffer.h"
+#include "event-publisher.h"
 #include "controllers.h"
 #include "crc16.h"
 #include "binary-util.h"
@@ -8,7 +9,6 @@
 #include "wifi-manager.h"
 #include "settings.h"
 #include "mqtt-client.h"
-#include "event-sender.h"
 #include "config.h"
 #include "error-handler.h"
 #include "controllers/controller-builder.h"
@@ -17,7 +17,7 @@
 /**
  * Software revision number.
  */
-#define CONTROL_PROCESSOR_REVISION 6
+#define CONTROL_PROCESSOR_REVISION 7
 
 using namespace IrrigationSystem;
 
@@ -36,12 +36,12 @@ void handleMessage(IncomingMessageType type, const uint8_t *payload, int length)
 
 ControllerBuilder controllerBuilder;
 ControllerManager controllerManager(controllerBuilder.buildManager());
-EventHistory eventHistory;
-Controllers controllers(controllerManager, eventHistory);
+EventBuffer eventBuffer;
+Controllers controllers(controllerManager, eventBuffer);
 ErrorHandler errorHandler(publishErrorData);
 WiFiManager wifi(WIFI_SSID, WIFI_PASSWORD, errorHandler);
 MqttClient mqtt(MQTT_BROKER_ENDPOINT, MQTT_BROKER_PORT, MQTT_CLIENT_ID, MQTT_BROKER_CA_CERT, MQTT_CLIENT_CERT, MQTT_CLIENT_KEY, handleMessage, errorHandler);
-EventSender eventSender(eventHistory, publishEventData, errorHandler);
+EventPublisher eventPublisher(eventBuffer, publishEventData, errorHandler);
 Config config(controllers, errorHandler);
 
 unsigned long lastConnected = 0;
@@ -68,7 +68,7 @@ void loop()
     {
         lastConnected = now;
 
-        eventSender.loop();
+        eventPublisher.loop();
         // sendCommandResults();
     }
     else if ((now - lastConnected) > DISCONNECTED_RESET_TIME)
