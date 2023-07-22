@@ -32,14 +32,12 @@ plugins:
 custom:
   esbuild:
     bundle: true
-    minify: true
-    sourcemap: linked
+    minify: false
 
 functions:
   IotListener:
     handler: src/index.handler
     environment:
-      NODE_OPTIONS: --enable-source-maps
       STORAGE_QUEUE_URL: !Ref StorageQueue
       DYNAMODB_TABLE_NAME: !Ref StateTable
 

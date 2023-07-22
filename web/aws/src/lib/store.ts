@@ -4,6 +4,7 @@ import {
 } from "@aws-sdk/client-dynamodb";
 import {
   DynamoDBDocumentClient,
+  PutCommand,
   QueryCommand,
   UpdateCommand,
 } from "@aws-sdk/lib-dynamodb";
@@ -45,8 +46,8 @@ const propertyStateSkParts = [
   KeyPart.uint8, // value=0, desired=1
 ];
 const propertyHistoricalPkParts = [
-  KeyPart.utf8, // device id
   KeyPart.uint8, // 0x01
+  KeyPart.utf8, // device id
   KeyPart.uint8, // controller id
   KeyPart.uint16le, // property id
 ];
@@ -225,5 +226,24 @@ export class IrrigationDataStore {
         throw err;
       }
     }
+  }
+
+  async addPropertyHistory(state: PropertyState, ttl: number) {
+    await this.db.send(
+      new PutCommand({
+        TableName: this.tableName,
+        Item: {
+          pk: buildBinaryKey(propertyHistoricalPkParts, [
+            1,
+            state.deviceId,
+            state.controllerId,
+            state.propertyId,
+          ]),
+          sk: Uint32Array.from([state.lastUpdated]),
+          val: new Uint8Array(state.value),
+          exp: state.lastUpdated + ttl,
+        },
+      })
+    );
   }
 }

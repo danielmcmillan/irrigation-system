@@ -11,11 +11,13 @@ import {
   IrrigationDataStore,
   PropertyState,
 } from "./lib/store";
+import pLimit from "p-limit";
 
 const sqs = new SQSClient({});
 const store = new IrrigationDataStore({
   tableName: process.env.DYNAMODB_TABLE_NAME!,
 });
+const propertyHistoryTtl = 3600 * 24 * 14; // 14 days
 
 async function publishToSQS(message: DeviceMessage): Promise<void> {
   if (["event", "error"].includes(message.type)) {
@@ -116,16 +118,26 @@ async function updateStateStore(message: DeviceMessage): Promise<void> {
       }
     }
   }
+  const promises: Promise<unknown>[] = [];
+  const limit = pLimit(5);
   if (newDeviceState) {
-    await store.updateDeviceState({
-      deviceId: message.deviceId,
-      lastUpdated: messageTime,
-      ...newDeviceState,
-    });
+    promises.push(
+      limit(() =>
+        store.updateDeviceState({
+          deviceId: message.deviceId,
+          lastUpdated: messageTime,
+          ...newDeviceState,
+        })
+      )
+    );
   }
   for (const prop of newPropertyStates) {
-    await store.updatePropertyState(prop);
+    promises.push(limit(() => store.updatePropertyState(prop)));
+    promises.push(
+      limit(() => store.addPropertyHistory(prop, propertyHistoryTtl))
+    );
   }
+  await Promise.all(promises);
 }
 
 export async function handleDeviceMessage(
@@ -147,7 +159,6 @@ export async function handleDeviceMessage(
       }
     })(),
   ]);
-  // TODO store historical values
   // TODO handle IoT connection events
   // TODO send request for properties when needed and expire old properties
   // TODO forward events to websocket clients
