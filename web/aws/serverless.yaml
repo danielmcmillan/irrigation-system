@@ -5,17 +5,26 @@ provider:
   name: aws
   versionFunctions: false
   runtime: nodejs18.x
+  memorySize: 512
   region: ap-southeast-2
   stackTags:
     project: irrigation
-  environment:
-    NODE_OPTIONS: "--enable-source-maps"
   iam:
     role:
       statements:
         - Effect: Allow
           Action: sqs:SendMessage
           Resource: !GetAtt StorageQueue.Arn
+        - Effect: Allow
+          Action:
+            - dynamodb:GetItem
+            - dynamodb:Query
+            - dynamodb:BatchGetItem
+            - dynamodb:PutItem
+            - dynamodb:UpdateItem
+            - dynamodb:BatchWriteItem
+            - dynamodb:DeleteItem
+          Resource: !GetAtt StateTable.Arn
 
 plugins:
   - serverless-esbuild
@@ -30,7 +39,9 @@ functions:
   IotListener:
     handler: src/index.handler
     environment:
+      NODE_OPTIONS: --enable-source-maps
       STORAGE_QUEUE_URL: !Ref StorageQueue
+      DYNAMODB_TABLE_NAME: !Ref StateTable
 
 resources:
   Parameters:
@@ -87,6 +98,27 @@ resources:
       Properties:
         QueueName: irrigation-${sls:stage}-StorageQueue
         MessageRetentionPeriod: 1209600
+
+    StateTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: irrigation-${sls:stage}-Data
+        ProvisionedThroughput:
+          ReadCapacityUnits: 5
+          WriteCapacityUnits: 5
+        KeySchema:
+          - AttributeName: pk
+            KeyType: HASH
+          - AttributeName: sk
+            KeyType: RANGE
+        AttributeDefinitions:
+          - AttributeName: pk
+            AttributeType: B
+          - AttributeName: sk
+            AttributeType: B
+        TimeToLiveSpecification:
+          Enabled: true
+          AttributeName: exp
 # resources not included:
 
 # thing https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-iot-thing.html

@@ -1,5 +1,6 @@
 import { DeviceError, getErrorFromData } from "./deviceError";
 import { DeviceEvent, getEventsFromData } from "./deviceEvent";
+import { DeviceProperty, getPropertiesFromData } from "./deviceProperty";
 
 export interface RawDeviceMessage {
   data: string;
@@ -16,6 +17,7 @@ export interface DeviceMessage {
   type: string;
   events?: DeviceEvent[];
   error?: DeviceError;
+  properties?: DeviceProperty[];
   data?: string;
 }
 
@@ -41,6 +43,8 @@ export function parseDeviceMessage(input: RawDeviceMessage): DeviceMessage {
       result.events = getEventsFromData(buffer);
     } else if (input.type === "error") {
       result.error = getErrorFromData(buffer);
+    } else if (input.type === "properties") {
+      result.properties = getPropertiesFromData(buffer);
     } else {
       result.data = data.toString("base64");
     }
