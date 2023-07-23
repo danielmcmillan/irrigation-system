@@ -48,13 +48,29 @@ resources:
       Default: general-alarms
 
   Resources:
-    IoTRule:
+    IoTRuleOut:
       Type: AWS::IoT::TopicRule
       Properties:
-        RuleName: "IrrigationOutput_${sls:stage}"
+        RuleName: "IrrigationOut_${sls:stage}"
         TopicRulePayload:
           AwsIotSqlVersion: "2016-03-23"
           Sql: "SELECT encode(*, 'base64') as data, timestamp() as time, topic(2) as clientId, topic(3) as deviceId, topic(4) as type FROM 'icu-out/#'"
+          Actions:
+            - Lambda:
+                FunctionArn: !GetAtt IotListenerLambdaFunction.Arn
+          ErrorAction:
+            Sns:
+              TargetArn: !Sub "arn:aws:sns:${AWS::Region}:${AWS::AccountId}:${ErrorTopicName}"
+              RoleArn: !GetAtt ErrorActionRole.Arn
+              MessageFormat: RAW
+
+    IoTRulePresence:
+      Type: AWS::IoT::TopicRule
+      Properties:
+        RuleName: "IrrigationPresence_${sls:stage}"
+        TopicRulePayload:
+          AwsIotSqlVersion: "2016-03-23"
+          Sql: "SELECT clientId as deviceId, timestamp as time, eventType as type, ipAddress, disconnectReason FROM '$aws/events/presence/+/+' WHERE startswith(clientId, 'icu-')"
           Actions:
             - Lambda:
                 FunctionArn: !GetAtt IotListenerLambdaFunction.Arn

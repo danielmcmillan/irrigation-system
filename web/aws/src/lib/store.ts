@@ -21,6 +21,7 @@ export interface DeviceState {
   lastUpdated: number;
   connected?: boolean;
   status?: DeviceStatus;
+  config?: ArrayBuffer;
 }
 
 export interface PropertyState {
@@ -32,6 +33,11 @@ export interface PropertyState {
   lastUpdated: number;
   lastChanged: number;
   eventId?: number;
+}
+
+export enum DeviceStateQueryType {
+  Device = 0,
+  Properties = 1,
 }
 
 const deviceStateSkParts = [
@@ -65,7 +71,8 @@ export class IrrigationDataStore {
 
   /** Get the state for all devices and their properties or the device with the specified id. */
   async getDeviceState(
-    deviceId?: string
+    deviceId?: string,
+    type?: DeviceStateQueryType
   ): Promise<{ devices: DeviceState[]; properties: PropertyState[] }> {
     let keyCondition = "pk = :pk";
     const values: Record<string, unknown> = {
@@ -73,7 +80,10 @@ export class IrrigationDataStore {
     };
     if (deviceId) {
       keyCondition += " AND begins_with(sk, :sk)";
-      values[":sk"] = buildBinaryKey([KeyPart.utf8], [deviceId]);
+      values[":sk"] =
+        type === undefined
+          ? buildBinaryKey([KeyPart.utf8], [deviceId])
+          : buildBinaryKey([KeyPart.utf8, KeyPart.uint8], [deviceId, type]);
     }
 
     const result = await this.db.send(
@@ -99,6 +109,7 @@ export class IrrigationDataStore {
           lastUpdated: item.upd,
           connected: item.con,
           status: item.sts,
+          config: item.cfg,
         });
       } else {
         const propSkParts = parseBinaryKey(item.sk, propertyStateSkParts);
@@ -145,6 +156,11 @@ export class IrrigationDataStore {
       names["#st"] = "sts";
       values[":st"] = state.status;
       setExpressions.push("#st = :st");
+    }
+    if (state.config !== undefined) {
+      names["#cf"] = "cfg";
+      values[":cf"] = new Uint8Array(state.config);
+      setExpressions.push("#cf = :cf");
     }
 
     try {

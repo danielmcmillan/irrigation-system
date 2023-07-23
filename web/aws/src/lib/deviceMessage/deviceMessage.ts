@@ -3,22 +3,22 @@ import { DeviceEvent, getEventsFromData } from "./deviceEvent";
 import { DeviceProperty, getPropertiesFromData } from "./deviceProperty";
 
 export interface RawDeviceMessage {
-  data: string;
+  data?: string;
   time: number;
-  clientId: string;
+  clientId?: string;
   deviceId: string;
   type: string;
 }
 
 export interface DeviceMessage {
   time: number;
-  clientId: string;
+  clientId?: string;
   deviceId: string;
   type: string;
   events?: DeviceEvent[];
   error?: DeviceError;
   properties?: DeviceProperty[];
-  data?: string;
+  data?: ArrayBuffer;
 }
 
 /**
@@ -34,23 +34,24 @@ export function parseDeviceMessage(input: RawDeviceMessage): DeviceMessage {
   };
 
   try {
-    const data = Buffer.from(input.data, "base64");
-    const buffer = data.buffer.slice(
-      data.byteOffset,
-      data.byteOffset + data.byteLength
-    );
-    if (input.type === "event") {
-      result.events = getEventsFromData(buffer);
-    } else if (input.type === "error") {
-      result.error = getErrorFromData(buffer);
-    } else if (input.type === "properties") {
-      result.properties = getPropertiesFromData(buffer);
-    } else {
-      result.data = data.toString("base64");
+    if (input.data) {
+      const data = Buffer.from(input.data, "base64");
+      const buffer = data.buffer.slice(
+        data.byteOffset,
+        data.byteOffset + data.byteLength
+      );
+      if (input.type === "event") {
+        result.events = getEventsFromData(buffer);
+      } else if (input.type === "error") {
+        result.error = getErrorFromData(buffer);
+      } else if (input.type === "properties") {
+        result.properties = getPropertiesFromData(buffer);
+      } else {
+        result.data = buffer;
+      }
     }
   } catch (err) {
-    result.data = input.data;
-    console.error("Error parsing message data", err);
+    console.error("Error parsing message data", input.data, err);
   }
   return result;
 }

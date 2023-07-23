@@ -1,17 +1,18 @@
+import { SQSClient, SendMessageCommand } from "@aws-sdk/client-sqs";
+import pLimit from "p-limit";
 import { DeviceEventType } from "./lib/deviceMessage/deviceEvent";
 import {
   DeviceMessage,
   RawDeviceMessage,
   parseDeviceMessage,
 } from "./lib/deviceMessage/deviceMessage";
-import { SQSClient, SendMessageCommand } from "@aws-sdk/client-sqs";
 import {
   DeviceState,
+  DeviceStateQueryType,
   DeviceStatus,
   IrrigationDataStore,
   PropertyState,
 } from "./lib/store";
-import pLimit from "p-limit";
 
 const sqs = new SQSClient({});
 const store = new IrrigationDataStore({
@@ -36,13 +37,21 @@ async function publishToSQS(message: DeviceMessage): Promise<void> {
 }
 
 async function updateStateStore(message: DeviceMessage): Promise<void> {
-  if (!["event", "properties"].includes(message.type)) {
+  const messageTime = (message.time / 1000) | 0;
+  let newDeviceState:
+    | Pick<DeviceState, "connected" | "status" | "config">
+    | undefined;
+  const newPropertyStates: PropertyState[] = [];
+  let properties: PropertyState[] | undefined;
+
+  if (["event", "properties"].includes(message.type)) {
+    ({ properties } = await store.getDeviceState(
+      message.deviceId,
+      DeviceStateQueryType.Properties
+    ));
+  } else if (!["connected", "disconnected", "config"].includes(message.type)) {
     return;
   }
-  const messageTime = (message.time / 1000) | 0;
-  let newDeviceState: Pick<DeviceState, "connected" | "status"> | undefined;
-  const newPropertyStates: PropertyState[] = [];
-  const { properties } = await store.getDeviceState(message.deviceId);
 
   const addProperty = (
     property: Pick<
@@ -55,7 +64,7 @@ async function updateStateStore(message: DeviceMessage): Promise<void> {
       p.propertyId === property.propertyId &&
       (p.isDesiredValue ?? false) === (property.isDesiredValue ?? false);
     // Property already in table
-    const existingProperty = properties.find(propertyPredicate);
+    const existingProperty = properties?.find(propertyPredicate);
     const lastChanged =
       existingProperty &&
       Buffer.from(existingProperty.value).equals(Buffer.from(property.value))
@@ -117,6 +126,12 @@ async function updateStateStore(message: DeviceMessage): Promise<void> {
         });
       }
     }
+  } else if (message.type === "connected") {
+    newDeviceState = { connected: true };
+  } else if (message.type === "disconnected") {
+    newDeviceState = { connected: false };
+  } else if (message.type === "config") {
+    newDeviceState = { config: message.data };
   }
   const promises: Promise<unknown>[] = [];
   const limit = pLimit(5);
@@ -159,7 +174,6 @@ export async function handleDeviceMessage(
       }
     })(),
   ]);
-  // TODO handle IoT connection events
   // TODO send request for properties when needed and expire old properties
   // TODO forward events to websocket clients
 }

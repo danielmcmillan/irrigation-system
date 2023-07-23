@@ -6,7 +6,12 @@ import {
 } from "@aws-sdk/lib-dynamodb";
 import { beforeEach, describe, expect, it } from "@jest/globals";
 import { mockClient } from "aws-sdk-client-mock";
-import { DeviceStatus, IrrigationDataStore, PropertyState } from "./store";
+import {
+  DeviceStateQueryType,
+  DeviceStatus,
+  IrrigationDataStore,
+  PropertyState,
+} from "./store";
 
 const dbMock = mockClient(DynamoDBDocumentClient);
 const mockDeviceName = "dev1";
@@ -57,6 +62,21 @@ describe("store", () => {
     expect(params?.ExpressionAttributeValues).toEqual({
       ":pk": Uint8Array.from([1]),
       ":sk": new Uint8Array([...mockDeviceNameBin, 0]),
+    });
+    expect(devices.length).toBe(1);
+    expect(properties.length).toBe(1);
+  });
+
+  it("should query property state by device id", async () => {
+    dbMock.on(QueryCommand).resolves({});
+    await store.getDeviceState(mockDeviceName, DeviceStateQueryType.Properties);
+    const params = dbMock.commandCalls(QueryCommand).at(0)?.args.at(0)?.input;
+    expect(params?.KeyConditionExpression).toBe(
+      "pk = :pk AND begins_with(sk, :sk)"
+    );
+    expect(params?.ExpressionAttributeValues).toEqual({
+      ":pk": Uint8Array.from([1]),
+      ":sk": new Uint8Array([...mockDeviceNameBin, 0, 1]),
     });
   });
 
