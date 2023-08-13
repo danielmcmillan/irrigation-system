@@ -36,10 +36,21 @@ custom:
 
 functions:
   IotListener:
-    handler: src/index.handler
+    handler: src/handleDeviceMessage.handleDeviceMessage
     environment:
       STORAGE_QUEUE_URL: !Ref StorageQueue
       DYNAMODB_TABLE_NAME: !Ref StateTable
+
+  WebSocketListener:
+    handler: src/handleWebSocketEvent.handleWebSocketEvent
+    events:
+      - websocket:
+          route: $connect
+          # This is unsupported, authorizer type set to aws_iam under extensions
+          # authorizer:
+          #   type: AWS_IAM
+      - websocket: $disconnect
+      - websocket: $default
 
 resources:
   Parameters:
@@ -133,11 +144,121 @@ resources:
         TimeToLiveSpecification:
           Enabled: true
           AttributeName: exp
-# resources not included:
 
+    AuthenticatedUserRole:
+      Type: AWS::IAM::Role
+      Properties:
+        RoleName: irrigation-${sls:stage}-AuthRole
+        AssumeRolePolicyDocument:
+          Version: "2012-10-17"
+          Statement:
+            - Effect: Allow
+              Action: sts:AssumeRoleWithWebIdentity
+              Principal:
+                Federated: cognito-identity.amazonaws.com
+              Condition:
+                ForAnyValue:StringLike:
+                  cognito-identity.amazonaws.com:amr: authenticated
+                StringEquals:
+                  cognito-identity.amazonaws.com:aud: !Ref IdentityPool
+        Policies:
+          - PolicyName: AuthRole
+            PolicyDocument:
+              Version: "2012-10-17"
+              Statement:
+                - Effect: Allow
+                  Action: execute-api:Invoke
+                  Resource: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${WebsocketsApi}/*"
+
+    UserPool:
+      Type: AWS::Cognito::UserPool
+      Properties:
+        UserPoolName: irrigation-${sls:stage}-UserPool
+        Policies:
+          PasswordPolicy:
+            MinimumLength: 8
+            RequireLowercase: false
+            RequireNumbers: true
+            RequireSymbols: false
+            RequireUppercase: false
+            TemporaryPasswordValidityDays: 30
+        AccountRecoverySetting:
+          RecoveryMechanisms:
+            - Name: verified_email
+              Priority: 1
+        AdminCreateUserConfig:
+          AllowAdminCreateUserOnly: true
+        EmailConfiguration:
+          EmailSendingAccount: COGNITO_DEFAULT
+        UsernameConfiguration:
+          CaseSensitive: false
+        VerificationMessageTemplate:
+          DefaultEmailOption: CONFIRM_WITH_CODE
+        AliasAttributes:
+          - email
+          - preferred_username
+        AutoVerifiedAttributes:
+          - email
+        UserAttributeUpdateSettings:
+          AttributesRequireVerificationBeforeUpdate:
+            - email
+
+    UserPoolDomain:
+      Type: AWS::Cognito::UserPoolDomain
+      Properties:
+        Domain: irrigation-${sls:stage}
+        UserPoolId: !Ref UserPool
+
+    UserPoolWebClient:
+      Type: AWS::Cognito::UserPoolClient
+      Properties:
+        ClientName: irrigation-${sls:stage}-WebClient
+        UserPoolId: !Ref UserPool
+        AccessTokenValidity: 1
+        IdTokenValidity: 1
+        RefreshTokenValidity: 365
+        CallbackURLs:
+          - http://localhost:5173/auth
+          - https://irrigation.danielmcm.com/auth
+        AllowedOAuthFlows:
+          - code
+        AllowedOAuthFlowsUserPoolClient: true
+        EnableTokenRevocation: false
+        AllowedOAuthScopes:
+          - email
+          - openid
+        ExplicitAuthFlows:
+          - ALLOW_REFRESH_TOKEN_AUTH
+          - ALLOW_USER_SRP_AUTH
+        GenerateSecret: false
+        PreventUserExistenceErrors: LEGACY
+        SupportedIdentityProviders:
+          - COGNITO
+
+    IdentityPool:
+      Type: AWS::Cognito::IdentityPool
+      Properties:
+        IdentityPoolName: irrigation-${sls:stage}-IdentityPool
+        AllowClassicFlow: false
+        AllowUnauthenticatedIdentities: false
+        CognitoIdentityProviders:
+          - ClientId: !Ref UserPoolWebClient
+            ProviderName: !GetAtt UserPool.ProviderName
+            ServerSideTokenCheck: false
+
+    IdentityPoolRoleMapping:
+      Type: AWS::Cognito::IdentityPoolRoleAttachment
+      Properties:
+        IdentityPoolId: !Ref IdentityPool
+        Roles:
+          authenticated: !GetAtt AuthenticatedUserRole.Arn
+
+  extensions:
+    # Configuring AWS_IAM authorization is not currently supported by Serverless
+    SconnectWebsocketsRoute:
+      Properties:
+        AuthorizationType: AWS_IAM
+# resources not included:
 # thing https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-iot-thing.html
 # thing policy: permission to connect, publish, subscribe and receive
 # certificate attached to the thing
-
-# identity pool
-# role with policy allowing publish/subscribe

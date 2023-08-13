@@ -1,0 +1,9 @@
+html, body {
+  margin: 0;
+}
+
+#root > div > div[role=tablist] {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
