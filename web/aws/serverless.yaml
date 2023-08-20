@@ -43,6 +43,8 @@ functions:
 
   WebSocketListener:
     handler: src/handleWebSocketEvent.handleWebSocketEvent
+    environment:
+      DYNAMODB_TABLE_NAME: !Ref StateTable
     events:
       - websocket:
           route: $connect

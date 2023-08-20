@@ -34,49 +34,43 @@ describe("store", () => {
     dbMock.reset();
   });
 
-  it("should query state by device id", async () => {
+  it("should query device state", async () => {
     dbMock.on(QueryCommand).resolves({
       Items: [
         {
-          pk: Uint8Array.from([1]),
-          sk: new Uint8Array([...mockDeviceNameBin, 0, 0]),
+          pk: Uint8Array.from([0]),
+          sk: new Uint8Array([0, ...mockDeviceNameBin, 0]),
           con: true,
           sts: DeviceStatus.Ready,
           upd: 1234,
         },
-        {
-          pk: Uint8Array.from([1]),
-          sk: new Uint8Array([...mockDeviceNameBin, 0, 1, 4, 5, 1, 1]),
-          val: Uint8Array.from([3, 5, 2, 1]),
-          upd: 2123,
-          chg: 2050,
-          exp: 54321,
-        },
       ],
     });
-    const { devices, properties } = await store.getDeviceState(mockDeviceName);
+    const { devices, properties } = await store.getDeviceState(
+      DeviceStateQueryType.Device
+    );
     const params = dbMock.commandCalls(QueryCommand).at(0)?.args.at(0)?.input;
     expect(params?.KeyConditionExpression).toBe(
       "pk = :pk AND begins_with(sk, :sk)"
     );
     expect(params?.ExpressionAttributeValues).toEqual({
-      ":pk": Uint8Array.from([1]),
-      ":sk": new Uint8Array([...mockDeviceNameBin, 0]),
+      ":pk": Uint8Array.from([0]),
+      ":sk": new Uint8Array([0]),
     });
     expect(devices.length).toBe(1);
-    expect(properties.length).toBe(1);
+    expect(properties.length).toBe(0);
   });
 
   it("should query property state by device id", async () => {
     dbMock.on(QueryCommand).resolves({});
-    await store.getDeviceState(mockDeviceName, DeviceStateQueryType.Properties);
+    await store.getDeviceState(DeviceStateQueryType.Properties, mockDeviceName);
     const params = dbMock.commandCalls(QueryCommand).at(0)?.args.at(0)?.input;
     expect(params?.KeyConditionExpression).toBe(
       "pk = :pk AND begins_with(sk, :sk)"
     );
     expect(params?.ExpressionAttributeValues).toEqual({
-      ":pk": Uint8Array.from([1]),
-      ":sk": new Uint8Array([...mockDeviceNameBin, 0, 1]),
+      ":pk": Uint8Array.from([0]),
+      ":sk": new Uint8Array([1, ...mockDeviceNameBin, 0]),
     });
   });
 
@@ -90,8 +84,8 @@ describe("store", () => {
     });
     const params = dbMock.commandCalls(UpdateCommand).at(0)?.args.at(0)?.input;
     expect(params?.Key).toEqual({
-      pk: Uint8Array.from([1]),
-      sk: new Uint8Array([...mockDeviceNameBin, 0, 0]),
+      pk: Uint8Array.from([0]),
+      sk: new Uint8Array([0, ...mockDeviceNameBin, 0]),
     });
     expect(params?.UpdateExpression).toEqual(
       "SET " + ["#lu = :lu", "#cn = :cn", "#st = :st"].join(", ")
@@ -140,6 +134,7 @@ describe("store", () => {
       TableName: "table",
       Item: {
         pk: new Uint8Array([
+          0,
           1,
           ...mockDeviceNameBin,
           0,
@@ -147,7 +142,7 @@ describe("store", () => {
           321 & 0xff,
           (321 >> 8) & 0xff,
         ]),
-        sk: Uint32Array.from([999]),
+        sk: new Uint8Array(Uint32Array.from([999]).buffer),
         val: property.value,
         exp: property.lastUpdated + 3600,
       },

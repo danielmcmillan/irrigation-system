@@ -3,12 +3,19 @@ import {
   DynamoDBClient,
 } from "@aws-sdk/client-dynamodb";
 import {
+  DeleteCommand,
   DynamoDBDocumentClient,
   PutCommand,
   QueryCommand,
   UpdateCommand,
 } from "@aws-sdk/lib-dynamodb";
-import { KeyPart, buildBinaryKey, parseBinaryKey } from "./binaryKey";
+import {
+  KeyDefinition,
+  KeyPartType,
+  buildBinaryKey,
+  parseBinaryKey,
+} from "./binaryKey";
+import { PushSubscription } from "web-push";
 
 export enum DeviceStatus {
   Unconfigured = 0,
@@ -40,23 +47,72 @@ export enum DeviceStateQueryType {
   Properties = 1,
 }
 
-const deviceStateSkParts = [
-  KeyPart.utf8, // device id
-  KeyPart.uint8, // 0x00
-];
-const propertyStateSkParts = [
-  KeyPart.utf8, // device id
-  KeyPart.uint8, // 0x01
-  KeyPart.uint8, // controller id
-  KeyPart.uint16le, // property id
-  KeyPart.uint8, // value=0, desired=1
-];
-const propertyHistoricalPkParts = [
-  KeyPart.uint8, // 0x01
-  KeyPart.utf8, // device id
-  KeyPart.uint8, // controller id
-  KeyPart.uint16le, // property id
-];
+const tableKeys: {
+  devicePropertyState: {
+    pk: KeyDefinition<{}>;
+    skDeviceState: KeyDefinition<{ deviceId: string }>;
+    skPropertyState: KeyDefinition<{
+      deviceId: string;
+      controllerId: number;
+      propertyId: number;
+      isDesiredValue: number;
+    }>;
+    partialSkType: KeyDefinition<{ type: number }>;
+    partialSkDeviceId: KeyDefinition<{ type: number; deviceId: string }>;
+  };
+  propertyHistory: {
+    pk: KeyDefinition<{
+      deviceId: string;
+      controllerId: number;
+      propertyId: number;
+    }>;
+    sk: KeyDefinition<{ lastUpdated: number }>;
+  };
+  pushNotificationSubscription: {
+    pk: KeyDefinition<{}>;
+    sk: KeyDefinition<{ endpoint: string }>;
+  };
+} = {
+  devicePropertyState: {
+    pk: [
+      { value: 0x00, type: KeyPartType.uint8 },
+      { value: 0x01, type: KeyPartType.uint8 },
+    ],
+    skDeviceState: [
+      { value: 0x00, type: KeyPartType.uint8 },
+      { field: "deviceId", type: KeyPartType.utf8 },
+    ],
+    skPropertyState: [
+      { value: 0x01, type: KeyPartType.uint8 },
+      { field: "deviceId", type: KeyPartType.utf8 },
+      { field: "controllerId", type: KeyPartType.uint8 },
+      { field: "propertyId", type: KeyPartType.uint16le },
+      { field: "isDesiredValue", type: KeyPartType.uint8 },
+    ],
+    partialSkType: [{ field: "type", type: KeyPartType.uint8 }],
+    partialSkDeviceId: [
+      { field: "type", type: KeyPartType.uint8 },
+      { field: "deviceId", type: KeyPartType.utf8 },
+    ],
+  },
+  propertyHistory: {
+    pk: [
+      { value: 0x00, type: KeyPartType.uint8 },
+      { value: 0x02, type: KeyPartType.uint8 },
+      { field: "deviceId", type: KeyPartType.utf8 },
+      { field: "controllerId", type: KeyPartType.uint8 },
+      { field: "propertyId", type: KeyPartType.uint16le },
+    ],
+    sk: [{ field: "lastUpdated", type: KeyPartType.uint32le }],
+  },
+  pushNotificationSubscription: {
+    pk: [
+      { value: 0x00, type: KeyPartType.uint8 },
+      { value: 0x11, type: KeyPartType.uint8 },
+    ],
+    sk: [{ field: "endpoint", type: KeyPartType.utf8 }],
+  },
+};
 
 export class IrrigationDataStore {
   private db: DynamoDBDocumentClient;
@@ -71,19 +127,24 @@ export class IrrigationDataStore {
 
   /** Get the state for all devices and their properties or the device with the specified id. */
   async getDeviceState(
-    deviceId?: string,
-    type?: DeviceStateQueryType
+    type?: DeviceStateQueryType,
+    deviceId?: string
   ): Promise<{ devices: DeviceState[]; properties: PropertyState[] }> {
     let keyCondition = "pk = :pk";
     const values: Record<string, unknown> = {
-      ":pk": Uint8Array.from([1]),
+      ":pk": buildBinaryKey(tableKeys.devicePropertyState.pk, {}),
     };
-    if (deviceId) {
+    if (type !== undefined) {
       keyCondition += " AND begins_with(sk, :sk)";
       values[":sk"] =
-        type === undefined
-          ? buildBinaryKey([KeyPart.utf8], [deviceId])
-          : buildBinaryKey([KeyPart.utf8, KeyPart.uint8], [deviceId, type]);
+        deviceId === undefined
+          ? buildBinaryKey(tableKeys.devicePropertyState.partialSkType, {
+              type,
+            })
+          : buildBinaryKey(tableKeys.devicePropertyState.partialSkDeviceId, {
+              type,
+              deviceId,
+            });
     }
 
     const result = await this.db.send(
@@ -96,14 +157,16 @@ export class IrrigationDataStore {
     const devices: DeviceState[] = [];
     const properties: PropertyState[] = [];
     for (const item of result.Items ?? []) {
-      const devSkParts = parseBinaryKey(item.sk, deviceStateSkParts);
+      const devSkParts = parseBinaryKey(
+        item.sk,
+        tableKeys.devicePropertyState.partialSkDeviceId
+      );
       if (!devSkParts) {
         throw new Error(`Invalid sk: ${item.sk}`);
       }
-      const deviceId = devSkParts[0] as string;
-      const isDevice = devSkParts[1] === 0;
+      const { type, deviceId } = devSkParts;
 
-      if (isDevice) {
+      if (type == DeviceStateQueryType.Device) {
         devices.push({
           deviceId,
           lastUpdated: item.upd,
@@ -112,18 +175,19 @@ export class IrrigationDataStore {
           config: item.cfg,
         });
       } else {
-        const propSkParts = parseBinaryKey(item.sk, propertyStateSkParts);
+        const propSkParts = parseBinaryKey(
+          item.sk,
+          tableKeys.devicePropertyState.skPropertyState
+        );
         if (!propSkParts) {
           throw new Error(`Invalid sk: ${item.sk}`);
         }
-        const controllerId = propSkParts[2] as number;
-        const propertyId = propSkParts[3] as number;
-        const isDesiredValue = propSkParts[4] === 1;
+        const { controllerId, propertyId, isDesiredValue } = propSkParts;
         properties.push({
           deviceId,
           controllerId,
           propertyId,
-          isDesiredValue,
+          isDesiredValue: isDesiredValue === 1,
           value: item.val,
           lastUpdated: item.upd,
           lastChanged: item.chg,
@@ -168,8 +232,10 @@ export class IrrigationDataStore {
         new UpdateCommand({
           TableName: this.tableName,
           Key: {
-            pk: new Uint8Array([1]),
-            sk: buildBinaryKey(deviceStateSkParts, [state.deviceId, 0]),
+            pk: buildBinaryKey(tableKeys.devicePropertyState.pk, {}),
+            sk: buildBinaryKey(tableKeys.devicePropertyState.skDeviceState, {
+              deviceId: state.deviceId,
+            }),
           },
           ExpressionAttributeNames: names,
           ExpressionAttributeValues: values,
@@ -217,14 +283,13 @@ export class IrrigationDataStore {
         new UpdateCommand({
           TableName: this.tableName,
           Key: {
-            pk: new Uint8Array([1]),
-            sk: buildBinaryKey(propertyStateSkParts, [
-              state.deviceId,
-              1,
-              state.controllerId,
-              state.propertyId,
-              state.isDesiredValue ? 1 : 0,
-            ]),
+            pk: buildBinaryKey(tableKeys.devicePropertyState.pk, {}),
+            sk: buildBinaryKey(tableKeys.devicePropertyState.skPropertyState, {
+              deviceId: state.deviceId,
+              controllerId: state.controllerId,
+              propertyId: state.propertyId,
+              isDesiredValue: state.isDesiredValue ? 1 : 0,
+            }),
           },
           ExpressionAttributeNames: names,
           ExpressionAttributeValues: values,
@@ -244,22 +309,96 @@ export class IrrigationDataStore {
     }
   }
 
+  /**
+   * Record a log of the current state of a property.
+   */
   async addPropertyHistory(state: PropertyState, ttl: number) {
     await this.db.send(
       new PutCommand({
         TableName: this.tableName,
         Item: {
-          pk: buildBinaryKey(propertyHistoricalPkParts, [
-            1,
-            state.deviceId,
-            state.controllerId,
-            state.propertyId,
-          ]),
-          sk: Uint32Array.from([state.lastUpdated]),
+          pk: buildBinaryKey(tableKeys.propertyHistory.pk, state),
+          sk: buildBinaryKey(tableKeys.propertyHistory.sk, state),
           val: new Uint8Array(state.value),
           exp: state.lastUpdated + ttl,
         },
       })
     );
+  }
+
+  /**
+   * Record a subscribed push notification client.
+   */
+  async addPushNotificationSubscription(
+    subscription: PushSubscription
+  ): Promise<void> {
+    const { endpoint: _endpoint, ...data } = subscription;
+    await this.db.send(
+      new PutCommand({
+        TableName: this.tableName,
+        Item: {
+          pk: buildBinaryKey(
+            tableKeys.pushNotificationSubscription.pk,
+            subscription
+          ),
+          sk: buildBinaryKey(
+            tableKeys.pushNotificationSubscription.sk,
+            subscription
+          ),
+          ...data,
+        },
+      })
+    );
+  }
+
+  /**
+   * Remove a subscribed push notification client.
+   */
+  async removePushNotificationSubscription(
+    subscription: PushSubscription
+  ): Promise<void> {
+    await this.db.send(
+      new DeleteCommand({
+        TableName: this.tableName,
+        Key: {
+          pk: buildBinaryKey(
+            tableKeys.pushNotificationSubscription.pk,
+            subscription
+          ),
+          sk: buildBinaryKey(
+            tableKeys.pushNotificationSubscription.sk,
+            subscription
+          ),
+        },
+      })
+    );
+  }
+
+  /**
+   * List all subscribed push notification clients.
+   */
+  async listPushNotificationSubscriptions(): Promise<PushSubscription[]> {
+    const result = await this.db.send(
+      new QueryCommand({
+        TableName: this.tableName,
+        KeyConditionExpression: "pk = :pk",
+        ExpressionAttributeValues: {
+          ":pk": buildBinaryKey(tableKeys.pushNotificationSubscription.pk, {}),
+        },
+      })
+    );
+    return (result.Items ?? []).map((item) => {
+      const skParts = parseBinaryKey(
+        item.sk,
+        tableKeys.pushNotificationSubscription.sk
+      );
+      if (!skParts) {
+        throw new Error(`Invalid push subscription sk: ${item.sk}`);
+      }
+      return {
+        endpoint: skParts.endpoint,
+        keys: item.keys,
+      };
+    });
   }
 }

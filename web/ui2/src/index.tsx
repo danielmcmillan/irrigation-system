@@ -6,29 +6,22 @@ import {
   RouterProvider,
   useLoaderData,
 } from "react-router-dom";
-import { ApiRequestSigner } from "./aws/apiRequestSigner";
-import { CognitoIdentityTokenProvider } from "./aws/cognitoIdentityTokenProvider";
+import { ApiRequestSigner } from "./services/apiRequestSigner";
+import { CognitoIdentityTokenProvider } from "./services/cognitoIdentityTokenProvider";
 import "./index.css";
+import { WebPush } from "./services/webPush";
 
 const config = {
-  // @ts-ignore
   region: import.meta.env.VITE_REGION,
-  // @ts-ignore
   userPoolId: import.meta.env.VITE_USER_POOL_ID,
-  // @ts-ignore
   identityPoolId: import.meta.env.VITE_IDENTITY_POOL_ID,
-  // @ts-ignore
   mqttEndpoint: import.meta.env.VITE_MQTT_ENDPOINT,
-  // @ts-ignore
   deviceId: import.meta.env.VITE_DEVICE_ID,
-  // @ts-ignore
   cognitoClientId: import.meta.env.VITE_CLIENT_ID,
-  // @ts-ignore
   cognitoDomain: import.meta.env.VITE_COGNITO_DOMAIN,
-  // @ts-ignore
   apiEndpoint: import.meta.env.VITE_API_ENDPOINT,
-  // @ts-ignore
   authRedirectUri: `http://${import.meta.env.VITE_HOSTNAME}/auth`,
+  vapidPublicKey: import.meta.env.VITE_VAPID_PUB_KEY,
 };
 
 const identityTokenProvider = new CognitoIdentityTokenProvider({
@@ -43,10 +36,40 @@ const apiRequestSigner = new ApiRequestSigner({
   userPoolId: config.userPoolId,
   wsApiUrl: config.apiEndpoint,
 });
+const webPush = new WebPush({ vapidPublicKeyString: config.vapidPublicKey });
+async function webPushSubscribe(ws: WebSocket) {
+  const subscription = await webPush.subscribe();
+  ws.send(
+    JSON.stringify({
+      action: "webPush/subscribe",
+      subscription,
+    })
+  );
+}
+async function webPushUnsubscribe(ws: WebSocket) {
+  const subscription = await webPush.unsubscribe();
+  if (subscription) {
+    ws.send(
+      JSON.stringify({
+        action: "webPush/unsubscribe",
+        subscription,
+      })
+    );
+  }
+}
 
 const RootComponent = () => {
-  const data = useLoaderData() as string;
-  return <div>Hello world! id token: {data}</div>;
+  const ws = useLoaderData() as WebSocket;
+  return (
+    <div>
+      Hello world!{" "}
+      <button onClick={() => webPushSubscribe(ws)}>Subscribe</button>
+      <button onClick={() => webPushUnsubscribe(ws)}>Unsubscribe</button>
+      <button onClick={() => ws.send(JSON.stringify({ msg: "send" }))}>
+        Send
+      </button>
+    </div>
+  );
 };
 
 const router = createBrowserRouter([
@@ -54,18 +77,21 @@ const router = createBrowserRouter([
     path: "/",
     element: <RootComponent />,
     loader: async () => {
-      // return (await identityTokenProvider.getIdToken()) ?? null;
       const apiUrl = await apiRequestSigner.getWsApiUrl();
       const ws = new WebSocket(apiUrl);
-      ws.addEventListener("open", (e) => {
-        console.log(e);
-        ws.send("Hello world!");
-        ws.close();
+      await new Promise<Event>((resolve, reject) => {
+        ws.addEventListener("open", (e) => {
+          console.log("ws open", e);
+          resolve(e);
+        });
+        ws.addEventListener("error", (e) => {
+          console.error("ws error", e);
+          reject(e);
+        });
+        ws.addEventListener("close", (e) => console.info("ws close", e));
+        ws.addEventListener("message", (e) => console.info("ws message", e));
       });
-      ws.addEventListener("error", (ev) => console.error("ws error", ev));
-      ws.addEventListener("close", (ev) => console.info("ws close", ev));
-      ws.addEventListener("message", (ev) => console.info("ws message", ev));
-      return apiUrl.toString();
+      return ws;
     },
   },
   {

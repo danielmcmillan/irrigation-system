@@ -13,12 +13,13 @@ import {
   IrrigationDataStore,
   PropertyState,
 } from "./lib/store";
+import { sendPushNotification } from "./lib/pushNotifications";
 
 const sqs = new SQSClient({});
 const store = new IrrigationDataStore({
   tableName: process.env.DYNAMODB_TABLE_NAME!,
 });
-const propertyHistoryTtl = 3600 * 24 * 14; // 14 days
+const propertyHistoryTtl = 3600 * 24 * 90; // 90 days
 
 async function publishToSQS(message: DeviceMessage): Promise<void> {
   if (["event", "error"].includes(message.type)) {
@@ -36,6 +37,23 @@ async function publishToSQS(message: DeviceMessage): Promise<void> {
   }
 }
 
+async function sendNotifications(message: DeviceMessage): Promise<void> {
+  if (message.type === "event" && message.events) {
+    for (const event of message.events) {
+      if (event.type === DeviceEventType.Started) {
+        await sendPushNotification(
+          {
+            title: "Irrigation system restarted",
+            message:
+              "If the system is in use and the restart is not expected then check that it is still operating as expected.",
+          },
+          store
+        );
+      }
+    }
+  }
+}
+
 async function updateStateStore(message: DeviceMessage): Promise<void> {
   const messageTime = (message.time / 1000) | 0;
   let newDeviceState:
@@ -46,8 +64,8 @@ async function updateStateStore(message: DeviceMessage): Promise<void> {
 
   if (["event", "properties"].includes(message.type)) {
     ({ properties } = await store.getDeviceState(
-      message.deviceId,
-      DeviceStateQueryType.Properties
+      DeviceStateQueryType.Properties,
+      message.deviceId
     ));
   } else if (!["connected", "disconnected", "config"].includes(message.type)) {
     return;
@@ -160,20 +178,20 @@ export async function handleDeviceMessage(
 ): Promise<void> {
   const message = parseDeviceMessage(inputEvent);
 
-  await Promise.all([
+  const results = await Promise.allSettled([
     publishToSQS(message),
-    (async () => {
-      try {
-        await updateStateStore(message);
-      } catch (err) {
-        console.error(
-          "Failed to update state store",
-          { inputEvent, message },
-          err
-        );
-      }
-    })(),
+    sendNotifications(message),
+    updateStateStore(message),
   ]);
+  for (const result of results) {
+    if (result.status === "rejected") {
+      console.error(
+        "An error ocurred when handling message",
+        { inputEvent, message },
+        result.reason
+      );
+    }
+  }
   // TODO send request for properties when needed and expire old properties
   // TODO forward events to websocket clients
 }
