@@ -30,7 +30,7 @@ export default defineConfig({
       filename: "serviceWorker.ts",
       minify: false,
       devOptions: {
-        enabled: true,
+        enabled: false,
       },
     }),
   ],

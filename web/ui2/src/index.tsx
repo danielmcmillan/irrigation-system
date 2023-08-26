@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useCallback, useMemo } from "react";
 import ReactDOM from "react-dom/client";
 import {
   createBrowserRouter,
@@ -10,6 +10,7 @@ import { ApiRequestSigner } from "./services/apiRequestSigner";
 import { CognitoIdentityTokenProvider } from "./services/cognitoIdentityTokenProvider";
 import "./index.css";
 import { WebPush } from "./services/webPush";
+import useWebSocket, { ReadyState } from "react-use-websocket";
 
 const config = {
   region: import.meta.env.VITE_REGION,
@@ -36,39 +37,51 @@ const apiRequestSigner = new ApiRequestSigner({
   userPoolId: config.userPoolId,
   wsApiUrl: config.apiEndpoint,
 });
+const getWsUrl = () => apiRequestSigner.getWsApiUrl();
 const webPush = new WebPush({ vapidPublicKeyString: config.vapidPublicKey });
-async function webPushSubscribe(ws: WebSocket) {
+async function webPushSubscribe(send: (msg: object) => void) {
   const subscription = await webPush.subscribe();
-  ws.send(
-    JSON.stringify({
+  if (subscription) {
+    send({
       action: "webPush/subscribe",
       subscription,
-    })
-  );
+    });
+  }
 }
-async function webPushUnsubscribe(ws: WebSocket) {
+async function webPushUnsubscribe(send: (msg: object) => void) {
   const subscription = await webPush.unsubscribe();
   if (subscription) {
-    ws.send(
-      JSON.stringify({
-        action: "webPush/unsubscribe",
-        subscription,
-      })
-    );
+    send({
+      action: "webPush/unsubscribe",
+      subscription,
+    });
   }
 }
 
 const RootComponent = () => {
-  const ws = useLoaderData() as WebSocket;
+  const { readyState, lastJsonMessage, sendJsonMessage } = useWebSocket(
+    getWsUrl,
+    {
+      retryOnError: true,
+      shouldReconnect: () => true,
+    }
+  );
   return (
     <div>
-      Hello world!{" "}
-      <button onClick={() => webPushSubscribe(ws)}>Subscribe</button>
-      <button onClick={() => webPushUnsubscribe(ws)}>Unsubscribe</button>
-      <button
-        onClick={() => ws.send(JSON.stringify({ action: "webPush/test" }))}
-      >
-        Send
+      <h2>WebSocket</h2>
+      <ul>
+        <li>Connection status: {ReadyState[readyState]}</li>
+        <li>Last message: {JSON.stringify(lastJsonMessage)}</li>
+      </ul>
+      <h2>Push Notifications</h2>
+      <button onClick={() => webPushSubscribe(sendJsonMessage)}>
+        Subscribe
+      </button>
+      <button onClick={() => webPushUnsubscribe(sendJsonMessage)}>
+        Unsubscribe
+      </button>
+      <button onClick={() => sendJsonMessage({ action: "webPush/test" })}>
+        Test
       </button>
     </div>
   );
@@ -78,23 +91,6 @@ const router = createBrowserRouter([
   {
     path: "/",
     element: <RootComponent />,
-    loader: async () => {
-      const apiUrl = await apiRequestSigner.getWsApiUrl();
-      const ws = new WebSocket(apiUrl);
-      await new Promise<Event>((resolve, reject) => {
-        ws.addEventListener("open", (e) => {
-          console.log("ws open", e);
-          resolve(e);
-        });
-        ws.addEventListener("error", (e) => {
-          console.error("ws error", e);
-          reject(e);
-        });
-        ws.addEventListener("close", (e) => console.info("ws close", e));
-        ws.addEventListener("message", (e) => console.info("ws message", e));
-      });
-      return ws;
-    },
   },
   {
     path: "/auth",
