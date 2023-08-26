@@ -15,10 +15,9 @@ self.addEventListener("push", function (event) {
   // Keep the service worker alive until the notification is created.
   event.waitUntil(
     (async () => {
-      console.log("Got push event", event);
       const payload = event.data?.json();
       if (payload && payload.title && payload.message) {
-      self.registration.showNotification("Hello ServiceWorker!", {
+        self.registration.showNotification(payload.title, {
           body: payload.message,
           silent: payload.silent,
         });

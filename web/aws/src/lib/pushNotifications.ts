@@ -1,11 +1,9 @@
 import webpush from "web-push";
 import { IrrigationDataStore } from "./store";
-const publicVapidKey = "";
-const privateVapidKey = "";
 webpush.setVapidDetails(
-  "mailto:test@test.com",
-  publicVapidKey,
-  privateVapidKey
+  process.env.VAPID_SUBJECT!,
+  process.env.VAPID_PUBLIC_KEY!,
+  process.env.VAPID_PRIVATE_KEY!
 );
 
 export interface PushNotification {

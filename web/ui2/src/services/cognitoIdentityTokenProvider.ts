@@ -16,6 +16,14 @@ export class CognitoIdentityTokenProvider {
     this.restore();
   }
 
+  get available(): boolean {
+    return (
+      this.idToken !== undefined &&
+      this.idTokenExpiryTime !== undefined &&
+      this.idTokenExpiryTime > Date.now() + 30000
+    );
+  }
+
   async handleAuthentication(params: URLSearchParams): Promise<boolean> {
     const code = params.get("code");
     if (code) {
@@ -33,12 +41,7 @@ export class CognitoIdentityTokenProvider {
   }
 
   async getIdToken(): Promise<string | undefined> {
-    if (
-      (this.idToken &&
-        this.idTokenExpiryTime &&
-        this.idTokenExpiryTime > Date.now() + 30000) ||
-      (await this.refreshTokens())
-    ) {
+    if (this.available || (await this.refreshTokens())) {
       return this.idToken;
     } else {
       const authorizeParams = new URLSearchParams({

@@ -20,14 +20,14 @@ const config = {
   cognitoClientId: import.meta.env.VITE_CLIENT_ID,
   cognitoDomain: import.meta.env.VITE_COGNITO_DOMAIN,
   apiEndpoint: import.meta.env.VITE_API_ENDPOINT,
-  authRedirectUri: `http://${import.meta.env.VITE_HOSTNAME}/auth`,
+  appUrl: import.meta.env.VITE_URL,
   vapidPublicKey: import.meta.env.VITE_VAPID_PUB_KEY,
 };
 
 const identityTokenProvider = new CognitoIdentityTokenProvider({
   clientId: config.cognitoClientId,
   loginDomain: config.cognitoDomain,
-  redirectUri: config.authRedirectUri,
+  redirectUri: `${config.appUrl}/auth`,
 });
 const apiRequestSigner = new ApiRequestSigner({
   region: config.region,
@@ -65,7 +65,9 @@ const RootComponent = () => {
       Hello world!{" "}
       <button onClick={() => webPushSubscribe(ws)}>Subscribe</button>
       <button onClick={() => webPushUnsubscribe(ws)}>Unsubscribe</button>
-      <button onClick={() => ws.send(JSON.stringify({ msg: "send" }))}>
+      <button
+        onClick={() => ws.send(JSON.stringify({ action: "webPush/test" }))}
+      >
         Send
       </button>
     </div>

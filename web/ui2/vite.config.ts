@@ -40,4 +40,7 @@ export default defineConfig({
       "./runtimeConfig": "./runtimeConfig.browser",
     },
   },
+  server: {
+    hmr: process.env.NO_HMR === undefined,
+  },
 });

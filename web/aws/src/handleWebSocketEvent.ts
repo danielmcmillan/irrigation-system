@@ -3,6 +3,7 @@ import {
   APIGatewayProxyWebsocketEventV2,
 } from "aws-lambda";
 import { IrrigationDataStore } from "./lib/store";
+import { sendPushNotification } from "./lib/pushNotifications";
 
 const store = new IrrigationDataStore({
   tableName: process.env.DYNAMODB_TABLE_NAME!,
@@ -20,6 +21,15 @@ export async function handleWebSocketEvent(
         await store.addPushNotificationSubscription(data.subscription);
       } else if (data.action === "webPush/unsubscribe") {
         await store.removePushNotificationSubscription(data.subscription);
+      } else if (data.action === "webPush/test") {
+        await sendPushNotification(
+          {
+            title: "Test notification",
+            message:
+              "This message is being sent to confirm that notifications are working",
+          },
+          store
+        );
       } else {
         console.warn("Invalid WebSocket message", data);
       }
