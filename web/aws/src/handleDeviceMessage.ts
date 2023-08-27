@@ -6,20 +6,15 @@ import {
   RawDeviceMessage,
   parseDeviceMessage,
 } from "./lib/deviceMessage/deviceMessage";
-import {
-  DeviceState,
-  DeviceStateQueryType,
-  DeviceStatus,
-  IrrigationDataStore,
-  PropertyState,
-} from "./lib/store";
+import { DeviceState, DeviceStateQueryType, IrrigationDataStore, PropertyState } from "./lib/store";
 import { sendPushNotification } from "./lib/pushNotifications";
+import { DeviceStatus } from "./lib/types/device";
 
 const sqs = new SQSClient({});
 const store = new IrrigationDataStore({
   tableName: process.env.DYNAMODB_TABLE_NAME!,
 });
-const propertyHistoryTtl = 3600 * 24 * 90; // 90 days
+const historyTtl = 3600 * 24 * 90; // 90 days
 
 async function publishToSQS(message: DeviceMessage): Promise<void> {
   if (["event", "error"].includes(message.type)) {
@@ -28,9 +23,7 @@ async function publishToSQS(message: DeviceMessage): Promise<void> {
         QueueUrl: process.env.STORAGE_QUEUE_URL,
         // Encode binary data as base64 strings
         MessageBody: JSON.stringify(message, (_key, value) =>
-          value instanceof ArrayBuffer
-            ? Buffer.from(value).toString("base64")
-            : value
+          value instanceof ArrayBuffer ? Buffer.from(value).toString("base64") : value
         ),
       })
     );
@@ -56,9 +49,7 @@ async function sendNotifications(message: DeviceMessage): Promise<void> {
 
 async function updateStateStore(message: DeviceMessage): Promise<void> {
   const messageTime = (message.time / 1000) | 0;
-  let newDeviceState:
-    | Pick<DeviceState, "connected" | "status" | "config">
-    | undefined;
+  let newDeviceState: Pick<DeviceState, "connected" | "status" | "config"> | undefined;
   const newPropertyStates: PropertyState[] = [];
   let properties: PropertyState[] | undefined;
 
@@ -72,10 +63,7 @@ async function updateStateStore(message: DeviceMessage): Promise<void> {
   }
 
   const addProperty = (
-    property: Pick<
-      PropertyState,
-      "controllerId" | "propertyId" | "isDesiredValue" | "value"
-    >
+    property: Pick<PropertyState, "controllerId" | "propertyId" | "isDesiredValue" | "value">
   ) => {
     const propertyPredicate = (p: PropertyState) =>
       p.controllerId === property.controllerId &&
@@ -84,18 +72,14 @@ async function updateStateStore(message: DeviceMessage): Promise<void> {
     // Property already in table
     const existingProperty = properties?.find(propertyPredicate);
     const lastChanged =
-      existingProperty &&
-      Buffer.from(existingProperty.value).equals(Buffer.from(property.value))
+      existingProperty && Buffer.from(existingProperty.value).equals(Buffer.from(property.value))
         ? existingProperty.lastChanged
         : messageTime;
     // Property from previous event in same message
     const previousProperty = newPropertyStates.find(propertyPredicate);
     if (previousProperty) {
       previousProperty.value = property.value;
-      previousProperty.lastChanged = Math.max(
-        previousProperty.lastChanged,
-        lastChanged
-      );
+      previousProperty.lastChanged = Math.max(previousProperty.lastChanged, lastChanged);
     } else {
       newPropertyStates.push({
         ...property,
@@ -111,8 +95,7 @@ async function updateStateStore(message: DeviceMessage): Promise<void> {
         event.type === DeviceEventType.PropertyValueChanged ||
         event.type === DeviceEventType.PropertyDesiredValueChanged
       ) {
-        const isDesiredValue =
-          event.type === DeviceEventType.PropertyDesiredValueChanged;
+        const isDesiredValue = event.type === DeviceEventType.PropertyDesiredValueChanged;
         addProperty({
           controllerId: event.controllerId,
           propertyId: event.propertyId,
@@ -154,28 +137,22 @@ async function updateStateStore(message: DeviceMessage): Promise<void> {
   const promises: Promise<unknown>[] = [];
   const limit = pLimit(5);
   if (newDeviceState) {
-    promises.push(
-      limit(() =>
-        store.updateDeviceState({
-          deviceId: message.deviceId,
-          lastUpdated: messageTime,
-          ...newDeviceState,
-        })
-      )
-    );
+    const deviceState = {
+      deviceId: message.deviceId,
+      lastUpdated: messageTime,
+      ...newDeviceState,
+    };
+    promises.push(limit(() => store.updateDeviceState(deviceState)));
+    promises.push(limit(() => store.addDeviceHistory(deviceState, historyTtl)));
   }
   for (const prop of newPropertyStates) {
     promises.push(limit(() => store.updatePropertyState(prop)));
-    promises.push(
-      limit(() => store.addPropertyHistory(prop, propertyHistoryTtl))
-    );
+    promises.push(limit(() => store.addPropertyHistory(prop, historyTtl)));
   }
   await Promise.all(promises);
 }
 
-export async function handleDeviceMessage(
-  inputEvent: RawDeviceMessage
-): Promise<void> {
+export async function handleDeviceMessage(inputEvent: RawDeviceMessage): Promise<void> {
   const message = parseDeviceMessage(inputEvent);
 
   const results = await Promise.allSettled([

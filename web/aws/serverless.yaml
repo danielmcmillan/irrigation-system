@@ -56,7 +56,9 @@ functions:
           # authorizer:
           #   type: AWS_IAM
       - websocket: $disconnect
-      - websocket: $default
+      - websocket:
+          route: $default
+          routeResponseSelectionExpression: $default
 
 resources:
   Parameters:
