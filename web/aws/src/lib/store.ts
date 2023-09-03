@@ -9,6 +9,7 @@ import {
 import { KeyDefinition, KeyPartType, buildBinaryKey, parseBinaryKey } from "./binaryKey";
 import { PushSubscription } from "web-push";
 import { DeviceStatus } from "./types/device";
+import { WebSocketClient } from "./webSocketClient";
 
 export interface DeviceState {
   deviceId: string;
@@ -61,6 +62,10 @@ const tableKeys: {
     }>;
     sk: KeyDefinition<{ lastUpdated: number }>;
   };
+  webSocketClient: {
+    pk: KeyDefinition<{}>;
+    sk: KeyDefinition<{ connectionId: string }>;
+  };
   pushNotificationSubscription: {
     pk: KeyDefinition<{}>;
     sk: KeyDefinition<{ endpoint: string }>;
@@ -105,6 +110,13 @@ const tableKeys: {
       { field: "propertyId", type: KeyPartType.uint16le },
     ],
     sk: [{ field: "lastUpdated", type: KeyPartType.uint32le }],
+  },
+  webSocketClient: {
+    pk: [
+      { value: 0x00, type: KeyPartType.uint8 },
+      { value: 0x10, type: KeyPartType.uint8 },
+    ],
+    sk: [{ field: "connectionId", type: KeyPartType.utf8 }],
   },
   pushNotificationSubscription: {
     pk: [
@@ -338,6 +350,63 @@ export class IrrigationDataStore {
         },
       })
     );
+  }
+
+  /**
+   * Record a connected WebSocket client.
+   */
+  async addWebSocketClient(client: WebSocketClient, ttl: number): Promise<void> {
+    const { connectionId: _connectionId, ...data } = client;
+    await this.db.send(
+      new PutCommand({
+        TableName: this.tableName,
+        Item: {
+          pk: buildBinaryKey(tableKeys.webSocketClient.pk, client),
+          sk: buildBinaryKey(tableKeys.webSocketClient.sk, client),
+          ...data,
+          exp: ((Date.now() / 1000) | 0) + ttl,
+        },
+      })
+    );
+  }
+
+  /**
+   * Remove a WebSocket client.
+   */
+  async removeWebSocketClient(client: WebSocketClient): Promise<void> {
+    await this.db.send(
+      new DeleteCommand({
+        TableName: this.tableName,
+        Key: {
+          pk: buildBinaryKey(tableKeys.webSocketClient.pk, client),
+          sk: buildBinaryKey(tableKeys.webSocketClient.sk, client),
+        },
+      })
+    );
+  }
+
+  /**
+   * List all connected WebSocket clients.
+   */
+  async listWebSocketClients(): Promise<WebSocketClient[]> {
+    const result = await this.db.send(
+      new QueryCommand({
+        TableName: this.tableName,
+        KeyConditionExpression: "pk = :pk",
+        ExpressionAttributeValues: {
+          ":pk": buildBinaryKey(tableKeys.webSocketClient.pk, {}),
+        },
+      })
+    );
+    return (result.Items ?? []).map((item) => {
+      const skParts = parseBinaryKey(item.sk, tableKeys.webSocketClient.sk);
+      if (!skParts) {
+        throw new Error(`Invalid WebSocket client sk: ${item.sk}`);
+      }
+      return {
+        connectionId: skParts.connectionId,
+      };
+    });
   }
 
   /**
