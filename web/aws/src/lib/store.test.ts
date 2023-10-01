@@ -6,12 +6,8 @@ import {
 } from "@aws-sdk/lib-dynamodb";
 import { beforeEach, describe, expect, it } from "@jest/globals";
 import { mockClient } from "aws-sdk-client-mock";
-import {
-  DeviceStateQueryType,
-  DeviceStatus,
-  IrrigationDataStore,
-  PropertyState,
-} from "./store";
+import { DeviceStateQueryType, IrrigationDataStore, PropertyState } from "./store";
+import { DeviceStatus } from "./deviceStatus";
 
 const dbMock = mockClient(DynamoDBDocumentClient);
 const mockDeviceName = "dev1";
@@ -46,13 +42,9 @@ describe("store", () => {
         },
       ],
     });
-    const { devices, properties } = await store.getDeviceState(
-      DeviceStateQueryType.Device
-    );
+    const { devices, properties } = await store.getDeviceState(DeviceStateQueryType.Device);
     const params = dbMock.commandCalls(QueryCommand).at(0)?.args.at(0)?.input;
-    expect(params?.KeyConditionExpression).toBe(
-      "pk = :pk AND begins_with(sk, :sk)"
-    );
+    expect(params?.KeyConditionExpression).toBe("pk = :pk AND begins_with(sk, :sk)");
     expect(params?.ExpressionAttributeValues).toEqual({
       ":pk": Uint8Array.from([0]),
       ":sk": new Uint8Array([0]),
@@ -65,9 +57,7 @@ describe("store", () => {
     dbMock.on(QueryCommand).resolves({});
     await store.getDeviceState(DeviceStateQueryType.Properties, mockDeviceName);
     const params = dbMock.commandCalls(QueryCommand).at(0)?.args.at(0)?.input;
-    expect(params?.KeyConditionExpression).toBe(
-      "pk = :pk AND begins_with(sk, :sk)"
-    );
+    expect(params?.KeyConditionExpression).toBe("pk = :pk AND begins_with(sk, :sk)");
     expect(params?.ExpressionAttributeValues).toEqual({
       ":pk": Uint8Array.from([0]),
       ":sk": new Uint8Array([1, ...mockDeviceNameBin, 0]),
@@ -108,8 +98,7 @@ describe("store", () => {
     await store.updatePropertyState(property);
     const params = dbMock.commandCalls(UpdateCommand).at(0)?.args.at(0)?.input;
     expect(params?.UpdateExpression).toEqual(
-      "REMOVE #ex SET " +
-        ["#vl = :vl", "#lu = :lu", "#lc = :lc", "#ev = :ev"].join(", ")
+      "REMOVE #ex SET " + ["#vl = :vl", "#lu = :lu", "#lc = :lc", "#ev = :ev"].join(", ")
     );
     expect(params?.ExpressionAttributeNames).toEqual({
       "#vl": "val",
@@ -133,15 +122,7 @@ describe("store", () => {
     expect(params).toEqual({
       TableName: "table",
       Item: {
-        pk: new Uint8Array([
-          0,
-          1,
-          ...mockDeviceNameBin,
-          0,
-          4,
-          321 & 0xff,
-          (321 >> 8) & 0xff,
-        ]),
+        pk: new Uint8Array([0, 1, ...mockDeviceNameBin, 0, 4, 321 & 0xff, (321 >> 8) & 0xff]),
         sk: new Uint8Array(Uint32Array.from([999]).buffer),
         val: property.value,
         exp: property.lastUpdated + 3600,

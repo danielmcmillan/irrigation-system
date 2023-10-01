@@ -36,10 +36,7 @@ export function parseDeviceMessage(input: RawDeviceMessage): DeviceMessage {
   try {
     if (input.data) {
       const data = Buffer.from(input.data, "base64");
-      const buffer = data.buffer.slice(
-        data.byteOffset,
-        data.byteOffset + data.byteLength
-      );
+      const buffer = data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength);
       if (input.type === "event") {
         result.events = getEventsFromData(buffer);
       } else if (input.type === "error") {

@@ -8,7 +8,7 @@ import {
 } from "./lib/deviceMessage/deviceMessage";
 import { DeviceState, DeviceStateQueryType, IrrigationDataStore, PropertyState } from "./lib/store";
 import { sendPushNotification } from "./lib/pushNotifications";
-import { DeviceStatus } from "./lib/types/device";
+import { DeviceStatus } from "./lib/deviceStatus";
 
 const sqs = new SQSClient({});
 const store = new IrrigationDataStore({
@@ -100,7 +100,7 @@ async function updateStateStore(message: DeviceMessage): Promise<void> {
           controllerId: event.controllerId,
           propertyId: event.propertyId,
           isDesiredValue,
-          value: event.value,
+          value: new Uint8Array(event.value),
         });
       } else if (event.type === DeviceEventType.Started) {
         newDeviceState = { status: DeviceStatus.Unconfigured };
@@ -116,14 +116,14 @@ async function updateStateStore(message: DeviceMessage): Promise<void> {
         controllerId: property.controllerId,
         propertyId: property.propertyId,
         isDesiredValue: false,
-        value: property.value,
+        value: new Uint8Array(property.value),
       });
       if (property.desiredValue !== undefined) {
         addProperty({
           controllerId: property.controllerId,
           propertyId: property.propertyId,
           isDesiredValue: true,
-          value: property.desiredValue,
+          value: new Uint8Array(property.desiredValue),
         });
       }
     }
@@ -132,7 +132,7 @@ async function updateStateStore(message: DeviceMessage): Promise<void> {
   } else if (message.type === "disconnected") {
     newDeviceState = { connected: false };
   } else if (message.type === "config") {
-    newDeviceState = { config: message.data };
+    newDeviceState = { config: message.data ? new Uint8Array(message.data) : undefined };
   }
   const promises: Promise<unknown>[] = [];
   const limit = pLimit(5);

@@ -20,6 +20,7 @@
     "ts-jest": "^29.1.1"
   },
   "dependencies": {
+    "@aws-sdk/client-apigatewaymanagementapi": "^3.409.0",
     "@aws-sdk/client-dynamodb": "^3.370.0",
     "@aws-sdk/client-sqs": "^3.370.0",
     "@aws-sdk/lib-dynamodb": "^3.370.0",

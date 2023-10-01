@@ -1,11 +1,6 @@
 import React, { useCallback, useMemo } from "react";
 import ReactDOM from "react-dom/client";
-import {
-  createBrowserRouter,
-  redirect,
-  RouterProvider,
-  useLoaderData,
-} from "react-router-dom";
+import { createBrowserRouter, redirect, RouterProvider, useLoaderData } from "react-router-dom";
 import { ApiRequestSigner } from "./services/apiRequestSigner";
 import { CognitoIdentityTokenProvider } from "./services/cognitoIdentityTokenProvider";
 import "./index.css";
@@ -42,30 +37,33 @@ const webPush = new WebPush({ vapidPublicKeyString: config.vapidPublicKey });
 async function webPushSubscribe(send: (msg: object) => void) {
   const subscription = await webPush.subscribe();
   if (subscription) {
+    console.log("Subscribed");
     send({
       action: "webPush/subscribe",
+      requestId: 1,
       subscription,
     });
+  } else {
+    console.log("Failed to subscribe");
   }
 }
 async function webPushUnsubscribe(send: (msg: object) => void) {
   const subscription = await webPush.unsubscribe();
   if (subscription) {
+    console.log("Unsubscribed");
     send({
       action: "webPush/unsubscribe",
+      requestId: 1,
       subscription,
     });
   }
 }
 
 const RootComponent = () => {
-  const { readyState, lastJsonMessage, sendJsonMessage } = useWebSocket(
-    getWsUrl,
-    {
-      retryOnError: true,
-      shouldReconnect: () => true,
-    }
-  );
+  const { readyState, lastJsonMessage, sendJsonMessage } = useWebSocket(getWsUrl, {
+    retryOnError: true,
+    shouldReconnect: () => true,
+  });
   return (
     <div>
       <h2>WebSocket</h2>
@@ -74,15 +72,10 @@ const RootComponent = () => {
         <li>Last message: {JSON.stringify(lastJsonMessage)}</li>
       </ul>
       <h2>Push Notifications</h2>
-      <button onClick={() => webPushSubscribe(sendJsonMessage)}>
-        Subscribe
-      </button>
-      <button onClick={() => webPushUnsubscribe(sendJsonMessage)}>
-        Unsubscribe
-      </button>
-      <button onClick={() => sendJsonMessage({ action: "webPush/test" })}>
-        Test
-      </button>
+      <button onClick={() => webPushSubscribe(sendJsonMessage)}>Subscribe</button>
+      <button onClick={() => webPushUnsubscribe(sendJsonMessage)}>Unsubscribe</button>
+      <button onClick={() => sendJsonMessage({ action: "webPush/test" })}>Test</button>
+      <button onClick={() => sendJsonMessage({ action: "state/getAll" })}>Get State</button>
     </div>
   );
 };
@@ -105,9 +98,7 @@ const router = createBrowserRouter([
   },
 ]);
 
-const root = ReactDOM.createRoot(
-  document.getElementById("root") as HTMLElement
-);
+const root = ReactDOM.createRoot(document.getElementById("root") as HTMLElement);
 root.render(
   <React.StrictMode>
     <RouterProvider router={router} />

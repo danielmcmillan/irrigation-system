@@ -26,6 +26,12 @@ provider:
             - dynamodb:BatchWriteItem
             - dynamodb:DeleteItem
           Resource: !GetAtt StateTable.Arn
+  environment:
+    DYNAMODB_TABLE_NAME: !Ref StateTable
+    API_GATEWAY_ENDPOINT: !Sub "https://${WebsocketsApi.ApiId}.execute-api.${AWS::Region}.amazonaws.com/${sls:stage}"
+    VAPID_SUBJECT: ${env:VAPID_SUBJECT}
+    VAPID_PUBLIC_KEY: ${env:VAPID_PUBLIC_KEY}
+    VAPID_PRIVATE_KEY: ${env:VAPID_PRIVATE_KEY}
 
 plugins:
   - serverless-esbuild
@@ -40,15 +46,9 @@ functions:
     handler: src/handleDeviceMessage.handleDeviceMessage
     environment:
       STORAGE_QUEUE_URL: !Ref StorageQueue
-      DYNAMODB_TABLE_NAME: !Ref StateTable
 
   WebSocketListener:
     handler: src/handleWebSocketEvent.handleWebSocketEvent
-    environment:
-      DYNAMODB_TABLE_NAME: !Ref StateTable
-      VAPID_SUBJECT: ${env:VAPID_SUBJECT}
-      VAPID_PUBLIC_KEY: ${env:VAPID_PUBLIC_KEY}
-      VAPID_PRIVATE_KEY: ${env:VAPID_PRIVATE_KEY}
     events:
       - websocket:
           route: $connect

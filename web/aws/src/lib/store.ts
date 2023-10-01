@@ -8,7 +8,7 @@ import {
 } from "@aws-sdk/lib-dynamodb";
 import { KeyDefinition, KeyPartType, buildBinaryKey, parseBinaryKey } from "./binaryKey";
 import { PushSubscription } from "web-push";
-import { DeviceStatus } from "./types/device";
+import { DeviceStatus } from "./deviceStatus";
 import { WebSocketClient } from "./webSocketClient";
 
 export interface DeviceState {
@@ -16,7 +16,7 @@ export interface DeviceState {
   lastUpdated: number;
   connected?: boolean;
   status?: DeviceStatus;
-  config?: ArrayBuffer;
+  config?: Uint8Array;
 }
 
 export interface PropertyState {
@@ -24,7 +24,7 @@ export interface PropertyState {
   controllerId: number;
   propertyId: number;
   isDesiredValue: boolean;
-  value: ArrayBuffer;
+  value: Uint8Array;
   lastUpdated: number;
   lastChanged: number;
   eventId?: number;
@@ -292,7 +292,7 @@ export class IrrigationDataStore {
       "#ex": "exp",
     };
     const values: Record<string, unknown> = {
-      ":vl": new Uint8Array(state.value),
+      ":vl": state.value,
       ":lu": state.lastUpdated,
       ":lc": state.lastChanged,
     };
