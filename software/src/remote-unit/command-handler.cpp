@@ -9,8 +9,10 @@ RemoteUnitCommandHandler::RemoteUnitCommandHandler(
     Solenoids &solenoids,
     RemoteUnitBattery &battery,
     RemoteUnitFaults &faults,
+    RemoteUnitSensor &sensor,
     volatile unsigned long &counts)
-    : config(config), rfModule(rfModule), solenoids(solenoids), battery(battery), faults(faults), counts(counts)
+    : config(config), rfModule(rfModule), solenoids(solenoids), battery(battery),
+      faults(faults), sensor(sensor), counts(counts)
 {
 }
 
@@ -102,4 +104,9 @@ int RemoteUnitCommandHandler::getSoftwareRevision(uint16_t *softwareRevisionOut)
 {
     *softwareRevisionOut = REMOTE_UNIT_REVISION;
     return 0;
+}
+
+int RemoteUnitCommandHandler::getSensorValue(uint8_t sensorId, uint16_t *valueOut) const
+{
+    return this->sensor.readValue(sensorId, valueOut);
 }

@@ -6,6 +6,7 @@
 #include "solenoids.h"
 #include "battery.h"
 #include "faults.h"
+#include "sensor.h"
 
 class RemoteUnitCommandHandler
 {
@@ -14,6 +15,7 @@ class RemoteUnitCommandHandler
   Solenoids &solenoids;
   RemoteUnitBattery &battery;
   RemoteUnitFaults &faults;
+  RemoteUnitSensor &sensor;
   volatile unsigned long &counts;
 
 public:
@@ -23,6 +25,7 @@ public:
       Solenoids &solenoids,
       RemoteUnitBattery &battery,
       RemoteUnitFaults &faults,
+      RemoteUnitSensor &sensor,
       volatile unsigned long &counts);
 
   /**
@@ -105,5 +108,10 @@ public:
    * Gets the current software revision.
    */
   int getSoftwareRevision(uint16_t *softwareRevisionOut) const;
+
+  /**
+   * Gets the current value for the sensor with sepcified id.
+   */
+  int getSensorValue(uint8_t sensorId, uint16_t *valueOut) const;
 };
 #endif

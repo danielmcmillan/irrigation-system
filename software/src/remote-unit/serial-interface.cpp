@@ -58,6 +58,12 @@ void RemoteUnitSerialInterface::handleCommand(RemoteUnitPacket::RemoteUnitComman
         responseData[0] = softwareRevision;
         responseData[1] = softwareRevision >> 8;
         break;
+    case RemoteUnitPacket::RemoteUnitCommand::GetSensorValue:
+        uint16_t sensorValue;
+        result = this->commands.getSensorValue(*data, &sensorValue);
+        responseData[0] = sensorValue;
+        responseData[1] = sensorValue >> 8;
+        break;
     default:
         result = -1;
         break;
@@ -65,7 +71,7 @@ void RemoteUnitSerialInterface::handleCommand(RemoteUnitPacket::RemoteUnitComman
     if (result != 0)
     {
         // When an error occurs, respond with all bits set in the data
-        memset(responseData, 0xff, RemoteUnitPacket::getCommandDataSize(command));
+        memset(responseData, 0xff, RemoteUnitPacket::getCommandDataSize(RemoteUnitPacket::getResponseForCommand(command)));
     }
 }
 

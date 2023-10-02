@@ -23,6 +23,7 @@ namespace IrrigationSystem
             GetConfig = 0x15,
             GetTimer = 0x16,
             GetSoftwareRevision = 0x17,
+            GetSensorValue = 0x18,
             // Write operations
             SetSolenoidState = 0x20,
             ClearFaults = 0x22,
@@ -39,6 +40,7 @@ namespace IrrigationSystem
             GetConfigResponse = responseFlag | 0x15,
             GetTimerResponse = responseFlag | 0x16,
             GetSoftwareRevisionResponse = responseFlag | 0x17,
+            GetSensorValueResponse = responseFlag | 0x18,
             SetSolenoidStateResponse = responseFlag | 0x20,
             ClearFaultsResponse = responseFlag | 0x22,
             SetConfigResponse = responseFlag | 0x25,

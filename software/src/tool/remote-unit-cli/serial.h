@@ -1,3 +1,5 @@
+#ifndef _TOOL_SERIAL_H
+#define _TOOL_SERIAL_H
 #include <cstdio>
 #include <cstring>
 #include <cinttypes>
@@ -13,6 +15,7 @@ int serialOpen(const char *device)
     if (serialPort < 0)
     {
         printf("Error %i from open: %s\n", errno, strerror(errno));
+        return 0;
     }
 
     // Configure port
@@ -77,3 +80,4 @@ void serialClose(int serialPort)
 {
     close(serialPort);
 }
+#endif

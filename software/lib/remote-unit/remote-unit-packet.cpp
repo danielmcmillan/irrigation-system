@@ -124,6 +124,10 @@ namespace IrrigationSystem
                 return 0;
             case RemoteUnitCommand::ApplyRfConfigResponse:
                 return 16;
+            case RemoteUnitCommand::GetSensorValue:
+                return 1;
+            case RemoteUnitCommand::GetSensorValueResponse:
+                return 2;
             case RemoteUnitCommand::ErrorResponse:
                 return 0;
             default:

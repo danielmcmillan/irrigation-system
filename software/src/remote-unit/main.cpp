@@ -7,6 +7,7 @@
 #include "solenoids.h"
 #include "battery.h"
 #include "faults.h"
+#include "sensor.h"
 #include "settings.h"
 
 #define SERIAL_BEGIN Serial.begin(9600, SERIAL_8N1)
@@ -27,6 +28,12 @@
 // Pulled low to enable solar charge
 #define DISABLE_CHARGE A4
 
+// RS485 sensor pins
+#define RS_485_RX_PIN A2    // PC2
+#define RS_485_TX_PIN 3     // PD3
+#define RS_485_RE_DE_PIN A5 // SCL
+#define RS485_ENABLE_PIN A3 // PC3
+
 unsigned long lastSuccessfulCommunicationCounts = 0;
 volatile bool dataPending = false;
 // Approximation of time elapsed, multiples of 8 seconds
@@ -40,7 +47,8 @@ RemoteUnitRfModule rfModule(NODE_ID, config, RF_EN);
 Solenoids solenoids(config, solenoidDefinitions);
 RemoteUnitBattery battery(config, 0, DISABLE_CHARGE);
 RemoteUnitFaults faults;
-RemoteUnitCommandHandler commandHandler(config, rfModule, solenoids, battery, faults, counts);
+RemoteUnitSensor sensor(RS_485_RX_PIN, RS_485_TX_PIN, RS_485_RE_DE_PIN, RS485_ENABLE_PIN);
+RemoteUnitCommandHandler commandHandler(config, rfModule, solenoids, battery, faults, sensor, counts);
 RemoteUnitSerialInterface remoteUnitSerial(NODE_ID, commandHandler);
 
 void handleRfModuleInterrupt()
@@ -126,6 +134,7 @@ void setup()
     rfModule.setup();
     solenoids.setup();
     battery.setup();
+    sensor.setup();
     if (rfModule.applyConfig())
     {
         faults.setFault(RemoteUnitFault::ConfigureRfModuleFailed);
