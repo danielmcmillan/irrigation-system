@@ -200,6 +200,10 @@ namespace IrrigationSystem
             size_t packetSize = RemoteUnitPacket::createPacket(packet, PACKET_BUFFER_SIZE, nodeId);
             uint8_t *packetData;
             packetSize = RemoteUnitPacket::addCommandToPacket(packet, PACKET_BUFFER_SIZE, packetSize, command, &packetData);
+            if (packetSize == 0)
+            {
+                return 8;
+            }
             memcpy(packetData, requestData, requestDataSize);
             packetSize = RemoteUnitPacket::finalisePacket(packet, PACKET_BUFFER_SIZE, packetSize, false);
             // Add big-endian node ID to initial bytes for LoRa module
