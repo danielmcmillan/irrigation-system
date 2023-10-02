@@ -1,26 +1,12 @@
-import {
-  action,
-  computed,
-  makeObservable,
-  observable,
-  runInAction,
-} from "mobx";
+import { action, computed, makeObservable, observable, runInAction } from "mobx";
 import { PubSub } from "@aws-amplify/pubsub";
 import { ZenObservable } from "zen-observable-ts/lib/types";
 import { CONNECTION_STATE_CHANGE, ConnectionState } from "@aws-amplify/pubsub";
 import { Hub } from "aws-amplify";
-import {
-  getEventsFromData,
-  getLogFromEvent,
-  IrrigationEventType,
-} from "./event";
+import { getEventsFromData, getLogFromEvent, IrrigationEventType } from "./event";
 import { LogEntry, LogLevel } from "./log";
 import { getErrorFromData, getLogFromError } from "./error";
-import {
-  getPropertiesFromData,
-  getPropertyValue,
-  IrrigationProperty,
-} from "./property";
+import { getPropertiesFromData, getPropertyValue, IrrigationProperty } from "./property";
 import {
   ConfigEntry,
   deserializeConfigEntriesFromBinary,
@@ -61,15 +47,9 @@ export class IrrigationStore {
   controllerCommandResult: ArrayBuffer | undefined = undefined;
   controllerStatus: ControllerStatus = ControllerStatus.Unknown;
 
-  constructor(
-    public readonly clientId: string,
-    public readonly controlDeviceId: string
-  ) {
+  constructor(public readonly clientId: string, public readonly controlDeviceId: string) {
     this.log = [];
-    makeObservable<
-      this,
-      "addLogEntries" | "updateProperties" | "updatePropertyValue"
-    >(this, {
+    makeObservable<this, "addLogEntries" | "updateProperties" | "updatePropertyValue">(this, {
       connectionState: observable,
       log: observable,
       properties: observable,
@@ -89,8 +69,7 @@ export class IrrigationStore {
       const { payload } = data;
       if (payload.event === CONNECTION_STATE_CHANGE) {
         runInAction(() => {
-          this.connectionState = payload.data
-            .connectionState as ConnectionState;
+          this.connectionState = payload.data.connectionState as ConnectionState;
           if (this.connectionState !== ConnectionState.Connected) {
             this.controllerStatus = ControllerStatus.Unknown;
           }
@@ -111,8 +90,7 @@ export class IrrigationStore {
       `icu-out/all/${this.controlDeviceId}/#`,
       `icu-out/${this.clientId}/${this.controlDeviceId}/#`,
     ]).subscribe({
-      next: (msg: any) =>
-        this.handleMessage(msg.value.topicSymbol, msg.value.bytes),
+      next: (msg: any) => this.handleMessage(msg.value.topicSymbol, msg.value.bytes),
       error: (error) => console.error("MQTT subscription error", error),
       complete: () => console.log("MQTT subscription ended"),
     });
@@ -135,10 +113,7 @@ export class IrrigationStore {
   }
 
   get errorLogCount(): number {
-    return this.log.reduce(
-      (prev, cur) => (cur.level === LogLevel.error ? prev + 1 : prev),
-      0
-    );
+    return this.log.reduce((prev, cur) => (cur.level === LogLevel.error ? prev + 1 : prev), 0);
   }
 
   requestSetProperty(controllerId: number, propertyId: number, value: boolean) {
@@ -166,10 +141,13 @@ export class IrrigationStore {
     if (this.configLoaded) {
       this.publish(
         `icu-in/${this.controlDeviceId}/setConfig`,
-        serializeConfigEntriesToBinary(
-          deserializeConfigEntriesFromIni(this.configIni)
-        )
+        serializeConfigEntriesToBinary(deserializeConfigEntriesFromIni(this.configIni))
       );
+      // const b = serializeConfigEntriesToBinary(deserializeConfigEntriesFromIni(this.configIni));
+      // console.log(
+      //   "Config: ",
+      //   Array.from(new Uint8Array(b)).map((x) => x.toString(16))
+      // );
     }
   }
 
@@ -206,10 +184,7 @@ export class IrrigationStore {
     }
   }
 
-  private getProperty(
-    controllerId: number,
-    propertyId: number
-  ): IrrigationProperty | undefined {
+  private getProperty(controllerId: number, propertyId: number): IrrigationProperty | undefined {
     return this.properties.find(
       (p) => p.controllerId === controllerId && p.propertyId === propertyId
     );
@@ -242,16 +217,11 @@ export class IrrigationStore {
         prop.value = newValue;
       }
     } else {
-      console.warn(
-        `Received event for unknown property ${controllerId}:${propertyId}`
-      );
+      console.warn(`Received event for unknown property ${controllerId}:${propertyId}`);
     }
   }
 
-  private async handleMessage(
-    topic: string,
-    payload: Uint8Array
-  ): Promise<unknown> {
+  private async handleMessage(topic: string, payload: Uint8Array): Promise<unknown> {
     const buffer = payload.buffer.slice(
       payload.byteOffset,
       payload.byteOffset + payload.byteLength
@@ -294,9 +264,7 @@ export class IrrigationStore {
         const properties = getPropertiesFromData(buffer);
         this.updateProperties(properties);
       } else if (messageType === MqttMessageType.Config) {
-        const configIni = serializeConfigEntriesToIni(
-          deserializeConfigEntriesFromBinary(buffer)
-        );
+        const configIni = serializeConfigEntriesToIni(deserializeConfigEntriesFromBinary(buffer));
         runInAction(() => {
           this.configIni = configIni;
           this.configLoaded = true;
@@ -306,16 +274,10 @@ export class IrrigationStore {
           this.controllerCommandResult = buffer;
         });
       } else {
-        console.warn(
-          `MQTT message payload for unknown type ${messageType}`,
-          payload
-        );
+        console.warn(`MQTT message payload for unknown type ${messageType}`, payload);
       }
     } else {
-      console.error(
-        `Received MQTT message on unexpected topic ${topic}`,
-        payload
-      );
+      console.error(`Received MQTT message on unexpected topic ${topic}`, payload);
     }
     return;
   }

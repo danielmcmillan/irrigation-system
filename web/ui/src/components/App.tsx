@@ -25,12 +25,7 @@ import {
   ButtonGroup,
   Alert,
 } from "@aws-amplify/ui-react";
-import {
-  getLogLevelString,
-  LogEntry,
-  LogLevel,
-  logLevels,
-} from "../irrigation/log";
+import { getLogLevelString, LogEntry, LogLevel, logLevels } from "../irrigation/log";
 import { IrrigationProperty } from "../irrigation/property";
 import { IniConfigEditor } from "./IniConfigEditor";
 import { runInAction } from "mobx";
@@ -64,9 +59,7 @@ const LogEntryCard = ({ entry }: { entry: LogEntry }) => {
 };
 
 const LogEntries = observer(({ icu }: { icu: IrrigationStore }) => {
-  const showStates = Object.fromEntries(
-    logLevels.map((level) => [level, useState(true)])
-  );
+  const showStates = Object.fromEntries(logLevels.map((level) => [level, useState(true)]));
   const logs = useMemo(
     () => icu.log.filter((entry) => showStates[entry.level][0]).reverse(),
     [icu.log.at(-1)?.id, showStates[0][0], showStates[1][0], showStates[2][0]]
@@ -133,12 +126,7 @@ const PropertyBooleanControl = ({
 
   return (
     <Flex direction="row" justifyContent="space-between">
-      <SwitchField
-        isDisabled={disabled}
-        label=""
-        isChecked={localValue}
-        onChange={handleChange}
-      />
+      <SwitchField isDisabled={disabled} label="" isChecked={localValue} onChange={handleChange} />
       {isChanging && <Loader />}
     </Flex>
   );
@@ -177,19 +165,14 @@ const PropertyControls = observer(({ icu }: { icu: IrrigationStore }) => {
       <Table variation="bordered">
         <TableBody>
           {groups.flatMap(([group, properties]) => [
-            <TableRow
-              key={group}
-              backgroundColor={tokens.colors.background.tertiary}
-            >
+            <TableRow key={group} backgroundColor={tokens.colors.background.tertiary}>
               <TableCell as="th" colSpan={3}>
                 {group}
               </TableCell>
             </TableRow>,
             ...properties.map((prop) => {
               const value = Array.isArray(prop.value) ? prop.value[0] : false;
-              const desiredValue = Array.isArray(prop.desiredValue)
-                ? prop.desiredValue[0]
-                : false;
+              const desiredValue = Array.isArray(prop.desiredValue) ? prop.desiredValue[0] : false;
               return (
                 <TableRow key={`${prop.controllerId}${prop.propertyId}`}>
                   <TableCell as="th">
@@ -201,14 +184,21 @@ const PropertyControls = observer(({ icu }: { icu: IrrigationStore }) => {
                   </TableCell>
                   {prop.isReadOnly && (
                     <TableCell colSpan={2}>
-                      {(Array.isArray(prop.value)
-                        ? prop.value
-                        : [prop.value]
-                      ).map((value, index) => (
-                        <Text key={index}>
-                          {value.toString()} {prop.format.unit}
-                        </Text>
-                      ))}
+                      {(Array.isArray(prop.value) ? prop.value : [prop.value]).map(
+                        (value, index) => {
+                          let suffix = "";
+                          if (typeof value === "number" && prop.format.unit?.match(/^[+\-]\d+$/)) {
+                            value += Number(prop.format.unit);
+                          } else if (prop.format.unit) {
+                            suffix = " " + prop.format.unit;
+                          }
+                          const text =
+                            (typeof value === "number"
+                              ? (+value.toFixed(2)).toString()
+                              : value.toString()) + suffix;
+                          return <Text key={index}>{text}</Text>;
+                        }
+                      )}
                     </TableCell>
                   )}
                   {!prop.isReadOnly && (
@@ -224,11 +214,7 @@ const PropertyControls = observer(({ icu }: { icu: IrrigationStore }) => {
                           disabled={!icu.ready}
                           desiredValue={desiredValue}
                           onDesiredValueChange={(value) =>
-                            icu.requestSetProperty(
-                              prop.controllerId,
-                              prop.propertyId,
-                              value
-                            )
+                            icu.requestSetProperty(prop.controllerId, prop.propertyId, value)
                           }
                         />
                       </TableCell>
@@ -255,9 +241,7 @@ const App = observer(({ icu }: { icu: IrrigationStore }) => {
     };
   }, []);
 
-  const [openPage, setOpenPage] = useState<
-    "config" | "vaconTool" | "remoteUnitTool" | null
-  >(null);
+  const [openPage, setOpenPage] = useState<"config" | "vaconTool" | "remoteUnitTool" | null>(null);
 
   if (openPage === "config") {
     return (
@@ -283,13 +267,7 @@ const App = observer(({ icu }: { icu: IrrigationStore }) => {
           const command =
             value === undefined
               ? new Uint8Array([1, address & 0xff, address >> 8])
-              : new Uint8Array([
-                  2,
-                  address & 0xff,
-                  address >> 8,
-                  value & 0xff,
-                  value >> 8,
-                ]);
+              : new Uint8Array([2, address & 0xff, address >> 8, value & 0xff, value >> 8]);
           icu.requestControllerCommand(2, command.buffer);
         }}
         onClose={() => setOpenPage(null)}

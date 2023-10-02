@@ -31,6 +31,15 @@ namespace IrrigationSystem
                 ++solenoidCount;
             }
             break;
+        case RemoteUnitConfigType::AddRemoteUnitSensor:
+        {
+            int index = getRemoteUnitIndex(data[0]);
+            if (index >= 0)
+            {
+                remoteUnits[index].hasSensor = true;
+            }
+            break;
+        }
         default:
             break;
         }
@@ -51,14 +60,18 @@ namespace IrrigationSystem
 
     unsigned int RemoteUnitControllerDefinition::getPropertyCount() const
     {
-        return remoteUnitCount * 2u + solenoidCount;
+        return remoteUnitCount + // available
+               remoteUnitCount + // battery
+               solenoidCount +   // solenoid on
+               getSensorCount();
     }
 
     uint16_t RemoteUnitControllerDefinition::getPropertyIdAt(unsigned int index) const
     {
         RemoteUnitPropertyType type;
         uint8_t subIndex; // Index within remote units or solenoids
-        // Order: all remote unit available, then remote unit battery, then solenoid on
+        // Order: all remote unit available, then remote unit battery, then remote unit sensors, then solenoid on
+        uint8_t sensorCount = getSensorCount();
         if (index < remoteUnitCount)
         {
             type = RemoteUnitPropertyType::RemoteUnitAvailable;
@@ -69,7 +82,24 @@ namespace IrrigationSystem
             type = RemoteUnitPropertyType::RemoteUnitBattery;
             subIndex = index - remoteUnitCount;
         }
-        else if (index < (remoteUnitCount * 2u + solenoidCount))
+        else if (index < remoteUnitCount * 2u + sensorCount)
+        {
+            type = RemoteUnitPropertyType::RemoteUnitSensor;
+            uint8_t sensorsToSkip = index - remoteUnitCount * 2u;
+            for (uint8_t i = 0; i < remoteUnitCount; ++i)
+            {
+                if (remoteUnits[i].hasSensor)
+                {
+                    if (sensorsToSkip == 0)
+                    {
+                        subIndex = i;
+                        break;
+                    }
+                    --sensorsToSkip;
+                }
+            }
+        }
+        else if (index < (remoteUnitCount * 2u + sensorCount + solenoidCount))
         {
             type = RemoteUnitPropertyType::RemoteUnitSolenoidOn;
             subIndex = index - remoteUnitCount * 2u;
@@ -83,7 +113,15 @@ namespace IrrigationSystem
 
     unsigned int RemoteUnitControllerDefinition::getPropertyLength(uint16_t id) const
     {
-        return 1;
+        RemoteUnitPropertyType type = (RemoteUnitPropertyType)(id >> 8);
+        const char *result;
+        switch (type)
+        {
+        case RemoteUnitPropertyType::RemoteUnitSensor:
+            return 2;
+        default:
+            return 1;
+        }
     }
 
     bool RemoteUnitControllerDefinition::getPropertyReadOnly(uint16_t id) const
@@ -135,6 +173,9 @@ namespace IrrigationSystem
         case RemoteUnitPropertyType::RemoteUnitSolenoidOn:
             result = "Open";
             break;
+        case RemoteUnitPropertyType::RemoteUnitSensor:
+            result = "Sensor";
+            break;
         default:
             return 0;
         }
@@ -156,6 +197,11 @@ namespace IrrigationSystem
         }
         case RemoteUnitPropertyType::RemoteUnitSolenoidOn:
             return {PropertyValueType::BooleanFlags, {.booleanCount = 1}};
+        case RemoteUnitPropertyType::RemoteUnitSensor:
+        {
+            PropertyFormat format = {PropertyValueType::UnsignedInt, {.mul = {10, -1}}, "-500"};
+            return format;
+        }
         default:
             return {};
         }
@@ -184,6 +230,19 @@ namespace IrrigationSystem
         return -1;
     }
 
+    uint8_t RemoteUnitControllerDefinition::getSensorCount() const
+    {
+        uint8_t sensorValueCount = 0;
+        for (uint8_t i = 0; i < remoteUnitCount; ++i)
+        {
+            if (remoteUnits[i].hasSensor)
+            {
+                ++sensorValueCount;
+            }
+        }
+        return sensorValueCount;
+    }
+
     uint8_t RemoteUnitControllerDefinition::getSolenoidCount() const
     {
         return solenoidCount;
@@ -208,7 +267,9 @@ namespace IrrigationSystem
 
     uint16_t RemoteUnitControllerDefinition::getPropertyId(RemoteUnitPropertyType type, int index) const
     {
-        uint8_t id = (type == RemoteUnitPropertyType::RemoteUnitAvailable || type == RemoteUnitPropertyType::RemoteUnitBattery)
+        uint8_t id = (type == RemoteUnitPropertyType::RemoteUnitAvailable ||
+                      type == RemoteUnitPropertyType::RemoteUnitBattery ||
+                      type == RemoteUnitPropertyType::RemoteUnitSensor)
                          ? getRemoteUnitAt(index).id
                          : getSolenoidAt(index).id;
         return (type << 8) + id;

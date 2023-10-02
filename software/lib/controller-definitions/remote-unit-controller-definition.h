@@ -13,6 +13,8 @@ namespace IrrigationSystem
         uint8_t id;
         /** RF node number for addressing */
         uint16_t nodeId;
+        /** Whether to read a sensor value from this node. */
+        bool hasSensor;
     };
     struct Solenoid
     {
@@ -23,13 +25,15 @@ namespace IrrigationSystem
     enum RemoteUnitConfigType : uint8_t
     {
         AddRemoteUnitConfig = 0x01,
-        AddRemoteUnitSolenoidConfig = 0x02
+        AddRemoteUnitSolenoidConfig = 0x02,
+        AddRemoteUnitSensor = 0x03,
     };
     enum RemoteUnitPropertyType : uint8_t
     {
         RemoteUnitAvailable = 0x01,
         RemoteUnitBattery = 0x02,
-        RemoteUnitSolenoidOn = 0x03
+        RemoteUnitSolenoidOn = 0x03,
+        RemoteUnitSensor = 0x04,
     };
 
     class RemoteUnitControllerDefinition : public IrrigationSystem::ControllerDefinition
@@ -55,6 +59,9 @@ namespace IrrigationSystem
         const RemoteUnit &getRemoteUnitAt(int index) const;
         /** Get the index of the RemoteUnit definition with specified id, or -1 if it doesn't exist */
         int getRemoteUnitIndex(uint8_t id) const;
+        /** Get the number of remote units with sensor enabled */
+        uint8_t getSensorCount() const;
+
         uint8_t getSolenoidCount() const;
         const Solenoid &getSolenoidAt(int index) const;
         /** Get the index of the Solenoid definition with specified id, or -1 if it doesn't exist  */

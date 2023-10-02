@@ -14,6 +14,7 @@ namespace IrrigationSystem
 
         uint8_t solenoidOn;
         uint8_t solenoidDesiredOn;
+        uint16_t sensorValue;
 
         /** Last update time, as multiples of 2^14 milliseconds (~16s) */
         uint8_t lastUpdated;
@@ -47,8 +48,8 @@ namespace IrrigationSystem
         /** Write the default config to RF module. Returns whether successful. */
         bool applyRfConfig();
         void setRemoteUnitAvailable(int index, bool available);
-        bool updateRemoteUnit(int index);
-        bool handleRemoteUnitResponse(const RemoteUnit &remoteUnit, int remoteUnitIndex, uint8_t *packet);
+        bool updateRemoteUnit(int index, bool updateSensor);
+        bool handleRemoteUnitResponse(const RemoteUnit &remoteUnit, int remoteUnitIndex, uint8_t *packet, bool updateSensor);
         void handleSolenoidValuesChanged(const RemoteUnit &remoteUnit, int remoteUnitIndex, uint8_t previousSolenoidOn, uint8_t previousSolenoidDesiredOn);
     };
 }

@@ -25,7 +25,7 @@ extern "C"
 // Time in 2^14 milliseconds between heartbeats for remote units with active solenoids
 #define REMOTE_UNIT_ACTIVE_UPDATE_INTERVAL 11 // ~3 minutes
 
-#define PACKET_BUFFER_SIZE 28
+#define PACKET_BUFFER_SIZE 31
 // Flag indicating an indeterminate state of a remote unit's solenoids
 #define SOLENOID_ON_INDETERMINATE 0xff
 
@@ -102,6 +102,13 @@ namespace IrrigationSystem
             if (index >= 0)
             {
                 return remoteUnits[index].batteryVoltage;
+            }
+            break;
+        case RemoteUnitPropertyType::RemoteUnitSensor:
+            index = definition.getRemoteUnitIndex(subId);
+            if (index >= 0)
+            {
+                return remoteUnits[index].sensorValue;
             }
             break;
         case RemoteUnitPropertyType::RemoteUnitSolenoidOn:
@@ -274,7 +281,7 @@ namespace IrrigationSystem
                 bool succeeded = false;
                 for (int attempt = 0; attempt <= RETRY_COUNT; ++attempt)
                 {
-                    succeeded = updateRemoteUnit(i);
+                    succeeded = updateRemoteUnit(i, false);
                     if (succeeded)
                     {
                         break;
@@ -305,7 +312,7 @@ namespace IrrigationSystem
                 bool succeeded = false;
                 for (int attempt = 0; attempt <= RETRY_COUNT; ++attempt)
                 {
-                    succeeded = updateRemoteUnit(i);
+                    succeeded = updateRemoteUnit(i, true);
                     if (succeeded)
                     {
                         break;
@@ -369,9 +376,13 @@ namespace IrrigationSystem
         }
     }
 
-    bool RemoteUnitController::updateRemoteUnit(int index)
+    bool RemoteUnitController::updateRemoteUnit(int index, bool updateSensor)
     {
         const RemoteUnit &remoteUnit = definition.getRemoteUnitAt(index);
+        if (!remoteUnit.hasSensor)
+        {
+            updateSensor = false;
+        }
         uint8_t buffer[PACKET_BUFFER_SIZE + 2];
 
         // Build request packet: get battery + clear faults + get/set solenoid state
@@ -388,6 +399,10 @@ namespace IrrigationSystem
             uint8_t *solenoidState;
             packetSize = RemoteUnitPacket::addCommandToPacket(packet, PACKET_BUFFER_SIZE, packetSize, RemoteUnitPacket::RemoteUnitCommand::SetSolenoidState, &solenoidState);
             *solenoidState = remoteUnits[index].solenoidDesiredOn;
+        }
+        if (updateSensor)
+        {
+            packetSize = RemoteUnitPacket::addCommandToPacket(packet, PACKET_BUFFER_SIZE, packetSize, RemoteUnitPacket::RemoteUnitCommand::GetSensorValue, nullptr);
         }
         packetSize = RemoteUnitPacket::finalisePacket(packet, PACKET_BUFFER_SIZE, packetSize, false);
         // Add big-endian node ID to initial bytes for LoRa module
@@ -420,7 +435,7 @@ namespace IrrigationSystem
         packetSize = RemoteUnitPacket::getPacket(buffer, read + 1, &packet);
 
         int numCommands = IrrigationSystem::RemoteUnitPacket::validatePacket(packet, packetSize, true);
-        if (numCommands != 3)
+        if (numCommands != (updateSensor ? 4 : 3))
         {
             if (numCommands == -2)
             {
@@ -440,7 +455,7 @@ namespace IrrigationSystem
             LOG_ERROR("Remote unit response is valid but for unexpected node id");
             return false;
         }
-        if (!handleRemoteUnitResponse(remoteUnit, index, packet))
+        if (!handleRemoteUnitResponse(remoteUnit, index, packet, updateSensor))
         {
             notifyError(0x07, remoteUnit.id);
             LOG_ERROR("Remote unit response is for unexpected commands");
@@ -451,7 +466,7 @@ namespace IrrigationSystem
         return true;
     }
 
-    bool RemoteUnitController::handleRemoteUnitResponse(const RemoteUnit &remoteUnit, int remoteUnitIndex, uint8_t *packet)
+    bool RemoteUnitController::handleRemoteUnitResponse(const RemoteUnit &remoteUnit, int remoteUnitIndex, uint8_t *packet, bool updateSensor)
     {
         const uint8_t *responseData;
         IrrigationSystem::RemoteUnitPacket::RemoteUnitCommand responseCommand;
@@ -499,6 +514,23 @@ namespace IrrigationSystem
         remoteUnits[remoteUnitIndex].solenoidDesiredOn = responseData[0];
         // Send events for any solenoid that changed state
         handleSolenoidValuesChanged(remoteUnit, remoteUnitIndex, previousSolenoidOn, previousSolenoidDesiredOn);
+
+        if (updateSensor)
+        {
+            responseCommand = IrrigationSystem::RemoteUnitPacket::getCommandAtIndex(packet, 3, &responseData);
+            if (responseCommand != RemoteUnitPacket::RemoteUnitCommand::GetSensorValueResponse)
+            {
+                return false;
+            }
+            uint16_t previousSensorValue = remoteUnits[remoteUnitIndex].sensorValue;
+            uint16_t sensorValue = read16LE(responseData);
+            remoteUnits[remoteUnitIndex].sensorValue = sensorValue;
+            if (eventHandler != nullptr && previousSensorValue != sensorValue)
+            {
+                eventHandler->handlePropertyValueChanged(controllerId, definition.getPropertyId(RemoteUnitPropertyType::RemoteUnitSensor, remoteUnitIndex), 2, sensorValue);
+            }
+        }
+
         return true;
     }
 
