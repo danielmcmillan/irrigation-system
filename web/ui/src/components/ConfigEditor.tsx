@@ -39,7 +39,7 @@ export const ConfigEditor: React.FC<ConfigEditorProps> = observer(
         setRemoteUnitId(entry.remoteUnitId);
         if (entry.type === ConfigType.RemoteUnitNode) {
           setNodeNumber(entry.nodeNumber);
-        } else {
+        } else if (entry.type === ConfigType.RemoteUnitSolenoid) {
           setSolenoidId(entry.solenoidId);
           setSolenoidNumber(entry.solenoidNumber);
         }
@@ -99,9 +99,7 @@ export const ConfigEditor: React.FC<ConfigEditorProps> = observer(
     };
 
     const handleRemoveEntry = (entryToRemove: ConfigEntry) => {
-      const updatedEntries = configEntries.filter(
-        (entry) => entry !== entryToRemove
-      );
+      const updatedEntries = configEntries.filter((entry) => entry !== entryToRemove);
       onUpdate(updatedEntries);
     };
 
@@ -136,17 +134,12 @@ export const ConfigEditor: React.FC<ConfigEditorProps> = observer(
                 {entry.type === ConfigType.RemoteUnitSolenoid && (
                   <>
                     <Text>Solenoid ID: {entry.solenoidId}</Text>
-                    <Text>
-                      Solenoid Number: {(entry as any).solenoidNumber}
-                    </Text>
+                    <Text>Solenoid Number: {(entry as any).solenoidNumber}</Text>
                   </>
                 )}
               </Flex>
               <ButtonGroup direction="column" gap="0.5rem">
-                <Button
-                  disabled={entry === editingEntry}
-                  onClick={() => startEditing(entry)}
-                >
+                <Button disabled={entry === editingEntry} onClick={() => startEditing(entry)}>
                   Edit
                 </Button>
                 <Button onClick={() => handleRemoveEntry(entry)}>Remove</Button>
@@ -162,24 +155,13 @@ export const ConfigEditor: React.FC<ConfigEditorProps> = observer(
             label="Type"
             name="type"
             value={type.toString()}
-            onChange={(e) =>
-              setType(parseInt(e.target.value, 10) as ConfigType)
-            }
+            onChange={(e) => setType(parseInt(e.target.value, 10) as ConfigType)}
           >
-            <Radio value={ConfigType.RemoteUnitNode.toString()}>
-              Remote Unit Node
-            </Radio>
-            <Radio value={ConfigType.RemoteUnitSolenoid.toString()}>
-              Remote Unit Solenoid
-            </Radio>
+            <Radio value={ConfigType.RemoteUnitNode.toString()}>Remote Unit Node</Radio>
+            <Radio value={ConfigType.RemoteUnitSolenoid.toString()}>Remote Unit Solenoid</Radio>
           </RadioGroupField>
 
-          <TextField
-            label="Controller ID"
-            type="number"
-            value={controllerId}
-            disabled={true}
-          />
+          <TextField label="Controller ID" type="number" value={controllerId} disabled={true} />
 
           <StepperField
             label="Remote Unit ID"
@@ -226,9 +208,7 @@ export const ConfigEditor: React.FC<ConfigEditorProps> = observer(
           <Button onClick={editingEntry ? handleUpdateEntry : handleAddEntry}>
             {editingEntry ? "Update Entry" : "Add Entry"}
           </Button>
-          {editingEntry && (
-            <Button onClick={() => startEditing(null)}>Cancel editing</Button>
-          )}
+          {editingEntry && <Button onClick={() => startEditing(null)}>Cancel editing</Button>}
         </Flex>
       </Flex>
     );
