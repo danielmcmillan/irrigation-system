@@ -102,7 +102,7 @@ namespace IrrigationSystem
         else if (index < (remoteUnitCount * 2u + sensorCount + solenoidCount))
         {
             type = RemoteUnitPropertyType::RemoteUnitSolenoidOn;
-            subIndex = index - remoteUnitCount * 2u;
+            subIndex = index - remoteUnitCount * 2u - sensorCount;
         }
         else
         {
