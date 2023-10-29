@@ -4202,7 +4202,7 @@
     (property "Purchase Link" "NA (Extended)" (at 184.15 24.13 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (property "JLCPCB Part" "C253606" (at 184.15 24.13 0)
+    (property "JLCPCB Part" "C497847" (at 184.15 24.13 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (pin "1" (uuid b49b60d9-6ee2-41bd-871e-432160694675))
