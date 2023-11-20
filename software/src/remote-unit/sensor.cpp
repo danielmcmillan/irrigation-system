@@ -11,8 +11,8 @@ uint8_t rs485ReadWaterPotentialCommand[] = {0x02,
                                             0x84,
                                             0x39};
 
-RemoteUnitSensor::RemoteUnitSensor(uint8_t rxPin, uint8_t txPin, uint8_t reDePin, uint8_t rs485EnablePin)
-    : txPin(txPin), reDePin(reDePin), rs485EnablePin(rs485EnablePin), ss(rxPin, txPin)
+RemoteUnitSensor::RemoteUnitSensor(const RemoteUnitConfig &config, uint8_t rxPin, uint8_t txPin, uint8_t reDePin, uint8_t rs485EnablePin)
+    : config(config), txPin(txPin), reDePin(reDePin), rs485EnablePin(rs485EnablePin), ss(rxPin, txPin)
 {
 }
 
@@ -87,7 +87,7 @@ void RemoteUnitSensor::rs485On()
     ss.begin(9600);
     ss.setTimeout(2000);
     digitalWrite(rs485EnablePin, HIGH);
-    delay(200);
+    delay(256 + 256 * (unsigned long)config.getSensorPowerOnDelay());
 }
 void RemoteUnitSensor::rs485Mode(bool tx)
 {

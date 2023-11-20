@@ -3,17 +3,30 @@
 #include <inttypes.h>
 
 #define REMOTE_UNIT_CONFIG_SIZE 16
-#define REMOTE_UNIT_EEPROM_SIZE REMOTE_UNIT_CONFIG_SIZE + 2
+#define REMOTE_UNIT_EEPROM_SIZE (1 + REMOTE_UNIT_CONFIG_SIZE + 2)
 #define REMOTE_UNIT_RF_CONFIG_SIZE 6
 
 class RemoteUnitConfig
 {
+  /**
+   * The config data as it appears in the EEPROM.
+   * First byte is the remote unit firmware revision which last wrote the data.
+   * Last two bytes are a Modbus CRC-16 checksum.
+   */
   uint8_t config[REMOTE_UNIT_EEPROM_SIZE] = {0};
   // Whether current config is different to the persisted config.
   bool isChanged = true;
 
 public:
+  /**
+   * Get the configuration data.
+   * Length of the return value is `REMOTE_UNIT_CONFIG_SIZE`.
+   */
   const uint8_t *getRaw() const;
+  /**
+   * Sets the configuration data.
+   * `newConfig` should have length `REMOTE_UNIT_CONFIG_SIZE`.
+   */
   const uint8_t *setRaw(const uint8_t *newConfig);
 
   /**
@@ -44,5 +57,6 @@ public:
   uint8_t getSolenoidAOffPulseWidth() const;
   uint8_t getSolenoidBOnPulseWidth() const;
   uint8_t getSolenoidBOffPulseWidth() const;
+  uint8_t getSensorPowerOnDelay() const;
 };
 #endif

@@ -47,7 +47,7 @@ RemoteUnitRfModule rfModule(NODE_ID, config, RF_EN);
 Solenoids solenoids(config, solenoidDefinitions);
 RemoteUnitBattery battery(config, 0, DISABLE_CHARGE);
 RemoteUnitFaults faults;
-RemoteUnitSensor sensor(RS_485_RX_PIN, RS_485_TX_PIN, RS_485_RE_DE_PIN, RS485_ENABLE_PIN);
+RemoteUnitSensor sensor(config, RS_485_RX_PIN, RS_485_TX_PIN, RS_485_RE_DE_PIN, RS485_ENABLE_PIN);
 RemoteUnitCommandHandler commandHandler(config, rfModule, solenoids, battery, faults, sensor, counts);
 RemoteUnitSerialInterface remoteUnitSerial(NODE_ID, commandHandler);
 

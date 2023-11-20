@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include <SoftwareSerial.h>
+#include "config.h"
 
 /**
  * Handles requests for sensor values.
@@ -10,6 +11,7 @@
  */
 class RemoteUnitSensor
 {
+  const RemoteUnitConfig &config;
   const uint8_t txPin;
   const uint8_t reDePin;
   const uint8_t rs485EnablePin;
@@ -17,6 +19,7 @@ class RemoteUnitSensor
 
 public:
   RemoteUnitSensor(
+      const RemoteUnitConfig &config,
       uint8_t rxPin,
       uint8_t txPin,
       uint8_t reDePin,
