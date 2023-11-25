@@ -164,6 +164,10 @@ namespace IrrigationSystem
 
     uint16_t Vacon100Client::getErrorCode()
     {
+        if (errno >= MODBUS_ENOBASE)
+        {
+            return errno - MODBUS_ENOBASE + 11234;
+        }
         return errno;
     }
 

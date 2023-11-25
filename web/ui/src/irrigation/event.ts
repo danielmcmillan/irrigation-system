@@ -26,20 +26,15 @@ export interface IrrigationEventGeneral extends IrrigationEventCommon {
   data: ArrayBuffer;
 }
 export interface IrrigationEventNotice extends IrrigationEventCommon {
-  type:
-    | IrrigationEventType.Started
-    | IrrigationEventType.Configured
-    | IrrigationEventType.Ready;
+  type: IrrigationEventType.Started | IrrigationEventType.Configured | IrrigationEventType.Ready;
 }
-export interface IrrigationEventPropertyValueChanged
-  extends IrrigationEventCommon {
+export interface IrrigationEventPropertyValueChanged extends IrrigationEventCommon {
   type: IrrigationEventType.PropertyValueChanged;
   controllerId: number;
   propertyId: number;
   value: ArrayBuffer;
 }
-export interface IrrigationEventPropertyDesiredValueChanged
-  extends IrrigationEventCommon {
+export interface IrrigationEventPropertyDesiredValueChanged extends IrrigationEventCommon {
   type: IrrigationEventType.PropertyDesiredValueChanged;
   controllerId: number;
   propertyId: number;
@@ -123,9 +118,7 @@ export function getEventsFromData(payload: ArrayBufferLike): IrrigationEvent[] {
 }
 
 function getEventTypeString(eventType: IrrigationEventType): string {
-  return (
-    IrrigationEventType[eventType] ?? `Unknown (0x${numberToHex(eventType, 1)})`
-  );
+  return IrrigationEventType[eventType] ?? `Unknown (0x${numberToHex(eventType, 1)})`;
 }
 
 function getControllerErrorDetail(
@@ -144,7 +137,7 @@ function getControllerErrorDetail(
         3: "Read",
       }[typeNum] ?? `Unknown (${typeNum})`;
     const code =
-      {
+      ({
         5: "EIO: Input/output error",
         22: "EINVAL: Invalid argument",
         109: "ENOPROTOOPT: Protocol not available",
@@ -166,7 +159,7 @@ function getControllerErrorDetail(
         11248: "EMBBADEXC: Invalid exception code",
         11250: "EMBMDATA: Too many data",
         11251: "EMBBADSLAVE: Response not from requested slave",
-      }[codeNum] ?? `Unknown (${codeNum})`;
+      }[codeNum] ?? "Unknown") + `(${codeNum})`;
     // 112345678-11234
     return { type, code };
   } else if (controllerId === 4) {
@@ -205,9 +198,7 @@ function getControllerErrorDetail(
   };
 }
 
-export function getEventDetail(
-  event: IrrigationEvent
-): Record<string, unknown> {
+export function getEventDetail(event: IrrigationEvent): Record<string, unknown> {
   switch (event.type) {
     case IrrigationEventType.Started:
     case IrrigationEventType.Configured:
@@ -258,9 +249,7 @@ export function getLogFromEvent(event: IrrigationEvent): LogEntry {
     time: new Date(),
     source: LogSource.ControlUnitEvent,
     level: levels[event.type] ?? LogLevel.warn,
-    summary: `Event ${event.id
-      .toString()
-      .padStart(5, "0")} ${getEventTypeString(event.type)}`,
+    summary: `Event ${event.id.toString().padStart(5, "0")} ${getEventTypeString(event.type)}`,
     detail: getEventDetail(event),
   };
 }
