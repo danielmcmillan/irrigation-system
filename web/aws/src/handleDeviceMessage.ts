@@ -1,14 +1,19 @@
 import { SQSClient, SendMessageCommand } from "@aws-sdk/client-sqs";
 import pLimit from "p-limit";
-import { DeviceEventType } from "./lib/deviceMessage/deviceEvent";
+import { DeviceEventType } from "./lib/deviceMessage/deviceEvent.js";
 import {
   DeviceMessage,
   RawDeviceMessage,
   parseDeviceMessage,
-} from "./lib/deviceMessage/deviceMessage";
-import { DeviceState, DeviceStateQueryType, IrrigationDataStore, PropertyState } from "./lib/store";
-import { sendPushNotification } from "./lib/pushNotifications";
-import { DeviceStatus } from "./lib/deviceStatus";
+} from "./lib/deviceMessage/deviceMessage.js";
+import {
+  DeviceState,
+  DeviceStateQueryType,
+  IrrigationDataStore,
+  PropertyState,
+} from "./lib/store.js";
+import { sendPushNotification } from "./lib/pushNotifications.js";
+import { DeviceStatus } from "./lib/deviceStatus.js";
 
 const sqs = new SQSClient({});
 const store = new IrrigationDataStore({
@@ -36,7 +41,7 @@ async function sendNotifications(message: DeviceMessage): Promise<void> {
       if (event.type === DeviceEventType.Started) {
         await sendPushNotification(
           {
-            title: "Irrigation system restarted",
+            title: `Irrigation system ${message.deviceId} restarted`,
             message:
               "If the system is in use and the restart is not expected then check that it is still operating as expected.",
           },

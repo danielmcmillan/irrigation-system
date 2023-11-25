@@ -6,8 +6,8 @@ import {
 } from "@aws-sdk/lib-dynamodb";
 import { beforeEach, describe, expect, it } from "@jest/globals";
 import { mockClient } from "aws-sdk-client-mock";
-import { DeviceStateQueryType, IrrigationDataStore, PropertyState } from "./store";
-import { DeviceStatus } from "./deviceStatus";
+import { DeviceStateQueryType, IrrigationDataStore, PropertyState } from "./store.js";
+import { DeviceStatus } from "./deviceStatus.js";
 
 const dbMock = mockClient(DynamoDBDocumentClient);
 const mockDeviceName = "dev1";
@@ -34,7 +34,7 @@ describe("store", () => {
     dbMock.on(QueryCommand).resolves({
       Items: [
         {
-          pk: Uint8Array.from([0]),
+          pk: Uint8Array.from([0, 1]),
           sk: new Uint8Array([0, ...mockDeviceNameBin, 0]),
           con: true,
           sts: DeviceStatus.Ready,
@@ -46,7 +46,7 @@ describe("store", () => {
     const params = dbMock.commandCalls(QueryCommand).at(0)?.args.at(0)?.input;
     expect(params?.KeyConditionExpression).toBe("pk = :pk AND begins_with(sk, :sk)");
     expect(params?.ExpressionAttributeValues).toEqual({
-      ":pk": Uint8Array.from([0]),
+      ":pk": Uint8Array.from([0, 1]),
       ":sk": new Uint8Array([0]),
     });
     expect(devices.length).toBe(1);
@@ -59,7 +59,7 @@ describe("store", () => {
     const params = dbMock.commandCalls(QueryCommand).at(0)?.args.at(0)?.input;
     expect(params?.KeyConditionExpression).toBe("pk = :pk AND begins_with(sk, :sk)");
     expect(params?.ExpressionAttributeValues).toEqual({
-      ":pk": Uint8Array.from([0]),
+      ":pk": Uint8Array.from([0, 1]),
       ":sk": new Uint8Array([1, ...mockDeviceNameBin, 0]),
     });
   });
@@ -74,7 +74,7 @@ describe("store", () => {
     });
     const params = dbMock.commandCalls(UpdateCommand).at(0)?.args.at(0)?.input;
     expect(params?.Key).toEqual({
-      pk: Uint8Array.from([0]),
+      pk: Uint8Array.from([0, 1]),
       sk: new Uint8Array([0, ...mockDeviceNameBin, 0]),
     });
     expect(params?.UpdateExpression).toEqual(
@@ -122,7 +122,7 @@ describe("store", () => {
     expect(params).toEqual({
       TableName: "table",
       Item: {
-        pk: new Uint8Array([0, 1, ...mockDeviceNameBin, 0, 4, 321 & 0xff, (321 >> 8) & 0xff]),
+        pk: new Uint8Array([0, 2, ...mockDeviceNameBin, 0, 4, 321 & 0xff, (321 >> 8) & 0xff]),
         sk: new Uint8Array(Uint32Array.from([999]).buffer),
         val: property.value,
         exp: property.lastUpdated + 3600,

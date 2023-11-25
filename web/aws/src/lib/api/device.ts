@@ -1,8 +1,8 @@
-import { configureDeviceControllers } from "../deviceControllers/configureDeviceControllers";
-import { getControllerDefinitions } from "../deviceControllers/definitions/getControllerDefinitions";
-import { DeviceComponentDefinition, DevicePropertyDefinition } from "../deviceControllers/types";
-import { DeviceStatus } from "../deviceStatus";
-import { DeviceState, PropertyState } from "../store";
+import { configureDeviceControllers } from "../deviceControllers/configureDeviceControllers.js";
+import { getControllerDefinitions } from "../deviceControllers/definitions/getControllerDefinitions.js";
+import { DeviceComponentDefinition, DevicePropertyDefinition } from "../deviceControllers/types.js";
+import { DeviceStatus } from "../deviceStatus.js";
+import { DeviceState, PropertyState } from "../store.js";
 
 export interface Device {
   id: string;

@@ -2,7 +2,7 @@ import {
   DeviceComponentDefinition,
   DeviceControllerDefinition,
   DevicePropertyDefinition,
-} from "../types";
+} from "../types.js";
 
 enum RemoteUnitConfigType {
   Node = 0x01,

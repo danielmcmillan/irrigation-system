@@ -1,5 +1,5 @@
 import { APIGatewayProxyResultV2, APIGatewayProxyWebsocketEventV2 } from "aws-lambda";
-import { getDevices } from "./lib/api/device";
+import { getDevices } from "./lib/api/device.js";
 import {
   AllStateRequest,
   AllStateResponse,
@@ -7,10 +7,10 @@ import {
   ServerMessage,
   WebPushSubscribeRequest,
   WebPushUnsubscribeRequest,
-} from "./lib/api/messages";
-import { sendPushNotification } from "./lib/pushNotifications";
-import { IrrigationDataStore } from "./lib/store";
-import { WebSocketClient } from "./lib/webSocketClient";
+} from "./lib/api/messages.js";
+import { sendPushNotification } from "./lib/pushNotifications.js";
+import { IrrigationDataStore } from "./lib/store.js";
+import { WebSocketClient } from "./lib/webSocketClient.js";
 
 const store = new IrrigationDataStore({
   tableName: process.env.DYNAMODB_TABLE_NAME!,

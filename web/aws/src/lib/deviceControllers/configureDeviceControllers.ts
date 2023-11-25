@@ -1,4 +1,4 @@
-import { DeviceControllerDefinition } from "./types";
+import { DeviceControllerDefinition } from "./types.js";
 
 export interface DeviceConfig {
   controllerId: number;

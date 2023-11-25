@@ -1,7 +1,7 @@
-import { DeviceStatus } from "../deviceStatus";
-import { Alert } from "./alert";
-import { Device } from "./device";
-import { WebPushSubscription } from "./webPush";
+import { DeviceStatus } from "../deviceStatus.js";
+import { Alert } from "./alert.js";
+import { Device } from "./device.js";
+import { WebPushSubscription } from "./webPush.js";
 
 export type RequestMessage<Action extends string = string, Params extends object = {}> = Params & {
   action: Action;

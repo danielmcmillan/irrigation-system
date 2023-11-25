@@ -1,10 +1,5 @@
 import { describe, expect, it } from "@jest/globals";
-import {
-  KeyPartType,
-  KeyDefinition,
-  buildBinaryKey,
-  parseBinaryKey,
-} from "./binaryKey";
+import { KeyPartType, KeyDefinition, buildBinaryKey, parseBinaryKey } from "./binaryKey.js";
 
 describe("binaryKey", () => {
   it("should parse binary key", () => {
@@ -89,9 +84,7 @@ describe("binaryKey", () => {
 
   it("should not parse binary key with unterminated string", () => {
     const key = new TextEncoder().encode("text");
-    const result = parseBinaryKey(key, [
-      { field: "x", type: KeyPartType.utf8 },
-    ]);
+    const result = parseBinaryKey(key, [{ field: "x", type: KeyPartType.utf8 }]);
     expect(key.byteLength).toBe(4);
     expect(result).toBeUndefined();
   });

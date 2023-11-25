@@ -6,10 +6,10 @@ import {
   QueryCommand,
   UpdateCommand,
 } from "@aws-sdk/lib-dynamodb";
-import { KeyDefinition, KeyPartType, buildBinaryKey, parseBinaryKey } from "./binaryKey";
+import { KeyDefinition, KeyPartType, buildBinaryKey, parseBinaryKey } from "./binaryKey.js";
 import { PushSubscription } from "web-push";
-import { DeviceStatus } from "./deviceStatus";
-import { WebSocketClient } from "./webSocketClient";
+import { DeviceStatus } from "./deviceStatus.js";
+import { WebSocketClient } from "./webSocketClient.js";
 
 export interface DeviceState {
   deviceId: string;

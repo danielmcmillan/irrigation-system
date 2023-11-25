@@ -1,6 +1,6 @@
-import { DeviceError, getErrorFromData } from "./deviceError";
-import { DeviceEvent, getEventsFromData } from "./deviceEvent";
-import { DeviceProperty, getPropertiesFromData } from "./deviceProperty";
+import { DeviceError, getErrorFromData } from "./deviceError.js";
+import { DeviceEvent, getEventsFromData } from "./deviceEvent.js";
+import { DeviceProperty, getPropertiesFromData } from "./deviceProperty.js";
 
 export interface RawDeviceMessage {
   data?: string;

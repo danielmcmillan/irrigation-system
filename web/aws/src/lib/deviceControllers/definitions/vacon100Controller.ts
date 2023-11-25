@@ -2,7 +2,7 @@ import {
   DeviceComponentDefinition,
   DeviceControllerDefinition,
   DevicePropertyDefinition,
-} from "../types";
+} from "../types.js";
 
 export class Vacon100Controller implements DeviceControllerDefinition {
   addConfig(type: number, data: ArrayBufferLike): void {}
