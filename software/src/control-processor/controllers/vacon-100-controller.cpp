@@ -28,7 +28,11 @@
 // Whether to force control when Fieldbus is not the configured control place
 #define VACON_FORCE_CONTROL false
 // Defined if motor run state should be controlled via relay rather than Modbus
+#if HW_REV == 2
+#define VACON_RELAY_CONTROL_PIN 12
+#else
 #define VACON_RELAY_CONTROL_PIN 23
+#endif
 
 #ifdef VACON_RELAY_CONTROL_PIN
 // Indeterminate state on startup not supported when using relay
