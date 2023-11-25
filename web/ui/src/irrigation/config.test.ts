@@ -10,13 +10,11 @@ import {
 describe("serializeConfigEntries and deserializeConfigEntries", () => {
   const testEntries: ConfigEntry[] = [
     {
-      controllerId: 1,
       type: ConfigType.RemoteUnitNode,
       remoteUnitId: 2,
       nodeNumber: 3,
     },
     {
-      controllerId: 4,
       type: ConfigType.RemoteUnitSolenoid,
       solenoidId: 5,
       remoteUnitId: 6,
@@ -39,21 +37,18 @@ describe("serializeConfigEntries and deserializeConfigEntries", () => {
   });
 
   test("deserializeConfigEntries should throw for an invalid entry length", () => {
-    const invalidLengthData = new Uint8Array([
-      0x07, 0x01, 0x01, 0x02, 0x03, 0x00, 0x00,
-    ]).buffer;
+    const invalidLengthData = new Uint8Array([0x07, 0x01, 0x01, 0x02, 0x03, 0x00, 0x00]).buffer;
 
     expect(() => {
       deserializeConfigEntriesFromBinary(invalidLengthData);
-    }).toThrowError("Invalid entry length: 7");
+    }).toThrowError(`Invalid config type: ${0x0101} with length 7`);
   });
 
   test("deserializeConfigEntries should throw for an invalid config type", () => {
-    const invalidTypeData = new Uint8Array([0x06, 0x01, 0x03, 0x02, 0x03, 0x00])
-      .buffer;
+    const invalidTypeData = new Uint8Array([0x06, 0x01, 0x03, 0x02, 0x03, 0x00]).buffer;
 
     expect(() => {
       deserializeConfigEntriesFromBinary(invalidTypeData);
-    }).toThrowError("Invalid config type: 3");
+    }).toThrowError(`Invalid config type: ${0x0103} with length 6`);
   });
 });
