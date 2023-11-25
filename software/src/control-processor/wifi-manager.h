@@ -6,6 +6,7 @@ class WiFiManager
 {
 public:
     WiFiManager(const char *ssid, const char *password, const ErrorHandler &errorHandler);
+    void setup();
     /**
      * Maintain WiFi connection. Returns whether connnection is currently active.
      */

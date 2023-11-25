@@ -4,6 +4,10 @@
 
 WiFiManager::WiFiManager(const char *ssid, const char *password, const ErrorHandler &errorHandler) : ssid(ssid), password(password), errorHandler(errorHandler)
 {
+}
+
+void WiFiManager::setup()
+{
     WiFi.mode(WIFI_STA);
     WiFi.setHostname("esp32-irrigation");
 }

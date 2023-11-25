@@ -5,10 +5,17 @@
 #include "binary-util.h"
 
 #define SERIAL_OBJ Serial2
-#define MAX485_RE 2
-#define MAX485_DE 4
-#define MAX485_RO 16 // UART RX
-#define MAX485_DI 17 // UART TX
+#if HW_REV == 2
+#define SERIAL_RE 15
+#define SERIAL_DE 4
+#define SERIAL_RO 16 // UART RX
+#define SERIAL_DI 17 // UART TX
+#else
+#define SERIAL_RE 2
+#define SERIAL_DE 4
+#define SERIAL_RO 16 // UART RX
+#define SERIAL_DI 17 // UART TX
+#endif
 // Number of consecutive errors beyond which connection to Vacon is considered unavailable
 #define MAX_ERROR_COUNT 2
 
@@ -32,7 +39,7 @@ namespace IrrigationSystem
 {
     Vacon100Controller::Vacon100Controller(uint8_t controllerId) : controllerId(controllerId),
                                                                    definition(),
-                                                                   vacon(SERIAL_OBJ, MAX485_RE, MAX485_DE, MAX485_DI),
+                                                                   vacon(SERIAL_OBJ, SERIAL_RE, SERIAL_DE, SERIAL_DI),
                                                                    values(),
                                                                    desiredMotorOn(false),
                                                                    motorRelayOn(false),
@@ -57,7 +64,7 @@ namespace IrrigationSystem
 
     bool Vacon100Controller::begin()
     {
-        SERIAL_OBJ.begin(9600, SERIAL_8N1, MAX485_RO, MAX485_DI);
+        SERIAL_OBJ.begin(9600, SERIAL_8N1, SERIAL_RO, SERIAL_DI);
         if (definition.enableModbus && !vacon.begin())
         {
             notifyError(0x00);

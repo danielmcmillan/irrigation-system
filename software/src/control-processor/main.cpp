@@ -28,6 +28,10 @@ using namespace IrrigationSystem;
 #define PROPERTIES_TOPIC "icu-out/%.*s/" MQTT_CLIENT_ID "/properties"
 #define TOPIC_CLIENT_MAX_LENGTH 20
 #define DISCONNECTED_RESET_TIME 120000 // 2 minutes
+#if HW_REV == 2
+#define LED_1 32
+#define LED_2 33
+#endif
 
 bool publishErrorData(const uint8_t *data, size_t size);
 bool publishEventData(const uint8_t *data, size_t size);
@@ -48,8 +52,17 @@ unsigned long lastConnected = 0;
 
 void setup()
 {
-    Serial.begin(9600, SERIAL_8N1);
+    Serial.begin(115200, SERIAL_8N1);
     controllers.setup();
+    wifi.setup();
+#ifdef LED_1
+    digitalWrite(LED_1, LOW);
+    pinMode(LED_1, OUTPUT);
+#endif
+#ifdef LED_2
+    digitalWrite(LED_2, HIGH);
+    pinMode(LED_2, OUTPUT);
+#endif
 }
 
 void loop()
@@ -57,10 +70,17 @@ void loop()
     controllers.loop();
 
     bool connected = false;
-    if (wifi.loop())
+    bool wifiConnected = wifi.loop();
+    if (wifiConnected)
     {
         connected = mqtt.loop();
     }
+#ifdef LED_1
+    digitalWrite(LED_1, wifiConnected);
+#endif
+#ifdef LED_2
+    digitalWrite(LED_2, connected);
+#endif
     config.loop();
 
     unsigned long now = millis();

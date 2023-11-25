@@ -8,3 +8,4 @@
 // #define DISABLE_LOGGING
 
 #define INCLUDE_CONTROLLER_METADATA
+#define HW_REV 2

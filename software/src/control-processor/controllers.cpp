@@ -44,6 +44,7 @@ bool Controllers::loop()
         else
         {
             delay(5000); // todo may want to avoid the delay
+            return false;
         }
     }
     return true;

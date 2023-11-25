@@ -9,9 +9,14 @@ extern "C"
 #include "binary-util.h"
 
 #define SERIAL_OBJ Serial1
+#if HW_REV == 2
+#define SERIAL_RX 25 // UART RX
+#define SERIAL_TX 26 // UART TX
+#else
 #define SERIAL_RX 18 // UART RX
 #define SERIAL_TX 19 // UART TX
 #define RF_ENABLE_PIN 5
+#endif
 #define RF_MODULE_RESPONSE_TIMEOUT 2000
 #define RF_FREQUENCY (434l * 1l << 14) // 434 MHz
 #define RF_TX_POWER 7
@@ -51,10 +56,12 @@ namespace IrrigationSystem
     bool RemoteUnitController::begin()
     {
         SERIAL_OBJ.begin(9600, SERIAL_8N1, SERIAL_RX, SERIAL_TX);
+#ifdef RF_ENABLE_PIN
         // Enable RF module
         pinMode(RF_ENABLE_PIN, OUTPUT);
         digitalWrite(RF_ENABLE_PIN, LOW);
         delay(500);
+#endif
 
         if (!applyRfConfig())
         {
