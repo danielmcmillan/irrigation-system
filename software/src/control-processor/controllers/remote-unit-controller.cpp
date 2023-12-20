@@ -23,6 +23,8 @@ extern "C"
 
 // Time to wait for data on Serial after sending a request to a remote unit
 #define REMOTE_UNIT_TIMEOUT 8000
+// Extra timeout for sensor read requests
+#define SENSOR_READ_TIMEOUT 4000
 // Number of times to retry communication with a remote unit before considering it unavailable
 #define RETRY_COUNT 1
 // Time in 2^14 milliseconds between heartbeats for each remote units
@@ -390,6 +392,7 @@ namespace IrrigationSystem
         {
             updateSensor = false;
         }
+        unsigned long timeout = REMOTE_UNIT_TIMEOUT;
         uint8_t buffer[PACKET_BUFFER_SIZE + 2];
 
         // Build request packet: get battery + clear faults + get/set solenoid state
@@ -410,6 +413,7 @@ namespace IrrigationSystem
         if (updateSensor)
         {
             packetSize = RemoteUnitPacket::addCommandToPacket(packet, PACKET_BUFFER_SIZE, packetSize, RemoteUnitPacket::RemoteUnitCommand::GetSensorValue, nullptr);
+            timeout += SENSOR_READ_TIMEOUT;
         }
         packetSize = RemoteUnitPacket::finalisePacket(packet, PACKET_BUFFER_SIZE, packetSize, false);
         // Add big-endian node ID to initial bytes for LoRa module
@@ -427,7 +431,7 @@ namespace IrrigationSystem
 
         // Read response packet
         // All of the data should arrive at once, so apply timeout only to first byte
-        SERIAL_OBJ.setTimeout(REMOTE_UNIT_TIMEOUT);
+        SERIAL_OBJ.setTimeout(timeout);
         size_t read = SERIAL_OBJ.readBytes(buffer, 1);
         if (read == 0)
         {
