@@ -187,8 +187,15 @@ const PropertyControls = observer(({ icu }: { icu: IrrigationStore }) => {
                       {(Array.isArray(prop.value) ? prop.value : [prop.value]).map(
                         (value, index) => {
                           let suffix = "";
-                          if (typeof value === "number" && prop.format.unit?.match(/^[+\-]\d+$/)) {
-                            value += Number(prop.format.unit);
+                          if (typeof value === "number" && prop.propertyName === "Sensor") {
+                            const original = value * 10;
+                            if (original === 0xffff) {
+                              value = 0;
+                            } else {
+                              const bytes = new Uint8Array([original & 0xff, original >> 8]);
+                              value = new Int16Array(bytes.buffer)[0] * 0.1;
+                              suffix = " kPa";
+                            }
                           } else if (prop.format.unit) {
                             suffix = " " + prop.format.unit;
                           }
