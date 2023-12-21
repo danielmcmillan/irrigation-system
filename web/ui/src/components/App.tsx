@@ -278,7 +278,9 @@ const App = observer(({ icu }: { icu: IrrigationStore }) => {
           icu.requestControllerCommand(2, command.buffer);
         }}
         onClose={() => setOpenPage(null)}
-        result={icu.controllerCommandResult}
+        result={
+          icu.controllerCommandResults.filter((result) => result.controllerId === 2).at(-1)?.data
+        }
       />
     );
   } else if (openPage === "remoteUnitTool") {
@@ -288,7 +290,7 @@ const App = observer(({ icu }: { icu: IrrigationStore }) => {
           icu.requestControllerCommand(4, commandData);
         }}
         onClose={() => setOpenPage(null)}
-        result={icu.controllerCommandResult}
+        results={icu.controllerCommandResults.filter((result) => result.controllerId === 4)}
       />
     );
   }
@@ -335,9 +337,6 @@ const App = observer(({ icu }: { icu: IrrigationStore }) => {
           </Button>
           <Button
             onClick={() => {
-              runInAction(() => {
-                icu.controllerCommandResult = undefined;
-              });
               setOpenPage("vaconTool");
             }}
           >
@@ -345,9 +344,6 @@ const App = observer(({ icu }: { icu: IrrigationStore }) => {
           </Button>
           <Button
             onClick={() => {
-              runInAction(() => {
-                icu.controllerCommandResult = undefined;
-              });
               setOpenPage("remoteUnitTool");
             }}
           >

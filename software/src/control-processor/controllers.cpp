@@ -142,14 +142,13 @@ bool Controllers::setPropertyValue(const uint8_t *data, size_t length)
     return true;
 }
 
-int Controllers::runControllerCommand(const uint8_t *data, size_t length, uint8_t *responseOut, size_t *responseSizeOut)
+uint16_t Controllers::runControllerCommand(const uint8_t *data, size_t length, uint8_t *responseOut, size_t *responseSizeOut)
 {
     uint8_t controllerId = data[0];
     IrrigationSystem::Controller *controller = controllers.getController(controllerId);
-    return controller->runCommand(data + 1, length - 1, responseOut, responseSizeOut);
+    if (controller != nullptr)
+    {
+        return controller->runCommand(data + 1, length - 1, responseOut, responseSizeOut);
+    }
+    return 0xffff;
 }
-
-// bool Controllers::getControllerCommandResult(const uint8_t **responseOut, size_t *responseSizeOut) const
-// {
-//     return sendMessage(ControlProcessorPacket::MessageType::GetControllerCommandResult, nullptr, 0, responseOut, responseSizeOut, true);
-// }

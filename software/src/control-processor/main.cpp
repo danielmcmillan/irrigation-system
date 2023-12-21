@@ -98,31 +98,6 @@ void loop()
     }
 }
 
-// #define COMMAND_RESULT_REQUEST_INTERVAL 2000
-// #define COMMAND_RESULT_REQUEST_COUNT 6
-// unsigned long lastCommandResultRequest = 0;
-// uint8_t commandResultRequestCount = COMMAND_RESULT_REQUEST_COUNT;
-// void sendCommandResults()
-// {
-//     unsigned int now = millis();
-//     if (commandResultRequestCount < COMMAND_RESULT_REQUEST_COUNT && (now - lastCommandResultRequest) > COMMAND_RESULT_REQUEST_INTERVAL)
-//     {
-//         lastCommandResultRequest = now;
-//         const uint8_t *response;
-//         size_t responseSize;
-//         if (control.getControllerCommandResult(&response, &responseSize))
-//         {
-//             mqtt.publish(COMMAND_RESULT_TOPIC, response, responseSize);
-//             commandResultRequestCount = COMMAND_RESULT_REQUEST_COUNT;
-//         }
-//         else if (commandResultRequestCount == COMMAND_RESULT_REQUEST_COUNT - 1)
-//         {
-//             mqtt.publish(COMMAND_RESULT_TOPIC, nullptr, 0);
-//             ++commandResultRequestCount;
-//         }
-//     }
-// }
-
 // TODO move property state retrieval functions to another file
 #define CONTROLLER_STATE_BUFFER_SIZE 512
 #define MAX_PROPERTY_NAME_SIZE 96
@@ -214,6 +189,31 @@ bool sendPropertyState(const uint8_t *subTopic, uint8_t length)
     return size == 0 || mqtt.publish(topic, buffer, size);
 }
 
+void runControllerCommand(const uint8_t *payload, int length)
+{
+    // payload: <commandId:2> <controllerId:1> <data...>
+    if (length < 3)
+    {
+        errorHandler.handleError(ErrorComponent::Controller, 1, "Invalid command");
+        return;
+    }
+    // response: <commandId:2> <resultCode:2> <data...>
+    uint8_t resultBuffer[128]; // assuming max command response payload size of 128
+    resultBuffer[0] = payload[0];
+    resultBuffer[1] = payload[1];
+
+    const uint8_t *data = payload + 2;
+    size_t dataLength = length - 2;
+    size_t resultSize = 0;
+    uint8_t *resultData = resultBuffer + 4;
+    uint16_t resultCode = controllers.runControllerCommand(data, dataLength, resultData, &resultSize);
+
+    resultBuffer[2] = resultCode & 0xff;
+    resultBuffer[3] = resultCode >> 8;
+    mqtt.publish(COMMAND_RESULT_TOPIC, resultBuffer, resultSize + 4);
+    Serial.println(resultCode);
+}
+
 void handleMessage(IncomingMessageType type, const uint8_t *payload, int length)
 {
     switch (type)
@@ -237,19 +237,8 @@ void handleMessage(IncomingMessageType type, const uint8_t *payload, int length)
         controllers.setPropertyValue(payload, length);
         break;
     case IncomingMessageType::Command:
-    {
-        uint8_t commandResponse[128]; // TODO properly define max command payload sizes
-        size_t responseSize = 0;
-        if (controllers.runControllerCommand(payload, length, commandResponse, &responseSize))
-        {
-            // Todo error response
-            mqtt.publish(COMMAND_RESULT_TOPIC, nullptr, 0);
-        }
-        // Todo success response (as in sendCommandResults)
-        mqtt.publish(COMMAND_RESULT_TOPIC, commandResponse, responseSize);
-
+        runControllerCommand(payload, length);
         break;
-    }
     case IncomingMessageType::Update:
     {
         char url[128];

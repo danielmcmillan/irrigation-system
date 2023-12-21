@@ -150,7 +150,7 @@ namespace IrrigationSystem
         }
     }
 
-    int Vacon100Controller::runCommand(const uint8_t *input, size_t inputSize, uint8_t *responseOut, size_t *responseSizeOut)
+    uint16_t Vacon100Controller::runCommand(const uint8_t *input, size_t inputSize, uint8_t *responseOut, size_t *responseSizeOut)
     {
         if (inputSize == 3 && input[0] == 1)
         {

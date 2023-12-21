@@ -17,11 +17,7 @@ interface Vacon100ToolProps {
   result: ArrayBuffer | undefined;
 }
 
-export const Vacon100Tool: React.FC<Vacon100ToolProps> = ({
-  onRunRequest,
-  onClose,
-  result,
-}) => {
+export const Vacon100Tool: React.FC<Vacon100ToolProps> = ({ onRunRequest, onClose, result }) => {
   const [isRead, setIsRead] = useState(true);
   const [address, setAddress] = useState<number>(0);
   const [value, setValue] = useState<number>(0);
@@ -32,15 +28,12 @@ export const Vacon100Tool: React.FC<Vacon100ToolProps> = ({
 
   const resultArray = result ? new Uint8Array(result) : undefined;
   const resultError =
-    resultArray && resultArray.byteLength > 1 && resultArray[0] > 0
-      ? result?.slice(1)
-      : undefined;
+    resultArray && resultArray.byteLength > 1 && resultArray[0] > 0 ? result?.slice(1) : undefined;
   const resultValue =
     resultArray && resultArray.byteLength > 2 && resultArray[0] === 0
       ? resultArray[1] + (resultArray[2] << 8)
       : undefined;
-  const successfulWrite =
-    resultArray && resultArray.byteLength === 1 && resultArray[0] === 0;
+  const successfulWrite = resultArray && resultArray.byteLength === 1 && resultArray[0] === 0;
 
   return (
     <Flex direction="column" margin="1rem">
@@ -80,9 +73,7 @@ export const Vacon100Tool: React.FC<Vacon100ToolProps> = ({
 
         <Button onClick={handleRunRequest}>Run Request</Button>
 
-        {resultError !== undefined && (
-          <Text>Error: {binToHex(resultError)}</Text>
-        )}
+        {resultError !== undefined && <Text>Error: {binToHex(resultError)}</Text>}
         {resultValue !== undefined && (
           <Text>
             Read value: {resultValue} (0x{numberToHex(resultValue, 2)})

@@ -31,6 +31,15 @@ export enum ControllerStatus {
   Unknown = "Unknown",
 }
 
+export interface ControllerCommandResult {
+  id: number;
+  time: number;
+  controllerId: number;
+  request: ArrayBuffer;
+  responseCode?: number;
+  data?: ArrayBuffer;
+}
+
 const maxLogEntries = 100;
 
 export class IrrigationStore {
@@ -44,7 +53,7 @@ export class IrrigationStore {
   properties: IrrigationProperty[] = [];
   configIni: string = "";
   configLoaded = false;
-  controllerCommandResult: ArrayBuffer | undefined = undefined;
+  controllerCommandResults: ControllerCommandResult[] = [];
   controllerStatus: ControllerStatus = ControllerStatus.Unknown;
 
   constructor(public readonly clientId: string, public readonly controlDeviceId: string) {
@@ -55,7 +64,7 @@ export class IrrigationStore {
       properties: observable,
       configIni: observable,
       configLoaded: observable,
-      controllerCommandResult: observable,
+      controllerCommandResults: observable,
       controllerStatus: observable,
       ready: computed,
       errorLogCount: computed,
@@ -143,22 +152,25 @@ export class IrrigationStore {
         `icu-in/${this.controlDeviceId}/setConfig`,
         serializeConfigEntriesToBinary(deserializeConfigEntriesFromIni(this.configIni))
       );
-      // const b = serializeConfigEntriesToBinary(deserializeConfigEntriesFromIni(this.configIni));
-      // console.log(
-      //   "Config: ",
-      //   Array.from(new Uint8Array(b)).map((x) => x.toString(16))
-      // );
     }
   }
 
   requestControllerCommand(controllerId: number, commandData: ArrayBuffer) {
+    const commandId = this.controllerCommandResults.length;
     runInAction(() => {
-      this.controllerCommandResult = undefined;
+      this.controllerCommandResults.push({
+        id: commandId,
+        time: Date.now(),
+        controllerId,
+        request: commandData,
+      });
     });
-    const payload = new Uint8Array(1 + commandData.byteLength);
-    payload[0] = controllerId;
-    payload.set(new Uint8Array(commandData), 1);
-    console.log("Command request", binToHex(payload.buffer));
+    const payload = new Uint8Array(3 + commandData.byteLength);
+    const dataView = new DataView(payload.buffer);
+
+    dataView.setUint16(0, commandId, true);
+    dataView.setUint8(2, controllerId);
+    payload.set(new Uint8Array(commandData), 3);
     this.publish(`icu-in/${this.controlDeviceId}/command`, payload.buffer);
   }
 
@@ -270,9 +282,23 @@ export class IrrigationStore {
           this.configLoaded = true;
         });
       } else if (messageType === MqttMessageType.CommandResult) {
-        runInAction(() => {
-          this.controllerCommandResult = buffer;
-        });
+        if (buffer.byteLength < 4) {
+          console.error("Received command result with invalid length", buffer);
+        } else {
+          const dataView = new DataView(buffer);
+          const commandId = dataView.getUint16(0, true);
+          const responseCode = dataView.getUint16(2, true);
+          if (this.controllerCommandResults[commandId]) {
+            runInAction(() => {
+              this.controllerCommandResults[commandId].responseCode = responseCode;
+              if (responseCode == 0) {
+                this.controllerCommandResults[commandId].data = buffer.slice(4);
+              }
+            });
+          } else {
+            console.error(`Received command result for unknown command ID ${commandId}`, buffer);
+          }
+        }
       } else {
         console.warn(`MQTT message payload for unknown type ${messageType}`, payload);
       }

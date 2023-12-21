@@ -200,7 +200,7 @@ namespace IrrigationSystem
         LOG_ERROR("setPropertyDesiredValue with unknown Remote Unit property");
     }
 
-    int RemoteUnitController::runCommand(const uint8_t *input, size_t inputSize, uint8_t *responseOut, size_t *responseSizeOut)
+    uint16_t RemoteUnitController::runCommand(const uint8_t *input, size_t inputSize, uint8_t *responseOut, size_t *responseSizeOut)
     {
         if (inputSize >= 4 && input[0] == 1)
         {

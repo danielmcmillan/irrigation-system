@@ -28,7 +28,7 @@ public:
     bool configEnd();
     bool getPropertyValue(uint8_t controllerId, uint16_t propertyId, uint8_t *valuesOut);
     bool setPropertyValue(const uint8_t *data, size_t length);
-    int runControllerCommand(const uint8_t *data, size_t length, uint8_t *responseOut, size_t *responseSizeOut);
+    uint16_t runControllerCommand(const uint8_t *data, size_t length, uint8_t *responseOut, size_t *responseSizeOut);
     // void runPendingControllerCommand() const
     // bool getControllerCommandResult(const uint8_t **responseOut, size_t *responseSizeOut) const;
 
