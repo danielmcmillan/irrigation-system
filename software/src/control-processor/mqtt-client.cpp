@@ -69,16 +69,16 @@ bool MqttClient::loop()
         for (int i = 0; i < messageQueueEnd;)
         {
             IncomingMessageType type = (IncomingMessageType)messageQueue[i];
+            uint8_t length = messageQueue[i + 1];
             if (type == IncomingMessageType::Invalid)
             {
                 errorHandler.handleError(ErrorComponent::Mqtt, 3, "Unexpected message topic");
             }
             else
             {
-                uint8_t length = messageQueue[i + 1];
                 handler(type, &messageQueue[i + 2], length);
-                i += length + 2;
             }
+            i += length + 2;
         }
         messageQueueEnd = 0;
     }

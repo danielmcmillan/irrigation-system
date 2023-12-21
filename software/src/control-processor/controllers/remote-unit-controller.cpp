@@ -169,6 +169,7 @@ namespace IrrigationSystem
         switch (type)
         {
         case RemoteUnitPropertyType::RemoteUnitSolenoidOn:
+        {
             int index = definition.getSolenoidIndex(subId);
             if (index >= 0)
             {
@@ -197,7 +198,10 @@ namespace IrrigationSystem
             }
             break;
         }
-        LOG_ERROR("setPropertyDesiredValue with unknown Remote Unit property");
+        default:
+            LOG_ERROR("setPropertyDesiredValue with unknown Remote Unit property");
+            break;
+        }
     }
 
     uint16_t RemoteUnitController::runCommand(const uint8_t *input, size_t inputSize, uint8_t *responseOut, size_t *responseSizeOut)

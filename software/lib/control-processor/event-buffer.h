@@ -22,7 +22,7 @@ namespace IrrigationSystem
          */
         uint8_t peek() const;
         /**
-         * If there is an event in the buffer, returns it's size and writes it's content to eventOut.
+         * If there is an event in the buffer, returns it's size, writes it's content to `eventOut` and removes it from the buffer.
          * Otherwise returns 0.
          */
         uint8_t pop(uint8_t *eventOut);

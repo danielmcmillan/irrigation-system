@@ -104,7 +104,7 @@ namespace IrrigationSystem
          * If dataPtr is is not null, then it will be set to point to the data portion for the command in the packet buffer.
          *
          * Returns the intermediate packet size.
-         * Returns 0 if the buffer is too small.
+         * Returns 0 if the buffer is too small or command is invalid.
          */
         size_t addCommandToPacket(uint8_t *packetBuffer, size_t bufferSize, size_t intermediatePacketSize, RemoteUnitCommand command, uint8_t **dataPtr);
 
