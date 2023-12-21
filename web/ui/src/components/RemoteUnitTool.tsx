@@ -9,7 +9,7 @@ import {
   TextField,
 } from "@aws-amplify/ui-react";
 import React, { useState } from "react";
-import { binToHex, hexToBin } from "../irrigation/util";
+import { binToHex, hexToBin, numberToHex } from "../irrigation/util";
 import { ControllerCommandResult } from "../irrigation/store";
 import { observer } from "mobx-react-lite";
 
@@ -52,13 +52,16 @@ function getType(commandType: number): CommandType {
 const RemoteUnitResult: React.FC<{ result: ControllerCommandResult }> = observer(({ result }) => {
   const resultHex = result.data !== undefined ? `0x${binToHex(result.data)}` : undefined;
   const request = new DataView(result.request);
-  const resultType = getType(request.getUint8(3));
+  const commandType = request.getUint8(3);
+  const requestType = getType(commandType);
+  const node = request.getUint16(1, true);
+  const requestData = binToHex(result.request.slice(3));
   let resultString = "Pending...";
   if (result.responseCode) {
     resultString = `Error: ${result.responseCode}`;
   } else if (result.data) {
     const view = new DataView(result.data);
-    switch (resultType) {
+    switch (requestType) {
       case "getBattery":
         if (result.data.byteLength === 3) {
           resultString = `${view.getUint16(1, true)} (raw value)`;
@@ -81,11 +84,13 @@ const RemoteUnitResult: React.FC<{ result: ControllerCommandResult }> = observer
   }
   return (
     <tr>
+      <td>{result.id}</td>
+      <td>{new Date(result.time).toLocaleTimeString()}</td>
+      <td>{requestType}</td>
       <td>
-        {result.id} - {new Date(result.time).toLocaleTimeString()}
+        {node} (0x{numberToHex(node, 2)})
       </td>
-      <td>{resultType}</td>
-      <td>0x{binToHex(result.request)}</td>
+      <td>0x{requestData}</td>
       <td>{resultString}</td>
       <td>{resultHex ?? "-"}</td>
     </tr>
@@ -146,11 +151,13 @@ export const RemoteUnitTool: React.FC<RemoteUnitToolProps> = observer(
 
           <Button onClick={handleRunRequest}>Run Request</Button>
           <ScrollView>
-            <table>
+            <table style={{ textAlign: "left" }}>
               <thead>
                 <tr>
+                  <th></th>
                   <th>Time</th>
                   <th>Type</th>
+                  <th>Node</th>
                   <th>Request data</th>
                   <th>Response</th>
                   <th>Response data</th>
