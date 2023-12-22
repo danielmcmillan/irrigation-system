@@ -2,8 +2,8 @@
 #define _REMOTE_UNIT_CONTROLLER_DEFINITION_H
 #include "controller-definition.h"
 
-#define MAX_REMOTE_UNITS 20 // (5 bytes per remote unit)
-#define MAX_SOLENOIDS 30    // (4 bytes per solenoid)
+#define MAX_REMOTE_UNITS 30 // (5 bytes per remote unit)
+#define MAX_SOLENOIDS 60    // (4 bytes per solenoid)
 
 namespace IrrigationSystem
 {

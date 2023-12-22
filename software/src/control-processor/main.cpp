@@ -17,7 +17,7 @@
 /**
  * Software revision number.
  */
-#define CONTROL_PROCESSOR_REVISION 11
+#define CONTROL_PROCESSOR_REVISION 12
 
 using namespace IrrigationSystem;
 
@@ -36,7 +36,6 @@ using namespace IrrigationSystem;
 bool publishErrorData(const uint8_t *data, size_t size);
 bool publishEventData(const uint8_t *data, size_t size);
 void handleMessage(IncomingMessageType type, const uint8_t *payload, int length);
-// void sendCommandResults();
 
 ControllerBuilder controllerBuilder;
 ControllerManager controllerManager(controllerBuilder.buildManager());
@@ -211,7 +210,6 @@ void runControllerCommand(const uint8_t *payload, int length)
     resultBuffer[2] = resultCode & 0xff;
     resultBuffer[3] = resultCode >> 8;
     mqtt.publish(COMMAND_RESULT_TOPIC, resultBuffer, resultSize + 4);
-    Serial.println(resultCode);
 }
 
 void handleMessage(IncomingMessageType type, const uint8_t *payload, int length)
