@@ -61,7 +61,7 @@ interface PahoClient {
   isConnected: () => boolean;
   subscribe: (topic: string) => void;
   unsubscribe: (topic: string) => void;
-  send(topic: string, message: ArrayBuffer | ArrayBufferView | string): void;
+  send(topic: string, message: ArrayBuffer | ArrayBufferView | string, qos?: number): void;
 }
 
 class ClientsQueue {
@@ -273,7 +273,7 @@ export class MqttOverWSProvider extends AbstractPubSubProvider<MqttProviderOptio
 
     if (client) {
       logger.debug("Publishing to topic(s)", targetTopics.join(","), message);
-      targetTopics.forEach((topic) => client.send(topic, message));
+      targetTopics.forEach((topic) => client.send(topic, message, 1));
     } else {
       logger.debug(
         "Publishing to topic(s) failed",

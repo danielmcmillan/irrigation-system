@@ -14,10 +14,13 @@ MqttClient::MqttClient(const char *endpoint, int port, const char *clientId, con
     this->wifiClient.setPrivateKey(privateKey);
 
     mqttClient.begin(endpoint, port, this->wifiClient);
+    mqttClient.setOptions(
+        10,    // keepAlive
+        false, // cleanSession, use persistent sessions
+        10000  // timeout
+    );
     mqttClient.onMessageAdvanced([this](MQTTClient *client, char topic[], char bytes[], int length)
                                  { this->queueMessage(client, topic, bytes, length); });
-    // mqttClient.setKeepAlive() TODO
-    // mqttClient.setWill("topic", "payload", retained, qos) TODO
 }
 
 bool MqttClient::loop()
@@ -26,20 +29,29 @@ bool MqttClient::loop()
 
     if (!connected)
     {
-        subscribed = false;
-
         LOG_INFO("[MQTT] Connecting");
         for (int i = 0; i < 10; ++i)
         {
             if (mqttClient.connect(clientId))
             {
-                LOG_INFO("[MQTT] Connected successfully");
                 connected = true;
                 break;
             }
             delay(500);
         }
-        if (!connected)
+        if (connected)
+        {
+            if (mqttClient.sessionPresent())
+            {
+                LOG_INFO("[MQTT] Connected with existing session");
+            }
+            else
+            {
+                LOG_INFO("[MQTT] Connected with new session");
+                subscribed = false;
+            }
+        }
+        else
         {
             errorHandler.handleError(ErrorComponent::Mqtt, 1 | ((uint8_t)(-mqttClient.lastError()) << 8), "Connection failed");
         }
@@ -49,7 +61,7 @@ bool MqttClient::loop()
         LOG_INFO("[MQTT] Subscribing");
         for (int i = 0; i < 10; ++i)
         {
-            if (mqttClient.subscribe(INCOMING_TOPIC_FILTER))
+            if (mqttClient.subscribe(INCOMING_TOPIC_FILTER, 1))
             {
                 LOG_INFO("[MQTT] Subscribed successfully");
                 subscribed = true;
