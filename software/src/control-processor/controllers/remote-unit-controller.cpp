@@ -57,6 +57,10 @@ namespace IrrigationSystem
 
     bool RemoteUnitController::begin()
     {
+        if (definition.getRemoteUnitCount() == 0)
+        {
+            return true;
+        }
         SERIAL_OBJ.begin(9600, SERIAL_8N1, SERIAL_RX, SERIAL_TX);
 #ifdef RF_ENABLE_PIN
         // Enable RF module
