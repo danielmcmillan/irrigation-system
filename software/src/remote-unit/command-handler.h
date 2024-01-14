@@ -110,7 +110,7 @@ public:
   int getSoftwareRevision(uint16_t *softwareRevisionOut) const;
 
   /**
-   * Gets the current value for the sensor with sepcified id.
+   * Gets the current value for the sensor with specified id.
    */
   int getSensorValue(uint8_t sensorId, uint16_t *valueOut) const;
 };

@@ -51,7 +51,7 @@ int RemoteUnitSensor::readValue(uint8_t sensor, uint16_t *valueOut)
         if (crc == 0)
         {
             result = 0;
-            *valueOut = ((uint16_t)response[3] << 8) + response[4];
+            *valueOut = (((uint16_t)response[3]) << 8) + (uint16_t)(response[4]);
         }
         else
         {
@@ -64,7 +64,12 @@ int RemoteUnitSensor::readValue(uint8_t sensor, uint16_t *valueOut)
     }
 
     rs485Off();
-    return result;
+    // Temporary: using high valued positive signed integer to indicate error until error response can include details
+    if (result != 0)
+    {
+        *valueOut = 0x7ff0 | (uint16_t)result;
+    }
+    return 0;
 }
 
 void RemoteUnitSensor::rs485Setup()

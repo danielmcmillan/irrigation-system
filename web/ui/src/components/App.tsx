@@ -189,8 +189,9 @@ const PropertyControls = observer(({ icu }: { icu: IrrigationStore }) => {
                           let suffix = "";
                           if (typeof value === "number" && prop.propertyName === "Sensor") {
                             const original = value * 10;
-                            if (original === 0xffff) {
-                              value = 0;
+                            if (original >= 0x7ff0 && original <= 0x7fff) {
+                              value = original & 0x000f;
+                              suffix = " (error)";
                             } else {
                               const bytes = new Uint8Array([original & 0xff, original >> 8]);
                               value = new Int16Array(bytes.buffer)[0] * 0.1;
