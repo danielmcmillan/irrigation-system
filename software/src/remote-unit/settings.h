@@ -1,7 +1,7 @@
 /**
  * Software revision number.
  */
-#define REMOTE_UNIT_REVISION 6
+#define REMOTE_UNIT_REVISION 7
 
 /**
  * Unique 16 bit identifier for a remote unit.

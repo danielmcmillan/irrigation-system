@@ -210,7 +210,8 @@ void loop()
     }
     if (handleSerialData)
     {
-        delay(17);
+        // Allow some extra time for RF data to be sent before sleep
+        delay(34);
         dataPending = Serial.available() > 0;
     }
     if (!dataPending)
