@@ -124,7 +124,16 @@ void setup()
     SERIAL_BEGIN;
     pinMode(LED_1, OUTPUT);
     pinMode(LED_2, OUTPUT);
-    digitalWrite(LED_1, LOW);
+    // Startup LED flashing sequence
+    for (int i = 0; i < 4; ++i)
+    {
+        digitalWrite(LED_1, HIGH);
+        digitalWrite(LED_2, LOW);
+        delay(150);
+        digitalWrite(LED_1, LOW);
+        digitalWrite(LED_2, HIGH);
+        delay(150);
+    }
     digitalWrite(LED_2, LOW);
 
     if (config.load())
