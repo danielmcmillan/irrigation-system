@@ -106,7 +106,11 @@ int RemoteUnitCommandHandler::getSoftwareRevision(uint16_t *softwareRevisionOut)
     return 0;
 }
 
-int RemoteUnitCommandHandler::getSensorValue(uint8_t sensorId, uint16_t *valueOut) const
+RemoteUnitSensor::SensorReadingResult RemoteUnitCommandHandler::getSensorValue(uint8_t sensorId, uint16_t *valueOut) const
 {
-    return this->sensor.readValue(sensorId, valueOut);
+    if (sensorId & 0x80)
+    {
+        this->sensor.scheduleUpdate();
+    }
+    return this->sensor.getValue(sensorId & 0x7f, valueOut);
 }

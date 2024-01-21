@@ -112,6 +112,6 @@ public:
   /**
    * Gets the current value for the sensor with specified id.
    */
-  int getSensorValue(uint8_t sensorId, uint16_t *valueOut) const;
+  RemoteUnitSensor::SensorReadingResult getSensorValue(uint8_t sensorId, uint16_t *valueOut) const;
 };
 #endif

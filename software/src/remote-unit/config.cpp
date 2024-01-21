@@ -50,11 +50,11 @@ int RemoteUnitConfig::load()
   this->config[14] = 50;                      // Solenoid A off pulse width * 2 ms
   this->config[15] = 50;                      // Solenoid B on pulse width * 2 ms
   this->config[16] = 50;                      // Solenoid B off pulse width * 2 ms
-  uint8_t sensorPowerOnDelay = 8;             // Sensor power-on delay time * 256 ms = 2048 ms
-  this->config[13] |= (sensorPowerOnDelay & 0x01) > 0;
-  this->config[14] |= (sensorPowerOnDelay & 0x02) > 0;
-  this->config[15] |= (sensorPowerOnDelay & 0x04) > 0;
-  this->config[16] |= (sensorPowerOnDelay & 0x08) > 0;
+  uint8_t sensorUpdateInterval = 0;           // Sensor update interval in multiples of 64 timer counts or 0 to disable
+  this->config[13] |= (sensorUpdateInterval & 0x01) > 0;
+  this->config[14] |= (sensorUpdateInterval & 0x02) > 0;
+  this->config[15] |= (sensorUpdateInterval & 0x04) > 0;
+  this->config[16] |= (sensorUpdateInterval & 0x08) > 0;
 
   return 1;
 }
@@ -135,7 +135,7 @@ uint8_t RemoteUnitConfig::getSolenoidBOffPulseWidth() const
   return this->config[16] & ~1;
 }
 
-uint8_t RemoteUnitConfig::getSensorPowerOnDelay() const
+uint8_t RemoteUnitConfig::getSensorUpdateInterval() const
 {
   return (this->config[13] & 1) + (this->config[14] & 1) * 0x02 + (this->config[15] & 1) * 0x04 + (this->config[16] & 1) * 0x08;
 }

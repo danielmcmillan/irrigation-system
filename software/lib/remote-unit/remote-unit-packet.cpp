@@ -127,7 +127,7 @@ namespace IrrigationSystem
             case RemoteUnitCommand::GetSensorValue:
                 return 1;
             case RemoteUnitCommand::GetSensorValueResponse:
-                return 2;
+                return 3;
             case RemoteUnitCommand::ErrorResponse:
                 return 0;
             default:

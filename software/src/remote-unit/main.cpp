@@ -164,9 +164,14 @@ void loop()
         rfModule.wake();
         SERIAL_BEGIN;
     }
-    if (battery.update(counts))
+    else
     {
-        faults.setFault(RemoteUnitFault::BatteryVoltageError);
+        // Only do battery and sensor updates when not handling RF data
+        if (battery.update(counts))
+        {
+            faults.setFault(RemoteUnitFault::BatteryVoltageError);
+        }
+        sensor.update(counts);
     }
 
     if (handleSerialData)

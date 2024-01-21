@@ -57,6 +57,6 @@ public:
   uint8_t getSolenoidAOffPulseWidth() const;
   uint8_t getSolenoidBOnPulseWidth() const;
   uint8_t getSolenoidBOffPulseWidth() const;
-  uint8_t getSensorPowerOnDelay() const;
+  uint8_t getSensorUpdateInterval() const;
 };
 #endif

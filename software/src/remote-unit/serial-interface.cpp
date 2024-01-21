@@ -59,11 +59,14 @@ void RemoteUnitSerialInterface::handleCommand(RemoteUnitPacket::RemoteUnitComman
         responseData[1] = softwareRevision >> 8;
         break;
     case RemoteUnitPacket::RemoteUnitCommand::GetSensorValue:
+    {
         uint16_t sensorValue;
-        result = this->commands.getSensorValue(*data, &sensorValue);
-        responseData[0] = sensorValue;
-        responseData[1] = sensorValue >> 8;
+        RemoteUnitSensor::SensorReadingResult sensorResult = this->commands.getSensorValue(*data, &sensorValue);
+        responseData[0] = (sensorResult.success << 7) | (sensorResult.unread << 6) | (sensorResult.error & 0x3f);
+        responseData[1] = sensorValue;
+        responseData[2] = sensorValue >> 8;
         break;
+    }
     default:
         result = -1;
         break;

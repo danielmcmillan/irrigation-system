@@ -12,7 +12,8 @@ uint8_t rs485ReadWaterPotentialCommand[] = {0x02,
                                             0x39};
 
 RemoteUnitSensor::RemoteUnitSensor(const RemoteUnitConfig &config, uint8_t rxPin, uint8_t txPin, uint8_t reDePin, uint8_t rs485EnablePin)
-    : config(config), txPin(txPin), reDePin(reDePin), rs485EnablePin(rs485EnablePin), ss(rxPin, txPin)
+    : config(config), txPin(txPin), reDePin(reDePin), rs485EnablePin(rs485EnablePin), ss(rxPin, txPin), lastUpdateCounts(0),
+      readPending(false), lastResult({0}), sensorValue(0x7fff)
 {
 }
 
@@ -21,9 +22,43 @@ void RemoteUnitSensor::setup()
     rs485Setup();
 }
 
-int RemoteUnitSensor::readValue(uint8_t sensor, uint16_t *valueOut)
+int RemoteUnitSensor::update(unsigned long counts)
 {
-    int result = 0;
+    uint16_t intervalCounts = (uint16_t)config.getSensorUpdateInterval() * 64;
+    if (readPending)
+    {
+        readPending = false;
+        uint8_t error = readValue(0, &sensorValue);
+        lastResult.success = error == 0;
+        lastResult.unread = true;
+        lastResult.error = error;
+    }
+    else if (lastUpdateCounts == 0xffffffff || (intervalCounts != 0 && (counts - lastUpdateCounts) > intervalCounts))
+    {
+        lastUpdateCounts = counts;
+        readPending = true;
+        // Turn sensor on to give it time to power up before next interval
+        digitalWrite(rs485EnablePin, HIGH);
+    }
+    return 0;
+}
+
+RemoteUnitSensor::SensorReadingResult RemoteUnitSensor::getValue(uint8_t sensor, uint16_t *valueOut)
+{
+    *valueOut = sensorValue;
+    RemoteUnitSensor::SensorReadingResult result = lastResult;
+    lastResult.unread = false;
+    return result;
+}
+
+void RemoteUnitSensor::scheduleUpdate()
+{
+    lastUpdateCounts = 0xffffffff;
+}
+
+uint8_t RemoteUnitSensor::readValue(uint8_t sensor, uint16_t *valueOut)
+{
+    uint8_t result = 0;
     // Clear any previous data in Serial buffer
     while (ss.available() > 0)
     {
@@ -64,12 +99,7 @@ int RemoteUnitSensor::readValue(uint8_t sensor, uint16_t *valueOut)
     }
 
     rs485Off();
-    // Temporary: using high valued positive signed integer to indicate error until error response can include details
-    if (result != 0)
-    {
-        *valueOut = 0x7ff0 | (uint16_t)result;
-    }
-    return 0;
+    return result;
 }
 
 void RemoteUnitSensor::rs485Setup()
@@ -92,7 +122,6 @@ void RemoteUnitSensor::rs485On()
     ss.begin(9600);
     ss.setTimeout(2000);
     digitalWrite(rs485EnablePin, HIGH);
-    delay(256 + 256 * (unsigned long)config.getSensorPowerOnDelay());
 }
 void RemoteUnitSensor::rs485Mode(bool tx)
 {
