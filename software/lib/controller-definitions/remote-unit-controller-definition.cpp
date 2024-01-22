@@ -199,7 +199,7 @@ namespace IrrigationSystem
             return {PropertyValueType::BooleanFlags, {.booleanCount = 1}};
         case RemoteUnitPropertyType::RemoteUnitSensor:
         {
-            PropertyFormat format = {PropertyValueType::UnsignedInt, {.mul = {10, -1}}, "-500"};
+            PropertyFormat format = {PropertyValueType::UnsignedInt, {.mul = {1, 1}}, ""};
             return format;
         }
         default:

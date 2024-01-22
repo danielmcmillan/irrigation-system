@@ -23,8 +23,6 @@ extern "C"
 
 // Time to wait for data on Serial after sending a request to a remote unit
 #define REMOTE_UNIT_TIMEOUT 8000
-// Extra timeout for sensor read requests
-#define SENSOR_READ_TIMEOUT 4000
 // Number of times to retry communication with a remote unit before considering it unavailable
 #define RETRY_COUNT 1
 // Time in 2^14 milliseconds between heartbeats for each remote units
@@ -298,7 +296,7 @@ namespace IrrigationSystem
                 bool succeeded = false;
                 for (int attempt = 0; attempt <= RETRY_COUNT; ++attempt)
                 {
-                    succeeded = updateRemoteUnit(i, false);
+                    succeeded = updateRemoteUnit(i);
                     if (succeeded)
                     {
                         break;
@@ -329,7 +327,7 @@ namespace IrrigationSystem
                 bool succeeded = false;
                 for (int attempt = 0; attempt <= RETRY_COUNT; ++attempt)
                 {
-                    succeeded = updateRemoteUnit(i, true);
+                    succeeded = updateRemoteUnit(i);
                     if (succeeded)
                     {
                         break;
@@ -393,13 +391,9 @@ namespace IrrigationSystem
         }
     }
 
-    bool RemoteUnitController::updateRemoteUnit(int index, bool updateSensor)
+    bool RemoteUnitController::updateRemoteUnit(int index)
     {
         const RemoteUnit &remoteUnit = definition.getRemoteUnitAt(index);
-        if (!remoteUnit.hasSensor)
-        {
-            updateSensor = false;
-        }
         unsigned long timeout = REMOTE_UNIT_TIMEOUT;
         uint8_t buffer[PACKET_BUFFER_SIZE + 2];
 
@@ -418,10 +412,11 @@ namespace IrrigationSystem
             packetSize = RemoteUnitPacket::addCommandToPacket(packet, PACKET_BUFFER_SIZE, packetSize, RemoteUnitPacket::RemoteUnitCommand::SetSolenoidState, &solenoidState);
             *solenoidState = remoteUnits[index].solenoidDesiredOn;
         }
-        if (updateSensor)
+        if (remoteUnit.hasSensor)
         {
-            packetSize = RemoteUnitPacket::addCommandToPacket(packet, PACKET_BUFFER_SIZE, packetSize, RemoteUnitPacket::RemoteUnitCommand::GetSensorValue, nullptr);
-            timeout += SENSOR_READ_TIMEOUT;
+            uint8_t *sensorId;
+            packetSize = RemoteUnitPacket::addCommandToPacket(packet, PACKET_BUFFER_SIZE, packetSize, RemoteUnitPacket::RemoteUnitCommand::GetSensorValue, &sensorId);
+            *sensorId = 0;
         }
         packetSize = RemoteUnitPacket::finalisePacket(packet, PACKET_BUFFER_SIZE, packetSize, false);
         // Add big-endian node ID to initial bytes for LoRa module
@@ -454,7 +449,7 @@ namespace IrrigationSystem
         packetSize = RemoteUnitPacket::getPacket(buffer, read + 1, &packet);
 
         int numCommands = IrrigationSystem::RemoteUnitPacket::validatePacket(packet, packetSize, true);
-        if (numCommands != (updateSensor ? 4 : 3))
+        if (numCommands != (remoteUnit.hasSensor ? 4 : 3))
         {
             if (numCommands == -2)
             {
@@ -474,7 +469,7 @@ namespace IrrigationSystem
             LOG_ERROR("Remote unit response is valid but for unexpected node id");
             return false;
         }
-        if (!handleRemoteUnitResponse(remoteUnit, index, packet, updateSensor))
+        if (!handleRemoteUnitResponse(remoteUnit, index, packet))
         {
             notifyError(0x07, remoteUnit.id);
             LOG_ERROR("Remote unit response is for unexpected commands");
@@ -485,7 +480,7 @@ namespace IrrigationSystem
         return true;
     }
 
-    bool RemoteUnitController::handleRemoteUnitResponse(const RemoteUnit &remoteUnit, int remoteUnitIndex, uint8_t *packet, bool updateSensor)
+    bool RemoteUnitController::handleRemoteUnitResponse(const RemoteUnit &remoteUnit, int remoteUnitIndex, uint8_t *packet)
     {
         const uint8_t *responseData;
         IrrigationSystem::RemoteUnitPacket::RemoteUnitCommand responseCommand;
@@ -534,7 +529,7 @@ namespace IrrigationSystem
         // Send events for any solenoid that changed state
         handleSolenoidValuesChanged(remoteUnit, remoteUnitIndex, previousSolenoidOn, previousSolenoidDesiredOn);
 
-        if (updateSensor)
+        if (remoteUnit.hasSensor)
         {
             responseCommand = IrrigationSystem::RemoteUnitPacket::getCommandAtIndex(packet, 3, &responseData);
             if (responseCommand != RemoteUnitPacket::RemoteUnitCommand::GetSensorValueResponse)
@@ -542,11 +537,23 @@ namespace IrrigationSystem
                 return false;
             }
             uint16_t previousSensorValue = remoteUnits[remoteUnitIndex].sensorValue;
-            uint16_t sensorValue = read16LE(responseData);
+            uint8_t sensorReadResult = responseData[0];
+            uint8_t sensorError = sensorReadResult & 0x3f;
+            uint16_t sensorValue = read16LE(&responseData[1]);
             remoteUnits[remoteUnitIndex].sensorValue = sensorValue;
-            if (eventHandler != nullptr && previousSensorValue != sensorValue)
+            if (eventHandler != nullptr)
             {
-                eventHandler->handlePropertyValueChanged(controllerId, definition.getPropertyId(RemoteUnitPropertyType::RemoteUnitSensor, remoteUnitIndex), 2, sensorValue);
+                uint16_t propertyId = definition.getPropertyId(RemoteUnitPropertyType::RemoteUnitSensor, remoteUnitIndex);
+                // Send sensor value update event if it has been read successfully since last check or the actual value has changed
+                if ((sensorReadResult & 0xc0) == 0xc0 /*=success&unread*/ || previousSensorValue != sensorValue)
+                {
+                    eventHandler->handlePropertyValueChanged(controllerId, propertyId, 2, sensorValue);
+                }
+                // Send property error if sensor read failed since last check
+                if ((sensorReadResult & 0xc0) == 0x40 /*=!success&unread*/)
+                {
+                    eventHandler->handlePropertyError(controllerId, propertyId, 1, sensorReadResult & 0x3f);
+                }
             }
         }
 

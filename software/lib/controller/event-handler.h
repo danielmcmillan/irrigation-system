@@ -28,6 +28,10 @@ namespace IrrigationSystem
         virtual void handleEvent(uint8_t type, uint8_t payloadSize, const uint8_t *payload) = 0;
         void handlePropertyValueChanged(uint8_t controllerId, uint16_t propertyId, uint8_t valueSize, uint32_t value);
         void handlePropertyDesiredValueChanged(uint8_t controllerId, uint16_t propertyId, uint8_t valueSize, uint32_t value);
+        void handlePropertyError(uint8_t controllerId, uint16_t propertyId, uint8_t errorSize, uint32_t error);
+
+    private:
+        void handlePropertyLevelEvent(uint8_t type, uint8_t controllerId, uint16_t propertyId, uint8_t dataSize, uint32_t data);
     };
 }
 

@@ -48,8 +48,8 @@ namespace IrrigationSystem
         /** Write the default config to RF module. Returns whether successful. */
         bool applyRfConfig();
         void setRemoteUnitAvailable(int index, bool available);
-        bool updateRemoteUnit(int index, bool updateSensor);
-        bool handleRemoteUnitResponse(const RemoteUnit &remoteUnit, int remoteUnitIndex, uint8_t *packet, bool updateSensor);
+        bool updateRemoteUnit(int index);
+        bool handleRemoteUnitResponse(const RemoteUnit &remoteUnit, int remoteUnitIndex, uint8_t *packet);
         void handleSolenoidValuesChanged(const RemoteUnit &remoteUnit, int remoteUnitIndex, uint8_t previousSolenoidOn, uint8_t previousSolenoidDesiredOn);
     };
 }
