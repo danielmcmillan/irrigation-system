@@ -381,13 +381,10 @@ namespace IrrigationSystem
     void RemoteUnitController::setRemoteUnitAvailable(int index, bool available)
     {
         RemoteUnitState &values = remoteUnits[index];
-        if (values.available != available)
+        values.available = available;
+        if (eventHandler != nullptr)
         {
-            values.available = available;
-            if (eventHandler != nullptr)
-            {
-                eventHandler->handlePropertyValueChanged(controllerId, definition.getPropertyId(RemoteUnitPropertyType::RemoteUnitAvailable, index), 1, available);
-            }
+            eventHandler->handlePropertyValueChanged(controllerId, definition.getPropertyId(RemoteUnitPropertyType::RemoteUnitAvailable, index), 1, available);
         }
     }
 
