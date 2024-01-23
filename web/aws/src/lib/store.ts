@@ -99,7 +99,7 @@ const tableKeys: {
       { value: 0x02, type: KeyPartType.uint8 },
       { field: "deviceId", type: KeyPartType.utf8 },
     ],
-    sk: [{ field: "lastUpdated", type: KeyPartType.uint32le }],
+    sk: [{ field: "lastUpdated", type: KeyPartType.uint32be }],
   },
   propertyHistory: {
     pk: [
@@ -109,7 +109,7 @@ const tableKeys: {
       { field: "controllerId", type: KeyPartType.uint8 },
       { field: "propertyId", type: KeyPartType.uint16le },
     ],
-    sk: [{ field: "lastUpdated", type: KeyPartType.uint32le }],
+    sk: [{ field: "lastUpdated", type: KeyPartType.uint32be }],
   },
   webSocketClient: {
     pk: [

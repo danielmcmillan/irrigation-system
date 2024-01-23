@@ -8,19 +8,21 @@ describe("binaryKey", () => {
       y: string;
       z: number;
       a: number;
-      b: boolean;
+      b: number;
+      c: boolean;
     }> = [
       { value: 100, type: KeyPartType.uint8 },
       { field: "x", type: KeyPartType.uint8 },
       { field: "y", type: KeyPartType.utf8 },
       { field: "z", type: KeyPartType.uint16le },
       { field: "a", type: KeyPartType.uint32le },
-      { field: "b", type: KeyPartType.bool },
+      { field: "b", type: KeyPartType.uint32be },
+      { field: "c", type: KeyPartType.bool },
     ];
-    const keyObj = { x: 123, y: "text", z: 1234, a: 101, b: true };
+    const keyObj = { x: 123, y: "text", z: 1234, a: 101, b: 102, c: true };
     const keyBin = buildBinaryKey(definition, keyObj)!;
     expect(keyBin[0]).toBe(100);
-    expect(keyBin.byteLength).toBe(14);
+    expect(keyBin.byteLength).toBe(18);
     const result = parseBinaryKey(keyBin, definition);
     expect(result).toEqual(keyObj);
   });

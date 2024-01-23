@@ -3,11 +3,12 @@ export enum KeyPartType {
   uint8,
   uint16le,
   uint32le,
+  uint32be,
   bool,
   utf8,
 }
 type KeyPartTypeForValue<V extends KeyPartValue> = V extends number
-  ? KeyPartType.uint8 | KeyPartType.uint16le | KeyPartType.uint32le
+  ? KeyPartType.uint8 | KeyPartType.uint16le | KeyPartType.uint32le | KeyPartType.uint32be
   : V extends boolean
   ? KeyPartType.bool
   : V extends string
@@ -28,9 +29,7 @@ type DynamicKeyPartDefinition<Key extends object> = ValueOf<{
 }>;
 
 export type KeyDefinition<Key extends object> = Array<
-  | DynamicKeyPartDefinition<Key>
-  | StaticKeyPartDefinition<number>
-  | StaticKeyPartDefinition<string>
+  DynamicKeyPartDefinition<Key> | StaticKeyPartDefinition<number> | StaticKeyPartDefinition<string>
 >;
 
 const textEncoder = new TextEncoder();
@@ -44,9 +43,7 @@ export function buildBinaryKey<Key extends object>(
   let keyPartIndex = 0;
   for (const keyPartDefinition of definition) {
     const value =
-      "value" in keyPartDefinition
-        ? keyPartDefinition.value
-        : values[keyPartDefinition.field];
+      "value" in keyPartDefinition ? keyPartDefinition.value : values[keyPartDefinition.field];
     if (
       typeof value !==
       (keyPartDefinition.type === KeyPartType.utf8
@@ -67,9 +64,14 @@ export function buildBinaryKey<Key extends object>(
         binParts.push(new Uint8Array(binPart));
         break;
       }
-      case KeyPartType.uint32le: {
+      case KeyPartType.uint32le:
+      case KeyPartType.uint32be: {
         const binPart = new ArrayBuffer(4);
-        new DataView(binPart).setUint32(0, value as number, true);
+        new DataView(binPart).setUint32(
+          0,
+          value as number,
+          keyPartDefinition.type === KeyPartType.uint32le
+        );
         binParts.push(new Uint8Array(binPart));
         break;
       }
@@ -84,9 +86,7 @@ export function buildBinaryKey<Key extends object>(
     }
     ++keyPartIndex;
   }
-  const result = new Uint8Array(
-    binParts.reduce((acc, part) => acc + part.length, 0)
-  );
+  const result = new Uint8Array(binParts.reduce((acc, part) => acc + part.length, 0));
   let offset = 0;
   for (const binPart of binParts) {
     result.set(binPart, offset);
@@ -115,7 +115,8 @@ export function parseBinaryKey<Key extends object>(
           offset += 2;
           break;
         case KeyPartType.uint32le:
-          value = view.getUint32(offset, true);
+        case KeyPartType.uint32be:
+          value = view.getUint32(offset, keyPartDefinition.type === KeyPartType.uint32le);
           offset += 4;
           break;
         case KeyPartType.bool:

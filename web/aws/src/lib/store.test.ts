@@ -119,11 +119,13 @@ describe("store", () => {
     dbMock.on(PutCommand).resolves({});
     await store.addPropertyHistory(property, 3600);
     const params = dbMock.commandCalls(PutCommand).at(0)?.args.at(0)?.input;
+    const sk = new Uint8Array(4);
+    new DataView(sk.buffer).setUint32(0, 999, false);
     expect(params).toEqual({
       TableName: "table",
       Item: {
         pk: new Uint8Array([0, 2, ...mockDeviceNameBin, 0, 4, 321 & 0xff, (321 >> 8) & 0xff]),
-        sk: new Uint8Array(Uint32Array.from([999]).buffer),
+        sk,
         val: property.value,
         exp: property.lastUpdated + 3600,
       },
