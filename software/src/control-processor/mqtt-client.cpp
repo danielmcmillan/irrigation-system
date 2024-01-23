@@ -105,7 +105,7 @@ bool MqttClient::loop()
 
 bool MqttClient::publish(const char *topic, const uint8_t *payload, int length, bool ignoreError) const
 {
-    if (this->mqttClient.publish(topic, (char *)payload, length))
+    if (this->mqttClient.publish(topic, (char *)payload, length, false, 1))
     {
         return true;
     }
