@@ -2,12 +2,12 @@
 
 void IrrigationSystem::EventHandler::handlePropertyValueChanged(uint8_t controllerId, uint16_t propertyId, uint8_t valueSize, uint32_t value)
 {
-    handlePropertyLevelEvent(EventType::propertyError, controllerId, propertyId, valueSize, value);
+    handlePropertyLevelEvent(EventType::propertyValueChanged, controllerId, propertyId, valueSize, value);
 }
 
 void IrrigationSystem::EventHandler::handlePropertyDesiredValueChanged(uint8_t controllerId, uint16_t propertyId, uint8_t valueSize, uint32_t value)
 {
-    handlePropertyLevelEvent(EventType::propertyError, controllerId, propertyId, valueSize, value);
+    handlePropertyLevelEvent(EventType::propertyDesiredValueChanged, controllerId, propertyId, valueSize, value);
 }
 
 void IrrigationSystem::EventHandler::handlePropertyError(uint8_t controllerId, uint16_t propertyId, uint8_t errorSize, uint32_t error)
