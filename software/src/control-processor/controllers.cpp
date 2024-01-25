@@ -57,9 +57,12 @@ ControllersStatus Controllers::getStatus() const
 
 bool Controllers::configStart()
 {
-    status = ControllersStatus::Unconfigured;
+    if (status != ControllersStatus::Unconfigured)
+    {
+        status = ControllersStatus::Unconfigured;
+        eventHandler.handleEvent(EventType::started, 0, nullptr); // todo move
+    }
     controllers.resetControllers();
-    eventHandler.handleEvent(EventType::started, 0, nullptr); // todo move
     return true;
 }
 

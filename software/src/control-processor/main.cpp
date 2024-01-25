@@ -17,7 +17,7 @@
 /**
  * Software revision number.
  */
-#define CONTROL_PROCESSOR_REVISION 18
+#define CONTROL_PROCESSOR_REVISION 19
 
 using namespace IrrigationSystem;
 
@@ -88,7 +88,6 @@ void loop()
         lastConnected = now;
 
         eventPublisher.loop();
-        // sendCommandResults();
     }
     else if ((now - lastConnected) > DISCONNECTED_RESET_TIME)
     {
