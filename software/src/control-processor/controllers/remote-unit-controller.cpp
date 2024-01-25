@@ -23,8 +23,10 @@ extern "C"
 
 // Time to wait for data on Serial after sending a request to a remote unit
 #define REMOTE_UNIT_TIMEOUT 8000
-// Number of times to retry communication with a remote unit before considering it unavailable
-#define RETRY_COUNT 1
+// Number of times communication with a remote unit can fail before considering it unavailable
+#define AVAILABLE_FAILURE_COUNT 2
+// Number of times to do an immediate retry after failure to apply changes before applying backoff delay
+#define ACTIVE_RETRY_COUNT 2
 // Time in 2^14 milliseconds between heartbeats for each remote units
 #define REMOTE_UNIT_UPDATE_INTERVAL 73 // ~20 minutes
 // Time in 2^14 milliseconds between heartbeats for remote units with active solenoids
@@ -83,7 +85,8 @@ namespace IrrigationSystem
         for (int i = 0; i < MAX_REMOTE_UNITS; ++i)
         {
             remoteUnits[i].solenoidDesiredOn = SOLENOID_ON_INDETERMINATE;
-            remoteUnits[i].lastUpdated = -REMOTE_UNIT_UPDATE_INTERVAL - 1;
+            remoteUnits[i].nextUpdateTime = millis() >> 14;
+            remoteUnits[i].updateFailCount = 0;
         }
         definition.reset();
     }
@@ -183,6 +186,7 @@ namespace IrrigationSystem
                 {
                     remoteUnits[index].solenoidDesiredOn = remoteUnits[index].solenoidOn;
                 }
+                // Update the bit that corresponds to the solenoid
                 uint8_t mask = 1u << solenoid.numberAtRemoteUnit;
                 uint8_t previousValue = remoteUnits[index].solenoidDesiredOn & mask;
                 if (value > 0)
@@ -193,9 +197,15 @@ namespace IrrigationSystem
                 {
                     remoteUnits[index].solenoidDesiredOn &= ~mask;
                 }
-                if (eventHandler != nullptr && value != previousValue)
+                if (eventHandler != nullptr && (value > 0) != (previousValue > 0))
                 {
                     eventHandler->handlePropertyDesiredValueChanged(controllerId, id, 1, value);
+                }
+                // Schedule immediate update for the remote unit if the desired value differs from the actual
+                if (remoteUnits[index].solenoidDesiredOn != remoteUnits[index].solenoidOn)
+                {
+                    remoteUnits[index].nextUpdateTime = millis() >> 14;
+                    remoteUnits[index].updateFailCount = 0;
                 }
             }
             break;
@@ -284,59 +294,63 @@ namespace IrrigationSystem
 
     void RemoteUnitController::update()
     {
-        // 1. Check for solenoids with pending value change
-        // for each related remote unit, do updateRemoteUnit
-
-        // Applying pending value changes for solenoids
-        // on failure, retry immediately RETRY_COUNT times. If still failing, available becomes false and desired value indeterminate.
+        uint16_t now = millis() >> 14;
+        // Find the next remote unit to be updated.
+        // Prioritise first by whether change is due to be applied, followed by amount of time past since nextUpdateTime
+        int remoteUnitIndex = -1;
+        bool anyChangeDue = false;
+        uint16_t maxOverdue = 0;
         for (int i = 0; i < definition.getRemoteUnitCount(); ++i)
         {
-            if (remoteUnits[i].solenoidDesiredOn != SOLENOID_ON_INDETERMINATE && remoteUnits[i].solenoidOn != remoteUnits[i].solenoidDesiredOn)
+            // Compare time to nextUpdateTime, correctly handling overflow of the time values
+            uint16_t overdue = now - remoteUnits[i].nextUpdateTime;
+            if (overdue < (1 << 15))
             {
-                bool succeeded = false;
-                for (int attempt = 0; attempt <= RETRY_COUNT; ++attempt)
+                bool isChangeDue = remoteUnits[i].solenoidDesiredOn != SOLENOID_ON_INDETERMINATE && remoteUnits[i].solenoidOn != remoteUnits[i].solenoidDesiredOn;
+                if ((isChangeDue && !anyChangeDue) || (isChangeDue == anyChangeDue && overdue >= maxOverdue))
                 {
-                    succeeded = updateRemoteUnit(i);
-                    if (succeeded)
-                    {
-                        break;
-                    }
+                    remoteUnitIndex = i;
+                    anyChangeDue = isChangeDue;
+                    maxOverdue = overdue;
                 }
-                if (!succeeded)
-                {
-                    // Can't update, so revert desired value to indeterminate
-                    uint8_t previousDesiredValue = remoteUnits[i].solenoidDesiredOn;
-                    remoteUnits[i].solenoidDesiredOn = SOLENOID_ON_INDETERMINATE;
-                    // Actual value didn't change, so only desired value event is sent
-                    handleSolenoidValuesChanged(definition.getRemoteUnitAt(i), i, remoteUnits[i].solenoidOn, previousDesiredValue);
-                }
-                setRemoteUnitAvailable(i, succeeded);
-                remoteUnits[i].lastUpdated = millis() >> 14;
             }
         }
 
-        // Do scheduled update for remote units that are not recently updated
-        // on failure, retry immediately RETRY_COUNT times. If still failing, available becomes false
-        uint8_t now = millis() >> 14;
-        for (int i = 0; i < definition.getRemoteUnitCount(); ++i)
+        if (remoteUnitIndex >= 0)
         {
-            uint8_t updateInterval = remoteUnits[i].solenoidOn == 0 ? REMOTE_UNIT_UPDATE_INTERVAL : REMOTE_UNIT_ACTIVE_UPDATE_INTERVAL;
-            // Compare time since last updated, correctly handling overflow of the time values
-            if ((uint8_t)(now - remoteUnits[i].lastUpdated) > updateInterval)
+            if (updateRemoteUnit(remoteUnitIndex))
             {
-                bool succeeded = false;
-                for (int attempt = 0; attempt <= RETRY_COUNT; ++attempt)
+                // Successful - schedule to update again later
+                setRemoteUnitAvailable(remoteUnitIndex, true);
+                remoteUnits[remoteUnitIndex].updateFailCount = 0;
+                uint8_t updateInterval = (remoteUnits[remoteUnitIndex].solenoidOn | remoteUnits[remoteUnitIndex].solenoidDesiredOn) == 0
+                                             ? REMOTE_UNIT_UPDATE_INTERVAL
+                                             : REMOTE_UNIT_ACTIVE_UPDATE_INTERVAL;
+                remoteUnits[remoteUnitIndex].nextUpdateTime = now + updateInterval;
+            }
+            else
+            {
+                uint8_t failCount = remoteUnits[remoteUnitIndex].updateFailCount;
+                // Increment failCount to a maximum of 7 to limit backoff delay to ~70 minutes
+                if (failCount < 7)
                 {
-                    succeeded = updateRemoteUnit(i);
-                    if (succeeded)
-                    {
-                        break;
-                    }
+                    ++failCount;
                 }
-                setRemoteUnitAvailable(i, succeeded);
-                remoteUnits[i].lastUpdated = millis() >> 14;
-                // Leave other remote units for next update interval
-                break;
+                remoteUnits[remoteUnitIndex].updateFailCount = failCount;
+                uint16_t delay = 0;
+                if (!anyChangeDue || failCount > ACTIVE_RETRY_COUNT)
+                {
+                    if (anyChangeDue)
+                    {
+                        failCount -= ACTIVE_RETRY_COUNT;
+                    }
+                    delay = 2 * 1 << remoteUnits[remoteUnitIndex].updateFailCount;
+                }
+                remoteUnits[remoteUnitIndex].nextUpdateTime = now + delay;
+                if (remoteUnits[remoteUnitIndex].updateFailCount > AVAILABLE_FAILURE_COUNT)
+                {
+                    setRemoteUnitAvailable(remoteUnitIndex, false);
+                }
             }
         }
     }
@@ -380,8 +394,7 @@ namespace IrrigationSystem
     // Increment the error count for a remote unit, or set it back to 0 on success
     void RemoteUnitController::setRemoteUnitAvailable(int index, bool available)
     {
-        RemoteUnitState &values = remoteUnits[index];
-        values.available = available;
+        remoteUnits[index].available = available;
         if (eventHandler != nullptr)
         {
             eventHandler->handlePropertyValueChanged(controllerId, definition.getPropertyId(RemoteUnitPropertyType::RemoteUnitAvailable, index), 1, available);
@@ -564,6 +577,7 @@ namespace IrrigationSystem
         {
             return;
         }
+        // Send events if property values changed
         for (int solenoidIndex = 0; solenoidIndex < definition.getSolenoidCount(); ++solenoidIndex)
         {
             const Solenoid &solenoid = definition.getSolenoidAt(solenoidIndex);
@@ -572,7 +586,7 @@ namespace IrrigationSystem
                 uint16_t propertyId = definition.getPropertyId(RemoteUnitPropertyType::RemoteUnitSolenoidOn, solenoidIndex);
                 uint8_t mask = 1u << solenoid.numberAtRemoteUnit;
                 uint8_t value = (remoteUnits[remoteUnitIndex].solenoidOn & mask) > 0;
-                uint8_t previousValue = previousSolenoidOn & mask;
+                uint8_t previousValue = (previousSolenoidOn & mask) > 0;
                 uint8_t desiredValue = remoteUnits[remoteUnitIndex].solenoidDesiredOn == SOLENOID_ON_INDETERMINATE
                                            ? value
                                            : (remoteUnits[remoteUnitIndex].solenoidDesiredOn & mask) > 0;

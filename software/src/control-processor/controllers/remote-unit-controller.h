@@ -17,7 +17,14 @@ namespace IrrigationSystem
         uint16_t sensorValue;
 
         /** Last update time, as multiples of 2^14 milliseconds (~16s) */
-        uint8_t lastUpdated;
+        // uint8_t lastUpdated;
+
+        /** The time it should next be updated, as multiples of 2^14 milliseconds (~16s). */
+        uint16_t nextUpdateTime;
+        /** The number of times it has failed to update in a row. */
+        uint8_t updateFailCount;
+
+        // on fail, increment updateFailCount and set nextUpdateTime (different depending on whether there is change to apply).
     };
 
     class RemoteUnitController : public IrrigationSystem::Controller
