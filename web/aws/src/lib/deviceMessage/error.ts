@@ -1,4 +1,4 @@
-export interface DeviceError {
+export interface ErrorDeviceMessage {
   component: number;
   code: number;
   text: string;
@@ -6,7 +6,11 @@ export interface DeviceError {
 
 const errorTextDecoder = new TextDecoder();
 
-export function getErrorFromData(payload: ArrayBuffer): DeviceError {
+/**
+ * Parse an "error" device message.
+ * This type of message contains one `ErrorDeviceMessage`.
+ */
+export function parseErrorDeviceMessage(payload: ArrayBuffer): ErrorDeviceMessage {
   const view = new DataView(payload);
   return {
     component: view.getUint8(0),

@@ -16,17 +16,11 @@ interface DeviceEventCommon {
   type: DeviceEventType;
 }
 export interface DeviceEventGeneral extends DeviceEventCommon {
-  type:
-    | DeviceEventType.GeneralInfo
-    | DeviceEventType.GeneralWarning
-    | DeviceEventType.GeneralError;
+  type: DeviceEventType.GeneralInfo | DeviceEventType.GeneralWarning | DeviceEventType.GeneralError;
   data: ArrayBuffer;
 }
 export interface DeviceEventNotice extends DeviceEventCommon {
-  type:
-    | DeviceEventType.Started
-    | DeviceEventType.Configured
-    | DeviceEventType.Ready;
+  type: DeviceEventType.Started | DeviceEventType.Configured | DeviceEventType.Ready;
 }
 export interface DeviceEventPropertyValueChanged extends DeviceEventCommon {
   type: DeviceEventType.PropertyValueChanged;
@@ -34,8 +28,7 @@ export interface DeviceEventPropertyValueChanged extends DeviceEventCommon {
   propertyId: number;
   value: ArrayBuffer;
 }
-export interface DeviceEventPropertyDesiredValueChanged
-  extends DeviceEventCommon {
+export interface DeviceEventPropertyDesiredValueChanged extends DeviceEventCommon {
   type: DeviceEventType.PropertyDesiredValueChanged;
   controllerId: number;
   propertyId: number;
@@ -107,7 +100,11 @@ function getEventFromData(payload: ArrayBufferLike): DeviceEvent {
   }
 }
 
-export function getEventsFromData(payload: ArrayBuffer): DeviceEvent[] {
+/**
+ * Parse an "event" device message.
+ * This type of message contains one or more `DeviceEvent`.
+ */
+export function parseEventDeviceMessage(payload: ArrayBuffer): DeviceEvent[] {
   const view = new DataView(payload);
   const events: DeviceEvent[] = [];
   for (let i = 0; i < payload.byteLength; ) {

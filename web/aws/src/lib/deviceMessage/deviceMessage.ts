@@ -1,7 +1,10 @@
-import { DeviceError, getErrorFromData } from "./deviceError.js";
-import { DeviceEvent, getEventsFromData } from "./deviceEvent.js";
-import { DeviceProperty, getPropertiesFromData } from "./deviceProperty.js";
+import { ErrorDeviceMessage, parseErrorDeviceMessage } from "./error.js";
+import { DeviceEvent, parseEventDeviceMessage } from "./event.js";
+import { PropertyDeviceMessage, parsePropertiesDeviceMessage } from "./properties.js";
 
+/**
+ * A device message as delivered by AWS IoT Rules engine
+ */
 export interface RawDeviceMessage {
   data?: string;
   time: number;
@@ -16,8 +19,8 @@ export interface DeviceMessage {
   deviceId: string;
   type: string;
   events?: DeviceEvent[];
-  error?: DeviceError;
-  properties?: DeviceProperty[];
+  error?: ErrorDeviceMessage;
+  properties?: PropertyDeviceMessage[];
   data?: ArrayBuffer;
 }
 
@@ -38,11 +41,11 @@ export function parseDeviceMessage(input: RawDeviceMessage): DeviceMessage {
       const data = Buffer.from(input.data, "base64");
       const buffer = data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength);
       if (input.type === "event") {
-        result.events = getEventsFromData(buffer);
+        result.events = parseEventDeviceMessage(buffer);
       } else if (input.type === "error") {
-        result.error = getErrorFromData(buffer);
+        result.error = parseErrorDeviceMessage(buffer);
       } else if (input.type === "properties") {
-        result.properties = getPropertiesFromData(buffer);
+        result.properties = parsePropertiesDeviceMessage(buffer);
       } else {
         result.data = buffer;
       }

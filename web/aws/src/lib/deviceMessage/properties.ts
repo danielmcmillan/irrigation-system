@@ -1,4 +1,4 @@
-export interface DeviceProperty {
+export interface PropertyDeviceMessage {
   controllerId: number;
   propertyId: number;
   isReadOnly: boolean;
@@ -7,16 +7,14 @@ export interface DeviceProperty {
 }
 
 function getPropertyFromData(payload: ArrayBufferLike): {
-  property: DeviceProperty;
+  property: PropertyDeviceMessage;
   bytesLength: number;
 } {
   const view = new DataView(payload);
   const isReadOnly = view.getUint8(3) != 0;
   const valueLength = view.getUint8(4);
   const value = payload.slice(5, 5 + valueLength);
-  const desiredValue = isReadOnly
-    ? undefined
-    : payload.slice(5 + valueLength, 5 + valueLength * 2);
+  const desiredValue = isReadOnly ? undefined : payload.slice(5 + valueLength, 5 + valueLength * 2);
 
   const objectNameOffset = 5 + valueLength * (isReadOnly ? 1 : 2);
   const objectNameLength = view.getUint8(objectNameOffset);
@@ -28,7 +26,7 @@ function getPropertyFromData(payload: ArrayBufferLike): {
       ? 3 + view.getUint8(formatOffset + 2)
       : 4 + view.getUint8(formatOffset + 3);
 
-  const property: DeviceProperty = {
+  const property: PropertyDeviceMessage = {
     controllerId: view.getUint8(0),
     propertyId: view.getUint16(1, true),
     isReadOnly,
@@ -41,10 +39,12 @@ function getPropertyFromData(payload: ArrayBufferLike): {
   };
 }
 
-export function getPropertiesFromData(
-  payload: ArrayBufferLike
-): DeviceProperty[] {
-  const properties: DeviceProperty[] = [];
+/**
+ * Parse a "properties" device message.
+ * This type of message contains one or more `PropertyDeviceMessage`.
+ */
+export function parsePropertiesDeviceMessage(payload: ArrayBufferLike): PropertyDeviceMessage[] {
+  const properties: PropertyDeviceMessage[] = [];
   for (let i = 0; i < payload.byteLength; ) {
     const { property, bytesLength } = getPropertyFromData(payload.slice(i));
     properties.push(property);

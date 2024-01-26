@@ -1,6 +1,6 @@
 import { SQSClient, SendMessageCommand } from "@aws-sdk/client-sqs";
 import pLimit from "p-limit";
-import { DeviceEventType } from "./lib/deviceMessage/deviceEvent.js";
+import { DeviceEventType } from "./lib/deviceMessage/event.js";
 import {
   DeviceMessage,
   RawDeviceMessage,
