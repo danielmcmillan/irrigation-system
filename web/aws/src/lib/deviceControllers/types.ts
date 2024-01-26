@@ -4,11 +4,25 @@ export interface DeviceComponentDefinition {
   relatedIds?: string[];
 }
 
+export enum DevicePropertyValueType {
+  BooleanFlags,
+  UnsignedInt,
+  SignedInt,
+}
+
 export interface DevicePropertyDefinition {
-  id: string; // base64(controller id + property id [+ bit index])
+  propertyId: number;
   componentId: string;
   name: string;
   mutable?: boolean;
+  unit?: string;
+  format: {
+    type: DevicePropertyValueType;
+    /** Index into value for boolean flag properties. Default is 0. */
+    bitIndex?: number;
+    /** Value to multiply with the raw value. */
+    mul?: number;
+  };
 }
 
 export interface DeviceControllerDefinition {
@@ -16,12 +30,10 @@ export interface DeviceControllerDefinition {
    * Adds a controller configuration of the specified type.
    * Returns the length of configuration data read from `data`.
    */
-  addConfig(type: number, data: ArrayBufferLike): void;
+  addConfig(type: number, data: Uint8Array): void;
 
   getComponents(): DeviceComponentDefinition[];
   getProperties(): DevicePropertyDefinition[];
 }
 
-export interface DeviceControllerDefinitions {
-  [controllerId: number]: DeviceControllerDefinition;
-}
+export type DeviceControllerDefinitions = Map<number, DeviceControllerDefinition>;

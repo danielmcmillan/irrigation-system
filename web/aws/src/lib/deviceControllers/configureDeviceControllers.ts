@@ -1,4 +1,4 @@
-import { DeviceControllerDefinition } from "./types.js";
+import { DeviceControllerDefinitions } from "./types.js";
 
 export interface DeviceConfig {
   controllerId: number;
@@ -7,7 +7,7 @@ export interface DeviceConfig {
 }
 
 export function configureDeviceControllers(
-  controllers: Record<number, DeviceControllerDefinition | undefined>,
+  controllers: DeviceControllerDefinitions,
   configData: Uint8Array
 ): void {
   let offset = 0;
@@ -15,13 +15,11 @@ export function configureDeviceControllers(
     const length = configData[offset];
     const controllerId = configData[offset + 1];
     const type = configData[offset + 2];
-    const controller = controllers[controllerId];
+    const controller = controllers.get(controllerId);
     if (controller) {
-      controller.addConfig(type, configData.slice(offset + 2));
+      controller.addConfig(type, configData.slice(offset + 3));
     } else {
-      console.warn(
-        `Failed to configure device controllers. Unknown controller id ${controllerId}.`
-      );
+      console.warn(`Error configuring device controllers. Unknown controller id ${controllerId}.`);
     }
     offset += length;
   }
