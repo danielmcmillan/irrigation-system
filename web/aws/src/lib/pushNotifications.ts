@@ -1,4 +1,4 @@
-import webpush from "web-push";
+import webpush, { WebPushError } from "web-push";
 import { IrrigationDataStore } from "./store.js";
 webpush.setVapidDetails(
   process.env.VAPID_SUBJECT!,
@@ -24,12 +24,19 @@ export async function sendPushNotification(
   const subscriptions = await store.listPushNotificationSubscriptions();
   await Promise.all(
     subscriptions.map(async (subscription) => {
-      const result = await webpush.sendNotification(subscription, payload);
-      if ([404, 410].includes(result.statusCode)) {
-        console.warn("Dropping web notification subscription since it no longer exists", result);
-        await store.removePushNotificationSubscription(subscription);
-      } else if (result.statusCode > 299) {
-        console.error("Failed to push web notification", result);
+      try {
+        await webpush.sendNotification(subscription, payload);
+      } catch (err) {
+        if (err instanceof WebPushError) {
+          if ([404, 410].includes(err.statusCode)) {
+            console.warn("Dropping web notification subscription since it no longer exists", err);
+            await store.removePushNotificationSubscription(subscription);
+          } else {
+            console.error("Failed to push web notification", err);
+          }
+        } else {
+          throw err;
+        }
       }
     })
   );
