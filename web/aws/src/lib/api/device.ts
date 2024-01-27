@@ -8,6 +8,11 @@ import {
 import { DeviceStatus } from "../deviceStatus.js";
 import { DeviceState, PropertyState } from "../store.js";
 
+export enum PropertyType {
+  Number,
+  Boolean,
+}
+
 export interface Property {
   /** String uniquely identifying this property */
   id: string;
@@ -15,6 +20,7 @@ export interface Property {
   name: string;
   mutable?: boolean;
   unit?: string;
+  type?: PropertyType;
   lastUpdated?: number;
   lastChanged?: number;
   value?: number | boolean;
@@ -121,6 +127,10 @@ function getProperty(
     id: getPropertyId(controllerId, definition.propertyId, definition.format.bitIndex),
     componentId: definition.componentId,
     name: definition.name,
+    type:
+      definition.format.type === DevicePropertyValueType.BooleanFlags
+        ? PropertyType.Boolean
+        : PropertyType.Number,
     unit: definition.unit,
     mutable: definition.mutable,
     lastUpdated: state?.lastUpdated,

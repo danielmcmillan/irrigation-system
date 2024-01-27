@@ -24,8 +24,10 @@ export class Vacon100Controller implements DeviceControllerDefinition {
   getComponents(): DeviceComponentDefinition[] {
     return [
       {
-        type: "vsd",
+        type: "pump",
         id: "vsd",
+        typeName: "Pump",
+        name: `VSD`,
       },
     ];
   }

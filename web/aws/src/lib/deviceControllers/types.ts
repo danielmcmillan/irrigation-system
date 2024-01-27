@@ -2,6 +2,8 @@ export interface DeviceComponentDefinition {
   type: string;
   id: string;
   relatedIds?: string[];
+  typeName: string;
+  name: string;
 }
 
 export enum DevicePropertyValueType {

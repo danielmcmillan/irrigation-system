@@ -47,8 +47,10 @@ export class RemoteUnitController implements DeviceControllerDefinition {
     return [
       ...this.remoteUnits.map(
         (remoteUnit): DeviceComponentDefinition => ({
-          type: "node",
+          type: "rmu",
           id: `rmu_${remoteUnit.id}`,
+          typeName: "Node",
+          name: `${remoteUnit.id}`,
         })
       ),
       ...this.remoteUnits
@@ -56,11 +58,15 @@ export class RemoteUnitController implements DeviceControllerDefinition {
         .map((remoteUnit) => ({
           type: "sensor",
           id: `snr_${remoteUnit.id}`,
+          typeName: "Sensor",
+          name: `${remoteUnit.id}`,
         })),
       ...this.solenoids.map(
         (solenoid): DeviceComponentDefinition => ({
           type: "zone",
           id: `zn_${solenoid.id}`,
+          typeName: "Zone",
+          name: `${solenoid.id}`,
         })
       ),
     ];
@@ -94,7 +100,7 @@ export class RemoteUnitController implements DeviceControllerDefinition {
         .filter((remoteUnit) => remoteUnit.hasSensor)
         .map(
           (remoteUnit): DevicePropertyDefinition => ({
-            name: "Sensor",
+            name: "Moisture",
             componentId: `snr_${remoteUnit.id}`,
             propertyId: (4 << 8) | remoteUnit.id,
             unit: "kPa",

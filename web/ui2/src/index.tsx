@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo } from "react";
+import React, { useCallback, useEffect, useMemo } from "react";
 import ReactDOM from "react-dom/client";
 import { createBrowserRouter, redirect, RouterProvider, useLoaderData } from "react-router-dom";
 import { ApiRequestSigner } from "./services/apiRequestSigner";
@@ -6,6 +6,8 @@ import { CognitoIdentityTokenProvider } from "./services/cognitoIdentityTokenPro
 import "./index.css";
 import { WebPush } from "./services/webPush";
 import useWebSocket, { ReadyState } from "react-use-websocket";
+import { IrrigationStore } from "./legacy/irrigation/store";
+import LegacyApp from "./legacy/components/App";
 
 const config = {
   region: import.meta.env.VITE_REGION,
@@ -59,11 +61,31 @@ async function webPushUnsubscribe(send: (msg: object) => void) {
   }
 }
 
+const deviceId = import.meta.env.VITE_DEVICE_ID;
+const legacyStore = new IrrigationStore(deviceId);
+
 const RootComponent = () => {
   const { readyState, lastJsonMessage, sendJsonMessage } = useWebSocket(getWsUrl, {
     retryOnError: true,
     shouldReconnect: () => true,
+    onOpen: () => {
+      sendJsonMessage({ action: "subscribe/device", deviceIds: [deviceId] });
+    },
+    onMessage: (event) => {
+      const json = JSON.parse(event.data);
+      // Forward to legacy store
+      legacyStore.handleJsonMessage(json);
+    },
   });
+  useEffect(() => {
+    legacyStore.setSendJsonMessage(sendJsonMessage);
+  }, [sendJsonMessage]);
+  useEffect(() => {
+    legacyStore.setReadyState(readyState);
+  }, [readyState]);
+
+  return <LegacyApp icu={legacyStore} />;
+
   return (
     <div>
       <h2>WebSocket</h2>
@@ -72,11 +94,11 @@ const RootComponent = () => {
         <li>Last message: {JSON.stringify(lastJsonMessage)}</li>
       </ul>
       <h2>Websocket</h2>
-      <button
+      {/* <button
         onClick={() => sendJsonMessage({ action: "subscribe/device", deviceIds: ["icu-test"] })}
       >
         Subscribe State
-      </button>
+      </button> */}
       <button
         onClick={() =>
           sendJsonMessage({
