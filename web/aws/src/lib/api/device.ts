@@ -37,6 +37,20 @@ export interface Device {
   alerts: Alert[];
 }
 
+export function parsePropertyId(propertyId: string): {
+  controllerId: number;
+  propertyId: number;
+  bitIndex?: number;
+} {
+  const data = Buffer.from(propertyId, "base64");
+  const view = new DataView(data.buffer, data.byteOffset, data.byteLength);
+  return {
+    controllerId: view.getUint8(0),
+    propertyId: view.getUint16(1, true),
+    bitIndex: data.byteLength > 3 ? view.getUint8(3) : undefined,
+  };
+}
+
 function getPropertyId(
   controllerId: number,
   propertyId: number,
@@ -44,7 +58,7 @@ function getPropertyId(
 ): string {
   // Generate the unique string id for the property as base64(controller id + property id LE [+ bit index])
   const id = new Uint8Array(bitIndex !== undefined ? 4 : 3);
-  const idView = new DataView(id.buffer, id.byteOffset, id.byteOffset + id.byteLength);
+  const idView = new DataView(id.buffer, id.byteOffset, id.byteLength);
   idView.setUint8(0, controllerId);
   idView.setUint16(1, propertyId, true);
   if (bitIndex !== undefined) {
@@ -60,9 +74,7 @@ function getPropertyValue(
   if (!value) {
     return undefined;
   }
-  const view = new DataView(
-    value.buffer.slice(value.byteOffset, value.byteOffset + value.byteLength)
-  );
+  const view = new DataView(value.buffer, value.byteOffset, value.byteLength);
 
   let result: number | undefined;
   if (definition.format.type === DevicePropertyValueType.BooleanFlags) {

@@ -1,5 +1,5 @@
 import { APIGatewayProxyResultV2, APIGatewayProxyWebsocketEventV2 } from "aws-lambda";
-import { getDevices } from "./lib/api/device.js";
+import { getDevices, parsePropertyId } from "./lib/api/device.js";
 import {
   RequestMessage,
   ServerMessage,
@@ -12,12 +12,17 @@ import {
 } from "./lib/api/messages.js";
 import { sendPushNotification } from "./lib/pushNotifications.js";
 import { IrrigationDataStore } from "./lib/store.js";
+import { IoTDataPlaneClient, PublishCommand } from "@aws-sdk/client-iot-data-plane";
 
 const store = new IrrigationDataStore({
   tableName: process.env.DYNAMODB_TABLE_NAME!,
 });
 // Expire client connections after the maximum connection time limit for API Gateway of 2 hours.
 const WEB_SOCKET_CLIENT_TTL = 2.5 * 3600;
+
+const iotData = new IoTDataPlaneClient({
+  endpoint: process.env.IOT_ENDPOINT,
+});
 
 export async function handleWebSocketEvent(
   event: APIGatewayProxyWebsocketEventV2
@@ -74,7 +79,19 @@ export async function handleWebSocketEvent(
           response = subscribeResponse;
         } else if (data.action === "set/property") {
           const request = data as SetPropertyRequest;
-          // TODO send MQTT message
+          const { controllerId, propertyId } = parsePropertyId(request.propertyId);
+          const payload = new DataView(new ArrayBuffer(4));
+          payload.setUint8(0, controllerId);
+          payload.setUint16(1, propertyId, true);
+          // TODO handle value conversion (currently all mutable values are only 1 or 0)
+          payload.setUint8(3, request.value);
+          await iotData.send(
+            new PublishCommand({
+              topic: `icu-in/${request.deviceId}/setProperty`,
+              payload: payload.buffer,
+              qos: 1,
+            })
+          );
           const setPropertyResponse: SetPropertyResponse = {
             action: request.action,
             requestId: request.requestId,

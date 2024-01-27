@@ -77,6 +77,30 @@ const RootComponent = () => {
       >
         Subscribe State
       </button>
+      <button
+        onClick={() =>
+          sendJsonMessage({
+            action: "set/property",
+            deviceId: "icu-test",
+            propertyId: "AgEA",
+            value: 1,
+          })
+        }
+      >
+        Motor on
+      </button>
+      <button
+        onClick={() =>
+          sendJsonMessage({
+            action: "set/property",
+            deviceId: "icu-test",
+            propertyId: "AgEA",
+            value: 0,
+          })
+        }
+      >
+        Motor off
+      </button>
       <h2>Web Push Notifications</h2>
       <button onClick={() => webPushSubscribe(sendJsonMessage)}>Subscribe</button>
       <button onClick={() => webPushUnsubscribe(sendJsonMessage)}>Unsubscribe</button>

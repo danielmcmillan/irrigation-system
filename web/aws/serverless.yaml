@@ -26,9 +26,13 @@ provider:
             - dynamodb:BatchWriteItem
             - dynamodb:DeleteItem
           Resource: !GetAtt StateTable.Arn
+        - Effect: Allow
+          Action: iot:Publish
+          Resource: "*"
   environment:
     DYNAMODB_TABLE_NAME: !Ref StateTable
     API_GATEWAY_ENDPOINT: !Sub "https://${WebsocketsApi.ApiId}.execute-api.${AWS::Region}.amazonaws.com/${sls:stage}"
+    IOT_ENDPOINT: ${env:IOT_ENDPOINT}
     VAPID_SUBJECT: ${env:VAPID_SUBJECT}
     VAPID_PUBLIC_KEY: ${env:VAPID_PUBLIC_KEY}
     VAPID_PRIVATE_KEY: ${env:VAPID_PRIVATE_KEY}
