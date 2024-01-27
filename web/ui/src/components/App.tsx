@@ -192,7 +192,8 @@ const PropertyControls = observer(({ icu }: { icu: IrrigationStore }) => {
                               value = value & 0x000f;
                               suffix = " (no value)";
                             } else {
-                              const bytes = new Uint8Array([value & 0xff, value >> 8]);
+                              const original = value * 10;
+                              const bytes = new Uint8Array([original & 0xff, original >> 8]);
                               value = new Int16Array(bytes.buffer)[0] * 0.1;
                               suffix = " kPa";
                             }
