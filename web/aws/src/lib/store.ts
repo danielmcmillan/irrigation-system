@@ -6,8 +6,8 @@ import {
   QueryCommand,
   UpdateCommand,
 } from "@aws-sdk/lib-dynamodb";
-import { KeyDefinition, KeyPartType, buildBinaryKey, parseBinaryKey } from "./binaryKey.js";
 import { PushSubscription } from "web-push";
+import { KeyDefinition, KeyPartType, buildBinaryKey, parseBinaryKey } from "./binaryKey.js";
 import { DeviceStatus } from "./deviceStatus.js";
 import { WebSocketClient } from "./webSocketClient.js";
 
@@ -405,6 +405,7 @@ export class IrrigationDataStore {
       }
       return {
         connectionId: skParts.connectionId,
+        deviceIds: item.deviceIds ?? [],
       };
     });
   }

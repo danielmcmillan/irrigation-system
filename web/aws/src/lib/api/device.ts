@@ -25,6 +25,8 @@ export interface Property {
   };
 }
 
+export interface Alert {}
+
 export interface Device {
   id: string;
   connected: boolean;
@@ -32,6 +34,23 @@ export interface Device {
   lastUpdated: number;
   components: DeviceComponentDefinition[];
   properties: Property[];
+  alerts: Alert[];
+}
+
+function getPropertyId(
+  controllerId: number,
+  propertyId: number,
+  bitIndex: number | undefined
+): string {
+  // Generate the unique string id for the property as base64(controller id + property id LE [+ bit index])
+  const id = new Uint8Array(bitIndex !== undefined ? 4 : 3);
+  const idView = new DataView(id.buffer, id.byteOffset, id.byteOffset + id.byteLength);
+  idView.setUint8(0, controllerId);
+  idView.setUint16(1, propertyId, true);
+  if (bitIndex !== undefined) {
+    idView.setUint8(3, bitIndex);
+  }
+  return Buffer.from(id).toString("base64");
 }
 
 function getPropertyValue(
@@ -81,21 +100,13 @@ function getPropertyValue(
 }
 
 function getProperty(
-  definition: DevicePropertyDefinition,
   controllerId: number,
+  definition: DevicePropertyDefinition,
   state: PropertyState | undefined,
   desiredState: PropertyState | undefined
 ): Property {
-  // Generate the unique string id for the property as base64(controller id + property id LE [+ bit index])
-  const id = new Uint8Array(definition.format.bitIndex !== undefined ? 4 : 3);
-  const idView = new DataView(id.buffer, id.byteOffset, id.byteOffset + id.byteLength);
-  idView.setUint8(0, controllerId);
-  idView.setUint16(1, definition.propertyId, true);
-  if (definition.format.bitIndex !== undefined) {
-    idView.setUint8(3, definition.format.bitIndex);
-  }
   return {
-    id: Buffer.from(id).toString("base64"),
+    id: getPropertyId(controllerId, definition.propertyId, definition.format.bitIndex),
     componentId: definition.componentId,
     name: definition.name,
     unit: definition.unit,
@@ -103,17 +114,48 @@ function getProperty(
     lastUpdated: state?.lastUpdated,
     lastChanged: state?.lastChanged,
     value: getPropertyValue(definition, state?.value),
-    desired: definition.mutable
-      ? {
-          lastUpdated: desiredState?.lastUpdated,
-          lastChanged: desiredState?.lastChanged,
-          value: getPropertyValue(definition, desiredState?.value),
-        }
-      : undefined,
+    desired:
+      definition.mutable && desiredState
+        ? {
+            lastUpdated: desiredState?.lastUpdated,
+            lastChanged: desiredState?.lastChanged,
+            value: getPropertyValue(definition, desiredState?.value),
+          }
+        : undefined,
   };
 }
 
-function getDevice(deviceState: DeviceState, propertyState: PropertyState[]): Device {
+/**
+ * Combines the property definitions and state to get a list of properties with the public interface.
+ * When skipStateless is enabled, only properties with state provided are returned.
+ */
+export function getProperties(
+  deviceId: string,
+  controllerId: number,
+  definitions: DevicePropertyDefinition[],
+  propertyState: PropertyState[],
+  skipStateless = false
+): Property[] {
+  const properties: Property[] = [];
+  for (const propertyDefinition of definitions) {
+    const states = propertyState.filter(
+      (property) =>
+        property.deviceId === deviceId &&
+        property.controllerId === controllerId &&
+        property.propertyId === propertyDefinition.propertyId
+    );
+    if (!skipStateless || states.length > 0) {
+      const [state, desiredState] = [
+        states.find((s) => !s.isDesiredValue),
+        states.find((s) => s.isDesiredValue),
+      ];
+      properties.push(getProperty(controllerId, propertyDefinition, state, desiredState));
+    }
+  }
+  return properties;
+}
+
+export function getDevice(deviceState: DeviceState, propertyState: PropertyState[]): Device {
   const controllers = getControllerDefinitions();
   if (deviceState.config) {
     configureDeviceControllers(controllers, deviceState.config);
@@ -123,18 +165,12 @@ function getDevice(deviceState: DeviceState, propertyState: PropertyState[]): De
   for (const [controllerId, controller] of controllers.entries()) {
     components.push(...controller.getComponents());
     properties.push(
-      ...controller.getProperties().map((propertyDefinition) => {
-        const states = propertyState.filter(
-          (property) =>
-            property.controllerId === controllerId &&
-            property.propertyId === propertyDefinition.propertyId
-        );
-        const [state, desiredState] = [
-          states.find((s) => !s.isDesiredValue),
-          states.find((s) => s.isDesiredValue),
-        ];
-        return getProperty(propertyDefinition, controllerId, state, desiredState);
-      })
+      ...getProperties(
+        deviceState.deviceId,
+        controllerId,
+        controller.getProperties(),
+        propertyState
+      )
     );
   }
   return {
@@ -144,6 +180,7 @@ function getDevice(deviceState: DeviceState, propertyState: PropertyState[]): De
     lastUpdated: deviceState.lastUpdated,
     components,
     properties,
+    alerts: [],
   };
 }
 

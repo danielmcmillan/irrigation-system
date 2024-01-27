@@ -14,12 +14,23 @@ import {
 } from "./lib/store.js";
 import { sendPushNotification } from "./lib/pushNotifications.js";
 import { DeviceStatus } from "./lib/deviceStatus.js";
+import { DeviceUpdate, DeviceUpdateEvent } from "./lib/api/messages.js";
+import { getProperties } from "./lib/api/device.js";
+import { getControllerDefinitions } from "./lib/deviceControllers/definitions/getControllerDefinitions.js";
+import { configureDeviceControllers } from "./lib/deviceControllers/configureDeviceControllers.js";
+import {
+  ApiGatewayManagementApiClient,
+  PostToConnectionCommand,
+} from "@aws-sdk/client-apigatewaymanagementapi";
 
 const sqs = new SQSClient({});
 const store = new IrrigationDataStore({
   tableName: process.env.DYNAMODB_TABLE_NAME!,
 });
 const historyTtl = 3600 * 24 * 90; // 90 days
+const apigw = new ApiGatewayManagementApiClient({
+  endpoint: process.env.API_GATEWAY_ENDPOINT,
+});
 
 async function publishToSQS(message: DeviceMessage): Promise<void> {
   if (["event", "error"].includes(message.type)) {
@@ -50,6 +61,43 @@ async function sendNotifications(message: DeviceMessage): Promise<void> {
       }
     }
   }
+}
+
+/** Get the public device update interface given the updated state. */
+export function getDeviceUpdate(
+  deviceState: DeviceState,
+  propertyState: PropertyState[],
+  deviceStateUpdated: boolean
+): DeviceUpdate {
+  const controllers = getControllerDefinitions();
+  if (deviceState.config) {
+    configureDeviceControllers(controllers, deviceState.config);
+  }
+  const propertyUpdates: DeviceUpdate["properties"] = [];
+  for (const [controllerId, controller] of controllers.entries()) {
+    for (const property of getProperties(
+      deviceState.deviceId,
+      controllerId,
+      controller.getProperties(),
+      propertyState,
+      true
+    )) {
+      propertyUpdates.push({
+        id: property.id,
+        lastUpdated: property.lastUpdated,
+        lastChanged: property.lastChanged,
+        value: property.value,
+        desired: property.desired,
+      });
+    }
+  }
+  return {
+    id: deviceState.deviceId,
+    connected: deviceState.connected,
+    status: deviceState.status,
+    lastUpdated: deviceStateUpdated ? deviceState.lastUpdated : undefined,
+    properties: propertyUpdates,
+  };
 }
 
 async function updateStateStore(message: DeviceMessage): Promise<void> {
@@ -155,6 +203,47 @@ async function updateStateStore(message: DeviceMessage): Promise<void> {
     promises.push(limit(() => store.addPropertyHistory(prop, historyTtl)));
   }
   await Promise.all(promises);
+
+  // Send events to subscribed websocket clients
+  // Todo: depends on list of device/property updates but should be decoupled from the store updates
+  if (newDeviceState || newPropertyStates.length > 0) {
+    // Todo: don't run queries sequentially
+    const {
+      devices: [deviceState],
+    } = await store.getDeviceState(DeviceStateQueryType.Device, message.deviceId);
+    const clients = (await store.listWebSocketClients()).filter((client) =>
+      client.deviceIds?.includes(message.deviceId)
+    );
+    console.debug(
+      `Sending update for device ${deviceState?.deviceId} to ${clients.length} websocket clients`
+    );
+    if (!deviceState || clients.length === 0) {
+      return;
+    }
+    const event: DeviceUpdateEvent = {
+      type: "update/device",
+      ...getDeviceUpdate(
+        {
+          deviceId: message.deviceId,
+          config: deviceState.config,
+          lastUpdated: message.time,
+          ...newDeviceState,
+        },
+        newPropertyStates,
+        newDeviceState !== undefined
+      ),
+    };
+    const apigwResults = await Promise.all(
+      clients.map(async (client) =>
+        apigw.send(
+          new PostToConnectionCommand({
+            ConnectionId: client.connectionId,
+            Data: JSON.stringify(event),
+          })
+        )
+      )
+    );
+  }
 }
 
 export async function handleDeviceMessage(inputEvent: RawDeviceMessage): Promise<void> {

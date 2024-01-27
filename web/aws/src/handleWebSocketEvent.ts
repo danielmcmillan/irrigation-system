@@ -1,16 +1,17 @@
 import { APIGatewayProxyResultV2, APIGatewayProxyWebsocketEventV2 } from "aws-lambda";
 import { getDevices } from "./lib/api/device.js";
 import {
-  AllStateRequest,
-  AllStateResponse,
   RequestMessage,
   ServerMessage,
+  SetPropertyRequest,
+  SetPropertyResponse,
+  SubscribeDeviceRequest,
+  SubscribeDeviceResponse,
   WebPushSubscribeRequest,
   WebPushUnsubscribeRequest,
 } from "./lib/api/messages.js";
 import { sendPushNotification } from "./lib/pushNotifications.js";
 import { IrrigationDataStore } from "./lib/store.js";
-import { WebSocketClient } from "./lib/webSocketClient.js";
 
 const store = new IrrigationDataStore({
   tableName: process.env.DYNAMODB_TABLE_NAME!,
@@ -25,16 +26,13 @@ export async function handleWebSocketEvent(
     type: event.requestContext.eventType,
     body: event.body,
   });
-  const webSocketClient: WebSocketClient = {
-    connectionId: event.requestContext.connectionId,
-  };
+  const connectionId = event.requestContext.connectionId;
   let response: ServerMessage | undefined;
 
   try {
     if (event.requestContext.eventType === "CONNECT") {
-      await store.addWebSocketClient(webSocketClient, WEB_SOCKET_CLIENT_TTL);
     } else if (event.requestContext.eventType === "DISCONNECT") {
-      await store.removeWebSocketClient(webSocketClient);
+      await store.removeWebSocketClient({ connectionId });
     } else if (event.requestContext.eventType === "MESSAGE" && event.body) {
       const data: RequestMessage = JSON.parse(event.body);
       try {
@@ -55,15 +53,33 @@ export async function handleWebSocketEvent(
             store
           );
           response = data;
-        } else if (data.action === "state/getAll") {
-          const request = data as AllStateRequest;
+        } else if (data.action === "subscribe/device") {
+          const request = data as SubscribeDeviceRequest;
+          // Subscribe the client to updates for the requested devices
+          await store.addWebSocketClient(
+            { connectionId, deviceIds: request.deviceIds },
+            WEB_SOCKET_CLIENT_TTL
+          );
+          // Respond with the current state of the requested devices
+          // TOOD - consistency issue for updates happening at subscription time?
           const { devices, properties } = await store.getDeviceState();
-          const allStateResponse: AllStateResponse = {
-            ...request,
-            devices: getDevices(devices, properties),
-            alerts: [],
+          const subscribeResponse: SubscribeDeviceResponse = {
+            action: request.action,
+            requestId: request.requestId,
+            devices: getDevices(
+              devices.filter((device) => request.deviceIds.includes(device.deviceId)),
+              properties
+            ),
           };
-          response = allStateResponse;
+          response = subscribeResponse;
+        } else if (data.action === "set/property") {
+          const request = data as SetPropertyRequest;
+          // TODO send MQTT message
+          const setPropertyResponse: SetPropertyResponse = {
+            action: request.action,
+            requestId: request.requestId,
+          };
+          response = setPropertyResponse;
         } else {
           response = {
             action: data.action,

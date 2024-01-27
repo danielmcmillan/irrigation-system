@@ -71,11 +71,16 @@ const RootComponent = () => {
         <li>Connection status: {ReadyState[readyState]}</li>
         <li>Last message: {JSON.stringify(lastJsonMessage)}</li>
       </ul>
-      <h2>Push Notifications</h2>
+      <h2>Websocket</h2>
+      <button
+        onClick={() => sendJsonMessage({ action: "subscribe/device", deviceIds: ["icu-test"] })}
+      >
+        Subscribe State
+      </button>
+      <h2>Web Push Notifications</h2>
       <button onClick={() => webPushSubscribe(sendJsonMessage)}>Subscribe</button>
       <button onClick={() => webPushUnsubscribe(sendJsonMessage)}>Unsubscribe</button>
       <button onClick={() => sendJsonMessage({ action: "webPush/test" })}>Test</button>
-      <button onClick={() => sendJsonMessage({ action: "state/getAll" })}>Get State</button>
     </div>
   );
 };

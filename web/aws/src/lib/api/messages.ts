@@ -1,6 +1,5 @@
 import { DeviceStatus } from "../deviceStatus.js";
-import { Alert } from "./alert.js";
-import { Device } from "./device.js";
+import { Alert, Device } from "./device.js";
 import { WebPushSubscription } from "./webPush.js";
 
 export type RequestMessage<Action extends string = string, Params extends object = {}> = Params & {
@@ -28,34 +27,37 @@ export type ServerMessage = ResponseMessage | ServerEventMessage | undefined;
 export interface DeviceList {
   devices: Device[];
 }
-export interface AlertList {
-  alerts: Alert[];
-}
-export type AllState = DeviceList & AlertList;
-export type AllStateRequest = RequestMessage<"state/getAll", {}>;
-export type AllStateResponse = ResponseMessage<"state/getAll", AllState>;
+export type InitialDeviceState = DeviceList;
+export type SubscribeDeviceRequest = RequestMessage<"subscribe/device", { deviceIds: string[] }>;
+export type SubscribeDeviceResponse = ResponseMessage<"subscribe/device", InitialDeviceState>;
+
+// Change requests
+export type SetPropertyRequest = RequestMessage<
+  "set/property",
+  { deviceId: string; propertyId: string; value: number }
+>;
+export type SetPropertyResponse = ResponseMessage<"set/property">;
 
 // Incremental state changes
-export interface DeviceStateChange {
-  devices: Array<{
+export interface DeviceUpdate {
+  id: string;
+  connected?: boolean;
+  status?: DeviceStatus;
+  lastUpdated?: number;
+  properties?: Array<{
     id: string;
-    connected?: boolean;
-    status?: DeviceStatus;
-    lastUpdated: number;
-  }>;
-  properties: Array<{
-    id: string;
-    value?: number | boolean;
-    desiredValue?: number | boolean;
-    lastUpdated: number;
+    lastUpdated?: number;
     lastChanged?: number;
+    value?: number | boolean;
+    desired?: {
+      lastUpdated?: number;
+      lastChanged?: number;
+      value?: number | boolean;
+    };
   }>;
+  alerts?: Alert[];
 }
-export type StateChangeEvent = ServerEventMessage<"state/change", DeviceStateChange>;
-// Updated details for one or more devices
-export type DevicesEvent = ServerEventMessage<"state/devices", DeviceList>;
-// New alerts
-export type AlertsEvent = ServerEventMessage<"state/alerts", AlertList>;
+export type DeviceUpdateEvent = ServerEventMessage<"update/device", DeviceUpdate>;
 
 // Web Push
 export type WebPushSubscribeRequest = RequestMessage<"webPush/subscribe", WebPushSubscription>;
