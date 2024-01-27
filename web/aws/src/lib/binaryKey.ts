@@ -21,21 +21,21 @@ interface StaticKeyPartDefinition<Value extends KeyPartValue> {
 }
 
 type ValueOf<T> = T[keyof T];
-type DynamicKeyPartDefinition<Key extends object> = ValueOf<{
+type DynamicKeyPartDefinition<Key extends Record<string, KeyPartValue>> = ValueOf<{
   [Property in keyof Key]: {
     field: Property;
     type: KeyPartTypeForValue<Key[Property]>;
   };
 }>;
 
-export type KeyDefinition<Key extends object> = Array<
+export type KeyDefinition<Key extends Record<string, KeyPartValue>> = Array<
   DynamicKeyPartDefinition<Key> | StaticKeyPartDefinition<number> | StaticKeyPartDefinition<string>
 >;
 
 const textEncoder = new TextEncoder();
 const textDecoder = new TextDecoder();
 
-export function buildBinaryKey<Key extends object>(
+export function buildBinaryKey<Key extends Record<string, KeyPartValue>>(
   definition: KeyDefinition<Key>,
   values: Key
 ): Uint8Array | undefined {
@@ -95,7 +95,7 @@ export function buildBinaryKey<Key extends object>(
   return result;
 }
 
-export function parseBinaryKey<Key extends object>(
+export function parseBinaryKey<Key extends Record<string, KeyPartValue>>(
   key: Uint8Array,
   definition: KeyDefinition<Key>
 ): Key | undefined {
