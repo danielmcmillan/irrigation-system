@@ -353,6 +353,42 @@ export class IrrigationDataStore {
   }
 
   /**
+   * Get a list of historical property values.
+   */
+  async getPropertyHistory(
+    property: {
+      deviceId: string;
+      controllerId: number;
+      propertyId: number;
+    },
+    from: number,
+    to: number
+  ): Promise<Array<{ time: number; value: Uint8Array }>> {
+    const result = await this.db.send(
+      new QueryCommand({
+        TableName: this.tableName,
+        KeyConditionExpression: "pk = :pk AND sk BETWEEN :from AND :to",
+        ScanIndexForward: false,
+        ExpressionAttributeValues: {
+          ":pk": buildBinaryKey(tableKeys.propertyHistory.pk, property),
+          ":from": buildBinaryKey(tableKeys.propertyHistory.sk, { lastUpdated: from }),
+          ":to": buildBinaryKey(tableKeys.propertyHistory.sk, { lastUpdated: to }),
+        },
+      })
+    );
+    return (result.Items ?? []).map((item) => {
+      const skParts = parseBinaryKey(item.sk, tableKeys.propertyHistory.sk);
+      if (!skParts) {
+        throw new Error(`Invalid property history sk: ${item.sk}`);
+      }
+      return {
+        time: skParts.lastUpdated,
+        value: item.val,
+      };
+    });
+  }
+
+  /**
    * Record a connected WebSocket client.
    */
   async addWebSocketClient(client: WebSocketClient, ttl: number): Promise<void> {

@@ -1,3 +1,4 @@
+import { getControllerDefinitions } from "./definitions/getControllerDefinitions.js";
 import { DeviceControllerDefinitions } from "./types.js";
 
 export interface DeviceConfig {
@@ -23,4 +24,14 @@ export function configureDeviceControllers(
     }
     offset += length;
   }
+}
+
+export function getConfiguredDeviceControllerDefinitions(
+  config: Uint8Array | undefined
+): DeviceControllerDefinitions {
+  const controllers = getControllerDefinitions();
+  if (config) {
+    configureDeviceControllers(controllers, config);
+  }
+  return controllers;
 }

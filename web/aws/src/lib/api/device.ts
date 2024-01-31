@@ -1,5 +1,4 @@
-import { configureDeviceControllers } from "../deviceControllers/configureDeviceControllers.js";
-import { getControllerDefinitions } from "../deviceControllers/definitions/getControllerDefinitions.js";
+import { getConfiguredDeviceControllerDefinitions } from "../deviceControllers/configureDeviceControllers.js";
 import {
   DeviceComponentDefinition,
   DevicePropertyDefinition,
@@ -73,7 +72,7 @@ function getPropertyId(
   return Buffer.from(id).toString("base64");
 }
 
-function getPropertyValue(
+export function getPropertyValue(
   definition: DevicePropertyDefinition,
   value: Uint8Array | undefined
 ): number | undefined {
@@ -178,10 +177,7 @@ export function getProperties(
 }
 
 export function getDevice(deviceState: DeviceState, propertyState: PropertyState[]): Device {
-  const controllers = getControllerDefinitions();
-  if (deviceState.config) {
-    configureDeviceControllers(controllers, deviceState.config);
-  }
+  const controllers = getConfiguredDeviceControllerDefinitions(deviceState.config);
   const components: DeviceComponentDefinition[] = [];
   const properties: Property[] = [];
   for (const [controllerId, controller] of controllers.entries()) {

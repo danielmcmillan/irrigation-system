@@ -1,6 +1,8 @@
 import { APIGatewayProxyResultV2, APIGatewayProxyWebsocketEventV2 } from "aws-lambda";
-import { getDevices, parsePropertyId } from "./lib/api/device.js";
+import { getDevices, getPropertyValue, parsePropertyId } from "./lib/api/device.js";
 import {
+  GetPropertyHistoryRequest,
+  GetPropertyHistoryResponse,
   RequestMessage,
   ServerMessage,
   SetPropertyRequest,
@@ -11,8 +13,9 @@ import {
   WebPushUnsubscribeRequest,
 } from "./lib/api/messages.js";
 import { sendPushNotification } from "./lib/pushNotifications.js";
-import { IrrigationDataStore } from "./lib/store.js";
+import { DeviceStateQueryType, IrrigationDataStore } from "./lib/store.js";
 import { IoTDataPlaneClient, PublishCommand } from "@aws-sdk/client-iot-data-plane";
+import { getConfiguredDeviceControllerDefinitions } from "./lib/deviceControllers/configureDeviceControllers.js";
 
 const store = new IrrigationDataStore({
   tableName: process.env.DYNAMODB_TABLE_NAME!,
@@ -97,6 +100,54 @@ export async function handleWebSocketEvent(
             requestId: request.requestId,
           };
           response = setPropertyResponse;
+        } else if (data.action === "get/propertyHistory") {
+          const request = data as GetPropertyHistoryRequest;
+          const { controllerId, propertyId, bitIndex } = parsePropertyId(request.propertyId);
+          // Query values for the last 7 days
+          const [
+            {
+              devices: [device],
+            },
+            values,
+          ] = await Promise.all([
+            store.getDeviceState(DeviceStateQueryType.Device, request.deviceId),
+            store.getPropertyHistory(
+              {
+                deviceId: request.deviceId,
+                controllerId,
+                propertyId,
+              },
+              Date.now() / 1000 - 7 * 24 * 3600,
+              Date.now() / 1000
+            ),
+          ]);
+          const controllerDefinitions = getConfiguredDeviceControllerDefinitions(device?.config);
+          const propertyDefinition = controllerDefinitions
+            .get(controllerId)
+            ?.getProperties()
+            .find(
+              (property) =>
+                property.propertyId === propertyId && property.format.bitIndex === bitIndex
+            );
+          if (propertyDefinition) {
+            const propertyHistoryResponse: GetPropertyHistoryResponse = {
+              action: request.action,
+              requestId: request.requestId,
+              values: values.map((value) => ({
+                time: value.time,
+                value: getPropertyValue(propertyDefinition, value.value),
+              })),
+            };
+            response = propertyHistoryResponse;
+          } else {
+            response = {
+              action: request.action,
+              requestId: request.requestId,
+              error: {
+                message: `Unknown property with id ${request.propertyId} for device ${request.deviceId}`,
+              },
+            };
+          }
         } else {
           response = {
             action: data.action,

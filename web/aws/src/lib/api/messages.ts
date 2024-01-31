@@ -31,12 +31,25 @@ export type InitialDeviceState = DeviceList;
 export type SubscribeDeviceRequest = RequestMessage<"subscribe/device", { deviceIds: string[] }>;
 export type SubscribeDeviceResponse = ResponseMessage<"subscribe/device", InitialDeviceState>;
 
-// Change requests
+// Property requests
 export type SetPropertyRequest = RequestMessage<
   "set/property",
   { deviceId: string; propertyId: string; value: number }
 >;
 export type SetPropertyResponse = ResponseMessage<"set/property">;
+export type GetPropertyHistoryRequest = RequestMessage<
+  "get/propertyHistory",
+  { deviceId: string; propertyId: string }
+>;
+export type GetPropertyHistoryResponse = ResponseMessage<
+  "get/propertyHistory",
+  {
+    values: Array<{
+      time: number;
+      value: number | undefined;
+    }>;
+  }
+>;
 
 // Incremental state changes
 export interface DeviceUpdate {
