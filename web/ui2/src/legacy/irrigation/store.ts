@@ -4,7 +4,6 @@ import { IrrigationProperty } from "./property";
 import { ReadyState } from "react-use-websocket";
 
 export enum ControllerStatus {
-  Disconnected = "Disconnected",
   Unconfigured = "Unconfigured",
   Initialising = "Initialising...",
   Ready = "Ready",
@@ -27,6 +26,14 @@ export interface DeviceComponentDefinition {
   name: string;
 }
 
+export interface Alert {
+  time: number;
+  severity: LogLevel;
+  /** Id of the property if the alert is specific to a property. */
+  propertyId?: string;
+  message: string;
+}
+
 const maxLogEntries = 100;
 
 export class IrrigationStore {
@@ -38,7 +45,8 @@ export class IrrigationStore {
   configLoaded = false;
   controllerCommandResults: ControllerCommandResult[] = [];
   readyState: ReadyState = ReadyState.CLOSED;
-  controllerStatus: ControllerStatus = ControllerStatus.Disconnected;
+  controllerConnected: boolean = false;
+  controllerStatus: ControllerStatus = ControllerStatus.Unconfigured;
   private sendJsonMessage: ((message: object) => void) | undefined;
 
   constructor(public readonly controlDeviceId: string) {
@@ -51,6 +59,7 @@ export class IrrigationStore {
       configLoaded: observable,
       controllerCommandResults: observable,
       readyState: observable,
+      controllerConnected: observable,
       controllerStatus: observable,
       ready: computed,
       errorLogCount: computed,
@@ -64,26 +73,6 @@ export class IrrigationStore {
   public setSendJsonMessage(sendJsonMessage: (message: object) => void) {
     this.sendJsonMessage = sendJsonMessage;
   }
-
-  // start() {
-  //   if (this.subscription?.closed === false) {
-  //     // Already have active subscription
-  //     return;
-  //   }
-  //   this.subscription = PubSub.subscribe([
-  //     `icu-out/all/${this.controlDeviceId}/#`,
-  //     `icu-out/${this.clientId}/${this.controlDeviceId}/#`,
-  //   ]).subscribe({
-  //     next: (msg: any) => this.handleMessage(msg.value.topicSymbol, msg.value.bytes),
-  //     error: (error) => console.error("MQTT subscription error", error),
-  //     complete: () => console.log("MQTT subscription ended"),
-  //   });
-  // }
-
-  // stop() {
-  //   this.subscription?.unsubscribe();
-  //   this.subscription = undefined;
-  // }
 
   get ready(): boolean {
     return this.readyState === ReadyState.OPEN && this.controllerStatus === ControllerStatus.Ready;
@@ -180,25 +169,6 @@ export class IrrigationStore {
     }
   }
 
-  // private updatePropertyValue(
-  //   controllerId: number,
-  //   propertyId: string,
-  //   value: ArrayBuffer,
-  //   desired = false
-  // ) {
-  //   const prop = this.getProperty(controllerId, propertyId);
-  //   if (prop) {
-  //     const newValue = getPropertyValue(value, prop.format);
-  //     if (desired) {
-  //       prop.desiredValue = newValue;
-  //     } else {
-  //       prop.value = newValue;
-  //     }
-  //   } else {
-  //     console.warn(`Received event for unknown property ${controllerId}:${propertyId}`);
-  //   }
-  // }
-
   public async handleJsonMessage(message: any): Promise<void> {
     let device: any;
     if (message.action === "subscribe/device") {
@@ -208,17 +178,18 @@ export class IrrigationStore {
     }
     if (device) {
       console.debug("Legacy: handling new device state", device);
+      if (device.connected !== undefined) {
+        runInAction(() => {
+          this.controllerConnected = device.connected;
+        });
+      }
       let newStatus: ControllerStatus | undefined;
-      if (device.connected === false) {
-        newStatus = ControllerStatus.Disconnected;
-      } else if (device.status === 0) {
+      if (device.status === 0) {
         newStatus = ControllerStatus.Unconfigured;
       } else if (device.status === 1) {
         newStatus = ControllerStatus.Initialising;
       } else if (device.status === 2) {
         newStatus = ControllerStatus.Ready;
-      } else if (device.connected === true) {
-        newStatus = ControllerStatus.Unconfigured;
       }
       if (newStatus !== undefined) {
         runInAction(() => {
@@ -227,45 +198,51 @@ export class IrrigationStore {
       }
       if (device.properties) {
         this.updateProperties(device.properties);
+        if (!device.components) {
+          this.addLogEntries(
+            device.properties.flatMap((property: IrrigationProperty) => {
+              const { name, componentId } = this.getProperty(property.id) ?? property;
+              const component = this.components.find((c) => c.id === componentId);
+              return (
+                [
+                  [true, property.desired],
+                  [false, property],
+                ] as const
+              )
+                .filter(([_, values]) => values?.value !== undefined)
+                .map(([desired, values]) => ({
+                  time: new Date(values!.lastUpdated! * 1000),
+                  level: LogLevel.info,
+                  summary: `Property ${desired ? "desired " : ""}value updated: ${
+                    component?.typeName
+                  } ${component?.name} ${name} = ${values!.value}`,
+                  detail: {
+                    lastChanged:
+                      values!.lastChanged && new Date(values!.lastChanged * 1000).toLocaleString(),
+                  },
+                }));
+            })
+          );
+        }
       }
       if (device.components) {
         runInAction(() => {
           this.components = device.components;
         });
       }
+      if (device.alerts) {
+        this.addLogEntries(
+          device.alerts.map((alert: Alert) => ({
+            time: new Date(alert.time * 1000),
+            level: alert.severity,
+            summary: alert.message,
+            detail: alert.propertyId ? { property: this.getProperty(alert.propertyId)?.name } : {},
+          }))
+        );
+      }
     }
 
-    //   const events = getEventsFromData(buffer);
-    //   this.addLogEntries(events.map(getLogFromEvent));
-    //   for (const event of events) {
-    //     if (
-    //       event.type === IrrigationEventType.PropertyValueChanged ||
-    //       event.type === IrrigationEventType.PropertyDesiredValueChanged
-    //     ) {
-    //       this.updatePropertyValue(
-    //         event.controllerId,
-    //         event.propertyId,
-    //         event.value,
-    //         event.type === IrrigationEventType.PropertyDesiredValueChanged
-    //       );
-    //     } else if (event.type === IrrigationEventType.Started) {
-    //       runInAction(() => {
-    //         this.controllerStatus = ControllerStatus.Unconfigured;
-    //       });
-    //     } else if (event.type === IrrigationEventType.Configured) {
-    //       await this.requestProperties();
-    //       runInAction(() => {
-    //         this.controllerStatus = ControllerStatus.LoadingProperties;
-    //       });
-    //     }
-    //   }
-    // } else if (messageType === MqttMessageType.Error) {
-    //   const error = getErrorFromData(buffer);
-    //   this.addLogEntries([getLogFromError(error)]);
-    // } else if (messageType === MqttMessageType.Properties) {
-    //   const properties = getPropertiesFromData(buffer);
-    //   this.updateProperties(properties);
-    // } else if (messageType === MqttMessageType.Config) {
+    // if (messageType === MqttMessageType.Config) {
     //   const configIni = serializeConfigEntriesToIni(deserializeConfigEntriesFromBinary(buffer));
     //   runInAction(() => {
     //     this.configIni = configIni;
@@ -289,8 +266,6 @@ export class IrrigationStore {
     //       console.error(`Received command result for unknown command ID ${commandId}`, buffer);
     //     }
     //   }
-    // } else {
-    //   console.warn(`MQTT message payload for unknown type ${messageType}`, payload);
     // }
   }
 }

@@ -2,6 +2,7 @@ export enum LogLevel {
   info,
   warn,
   error,
+  critical,
 }
 
 export enum LogSource {
@@ -12,18 +13,18 @@ export enum LogSource {
 
 export interface LogEntry {
   time: Date;
-  source: LogSource;
   level: LogLevel;
   summary: string;
   detail: Record<string, unknown>;
 }
 
-export const logLevels = [LogLevel.info, LogLevel.warn, LogLevel.error];
+export const logLevels = [LogLevel.info, LogLevel.warn, LogLevel.error, LogLevel.critical];
 
 export function getLogLevelString(level: LogLevel) {
   return {
     [LogLevel.info]: "Info",
     [LogLevel.warn]: "Warning",
     [LogLevel.error]: "Error",
+    [LogLevel.critical]: "Critical",
   }[level];
 }

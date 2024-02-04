@@ -30,7 +30,19 @@ export interface Property {
   };
 }
 
-export interface Alert {}
+export enum AlertSeverity {
+  Info,
+  Warning,
+  Error,
+  Critical,
+}
+export interface Alert {
+  time: number;
+  severity: AlertSeverity;
+  /** Id of the property if the alert is specific to a property. */
+  propertyId?: string;
+  message: string;
+}
 
 export interface Device {
   id: string;
@@ -56,7 +68,7 @@ export function parsePropertyId(propertyId: string): {
   };
 }
 
-function getPropertyId(
+export function getPropertyId(
   controllerId: number,
   propertyId: number,
   bitIndex: number | undefined

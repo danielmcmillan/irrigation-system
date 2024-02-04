@@ -15,13 +15,15 @@ import {
 import { sendPushNotification } from "./lib/pushNotifications.js";
 import { DeviceStatus } from "./lib/deviceStatus.js";
 import { DeviceUpdate, DeviceUpdateEvent } from "./lib/api/messages.js";
-import { getProperties } from "./lib/api/device.js";
+import { Alert, AlertSeverity, getProperties, getPropertyId } from "./lib/api/device.js";
 import { getControllerDefinitions } from "./lib/deviceControllers/definitions/getControllerDefinitions.js";
 import { configureDeviceControllers } from "./lib/deviceControllers/configureDeviceControllers.js";
 import {
   ApiGatewayManagementApiClient,
   PostToConnectionCommand,
 } from "@aws-sdk/client-apigatewaymanagementapi";
+import { getControllerErrorMessage, getPropertyErrorMessage } from "./lib/api/alert.js";
+import { WebSocketClient } from "./lib/webSocketClient.js";
 
 const sqs = new SQSClient({});
 const store = new IrrigationDataStore({
@@ -67,7 +69,8 @@ async function sendNotifications(message: DeviceMessage): Promise<void> {
 export function getDeviceUpdate(
   deviceState: DeviceState,
   propertyState: PropertyState[],
-  deviceStateUpdated: boolean
+  deviceStateUpdated: boolean,
+  alerts: Alert[]
 ): DeviceUpdate {
   const controllers = getControllerDefinitions();
   if (deviceState.config) {
@@ -97,11 +100,12 @@ export function getDeviceUpdate(
     status: deviceState.status,
     lastUpdated: deviceStateUpdated ? deviceState.lastUpdated : undefined,
     properties: propertyUpdates,
+    alerts: alerts.length > 0 ? alerts : undefined,
   };
 }
 
 async function updateStateStore(message: DeviceMessage): Promise<void> {
-  const messageTime = (message.time / 1000) | 0;
+  const messageTimeSeconds = (message.time / 1000) | 0;
   let newDeviceState: Pick<DeviceState, "connected" | "status" | "config"> | undefined;
   const newPropertyStates: PropertyState[] = [];
   let properties: PropertyState[] | undefined;
@@ -128,7 +132,7 @@ async function updateStateStore(message: DeviceMessage): Promise<void> {
       existingProperty && Buffer.from(existingProperty.value).equals(Buffer.from(property.value));
     // We can ignore an update for a "property" message if the value didn't change
     const isValueUpdated = message.type !== "property" || !isValueUnchanged;
-    const lastChanged = isValueUnchanged ? existingProperty.lastChanged : messageTime;
+    const lastChanged = isValueUnchanged ? existingProperty.lastChanged : messageTimeSeconds;
     // Property from previous event in same message
     const previousProperty = newPropertyStates.find(propertyPredicate);
     if (previousProperty) {
@@ -138,7 +142,7 @@ async function updateStateStore(message: DeviceMessage): Promise<void> {
       newPropertyStates.push({
         ...property,
         deviceId: message.deviceId,
-        lastUpdated: messageTime,
+        lastUpdated: messageTimeSeconds,
         lastChanged,
       });
     }
@@ -193,7 +197,7 @@ async function updateStateStore(message: DeviceMessage): Promise<void> {
   if (newDeviceState) {
     const deviceState = {
       deviceId: message.deviceId,
-      lastUpdated: messageTime,
+      lastUpdated: messageTimeSeconds,
       ...newDeviceState,
     };
     promises.push(limit(() => store.updateDeviceState(deviceState)));
@@ -205,14 +209,76 @@ async function updateStateStore(message: DeviceMessage): Promise<void> {
   }
   await Promise.all(promises);
 
+  // TODO separate function to build alerts from events/errors
+  const alerts: Alert[] = [];
+  if (message.type === "event" && message.events) {
+    for (const event of message.events) {
+      switch (event.type) {
+        case DeviceEventType.Started:
+          alerts.push({
+            time: messageTimeSeconds,
+            severity: AlertSeverity.Critical,
+            message: "Irrigation system restarted",
+          });
+          break;
+        case DeviceEventType.GeneralError:
+          alerts.push({
+            time: messageTimeSeconds,
+            severity: AlertSeverity.Error,
+            message: Buffer.from(event.data).toString("hex"),
+          });
+          break;
+        case DeviceEventType.GeneralWarning:
+          alerts.push({
+            time: messageTimeSeconds,
+            severity: AlertSeverity.Warning,
+            message: Buffer.from(event.data).toString("hex"),
+          });
+          break;
+        case DeviceEventType.GeneralInfo:
+          alerts.push({
+            time: messageTimeSeconds,
+            severity: AlertSeverity.Info,
+            message: Buffer.from(event.data).toString("hex"),
+          });
+          break;
+        case DeviceEventType.ControllerError:
+          alerts.push({
+            time: messageTimeSeconds,
+            severity: AlertSeverity.Error,
+            message: getControllerErrorMessage(event.controllerId, event.data),
+          });
+          break;
+        case DeviceEventType.PropertyError:
+          alerts.push({
+            time: messageTimeSeconds,
+            severity: AlertSeverity.Error,
+            message: getPropertyErrorMessage(event.controllerId, event.propertyId, event.data),
+            propertyId: getPropertyId(event.controllerId, event.propertyId, undefined), // TODO doesn't support bit flag properties
+          });
+          break;
+      }
+    }
+  } else if (message.type === "error" && message.error) {
+    alerts.push({
+      time: messageTimeSeconds,
+      severity: AlertSeverity.Error,
+      message: `${["Wifi", "Mqtt", "Config", "Controller", "Update"][message.error.component]} (${
+        message.error.code
+      }): ${message.error.text}`,
+    });
+  }
+  // TODO persist alerts in store
+
   // Send events to subscribed websocket clients
   // Todo: depends on list of device/property updates but should be decoupled from the store updates
-  if (newDeviceState || newPropertyStates.length > 0) {
+  let clients: WebSocketClient[] | undefined;
+  if (newDeviceState || newPropertyStates.length > 0 || alerts.length > 0) {
     // Todo: don't run queries sequentially
     const {
       devices: [deviceState],
     } = await store.getDeviceState(DeviceStateQueryType.Device, message.deviceId);
-    const clients = (await store.listWebSocketClients()).filter((client) =>
+    clients = (await store.listWebSocketClients()).filter((client) =>
       client.deviceIds?.includes(message.deviceId)
     );
     console.debug(
@@ -227,14 +293,15 @@ async function updateStateStore(message: DeviceMessage): Promise<void> {
         {
           deviceId: message.deviceId,
           config: deviceState.config,
-          lastUpdated: message.time,
+          lastUpdated: messageTimeSeconds,
           ...newDeviceState,
         },
         newPropertyStates,
-        newDeviceState !== undefined
+        newDeviceState !== undefined,
+        alerts
       ),
     };
-    const apigwResults = await Promise.all(
+    await Promise.all(
       clients.map(async (client) =>
         apigw.send(
           new PostToConnectionCommand({

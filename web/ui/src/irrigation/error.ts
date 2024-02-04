@@ -5,7 +5,8 @@ export enum ErrorComponent {
   Wifi,
   Mqtt,
   Config,
-  ControlI2c,
+  Controller,
+  Update,
 }
 
 export interface IrrigationError {
