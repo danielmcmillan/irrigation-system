@@ -84,6 +84,25 @@ export type DeviceSetConfigRequest = RequestMessage<
 >;
 export type DeviceSetConfigResponse = ResponseMessage<"device/setConfig">;
 
+// Controller commands
+export type DeviceControllerCommandRequest = RequestMessage<
+  "device/controllerCommand",
+  {
+    deviceId: string;
+    commandId: number;
+    controllerId: number;
+    data: string;
+  }
+>;
+export type DeviceControllerCommandResultEvent = ServerEventMessage<
+  "device/controllerCommandResult",
+  {
+    commandId: number;
+    responseCode: number;
+    data?: string;
+  }
+>;
+
 // Web Push
 export type WebPushSubscribeRequest = RequestMessage<"webPush/subscribe", WebPushSubscription>;
 export type WebPushUnsubscribeRequest = RequestMessage<"webPush/unsubscribe", WebPushSubscription>;

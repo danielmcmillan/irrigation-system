@@ -1,6 +1,7 @@
 import { APIGatewayProxyResultV2, APIGatewayProxyWebsocketEventV2 } from "aws-lambda";
 import { getDevices, getPropertyValue, parsePropertyId } from "./lib/api/device.js";
 import {
+  DeviceControllerCommandRequest,
   DeviceGetConfigRequest,
   DeviceGetConfigResponse,
   DeviceSetConfigRequest,
@@ -175,7 +176,6 @@ export async function handleWebSocketEvent(
           }
         } else if (data.action === "device/setConfig") {
           const request = data as DeviceSetConfigRequest;
-          store.updateDeviceState;
           const {
             devices: [device],
           } = await store.getDeviceState(DeviceStateQueryType.Device, request.deviceId);
@@ -197,6 +197,22 @@ export async function handleWebSocketEvent(
               },
             };
           }
+        } else if (data.action === "device/controllerCommand") {
+          const request = data as DeviceControllerCommandRequest;
+          const commandData = Buffer.from(request.data, "base64");
+          const payload = new ArrayBuffer(3 + commandData.byteLength);
+          const view = new DataView(payload);
+          view.setUint16(0, request.commandId, true);
+          view.setUint8(2, request.controllerId);
+          new Uint8Array(payload).set(commandData, 3);
+          await iotData.send(
+            new PublishCommand({
+              topic: `icu-in/${request.deviceId}/command`,
+              payload,
+              qos: 1,
+            })
+          );
+          response = { action: request.action, requestId: request.requestId };
         } else {
           response = {
             action: data.action,

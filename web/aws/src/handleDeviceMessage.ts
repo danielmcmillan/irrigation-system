@@ -1,30 +1,33 @@
+import {
+  ApiGatewayManagementApiClient,
+  PostToConnectionCommand,
+} from "@aws-sdk/client-apigatewaymanagementapi";
+import { IoTDataPlaneClient, PublishCommand } from "@aws-sdk/client-iot-data-plane";
 import { SQSClient, SendMessageCommand } from "@aws-sdk/client-sqs";
 import pLimit from "p-limit";
-import { DeviceEventType } from "./lib/deviceMessage/event.js";
+import { getControllerErrorMessage, getPropertyErrorMessage } from "./lib/api/alert.js";
+import { Alert, AlertSeverity, getProperties, getPropertyId } from "./lib/api/device.js";
+import {
+  DeviceControllerCommandResultEvent,
+  DeviceUpdate,
+  DeviceUpdateEvent,
+} from "./lib/api/messages.js";
+import { configureDeviceControllers } from "./lib/deviceControllers/configureDeviceControllers.js";
+import { getControllerDefinitions } from "./lib/deviceControllers/definitions/getControllerDefinitions.js";
 import {
   DeviceMessage,
   RawDeviceMessage,
   parseDeviceMessage,
 } from "./lib/deviceMessage/deviceMessage.js";
+import { DeviceEventType } from "./lib/deviceMessage/event.js";
+import { DeviceStatus } from "./lib/deviceStatus.js";
+import { sendPushNotification } from "./lib/pushNotifications.js";
 import {
   DeviceState,
   DeviceStateQueryType,
   IrrigationDataStore,
   PropertyState,
 } from "./lib/store.js";
-import { sendPushNotification } from "./lib/pushNotifications.js";
-import { DeviceStatus } from "./lib/deviceStatus.js";
-import { DeviceUpdate, DeviceUpdateEvent } from "./lib/api/messages.js";
-import { Alert, AlertSeverity, getProperties, getPropertyId } from "./lib/api/device.js";
-import { getControllerDefinitions } from "./lib/deviceControllers/definitions/getControllerDefinitions.js";
-import { configureDeviceControllers } from "./lib/deviceControllers/configureDeviceControllers.js";
-import {
-  ApiGatewayManagementApiClient,
-  PostToConnectionCommand,
-} from "@aws-sdk/client-apigatewaymanagementapi";
-import { getControllerErrorMessage, getPropertyErrorMessage } from "./lib/api/alert.js";
-import { WebSocketClient } from "./lib/webSocketClient.js";
-import { IoTDataPlaneClient, PublishCommand } from "@aws-sdk/client-iot-data-plane";
 
 const sqs = new SQSClient({});
 const store = new IrrigationDataStore({
@@ -276,13 +279,12 @@ async function updateStateStore(message: DeviceMessage): Promise<void> {
 
   // Send events to subscribed websocket clients
   // Todo: depends on list of device/property updates but should be decoupled from the store updates
-  let clients: WebSocketClient[] | undefined;
   if (newDeviceState || newPropertyStates.length > 0 || alerts.length > 0) {
     // Todo: don't run queries sequentially
     const {
       devices: [deviceState],
     } = await store.getDeviceState(DeviceStateQueryType.Device, message.deviceId);
-    clients = (await store.listWebSocketClients()).filter((client) =>
+    const clients = (await store.listWebSocketClients()).filter((client) =>
       client.deviceIds?.includes(message.deviceId)
     );
     console.debug(
@@ -343,6 +345,32 @@ async function requestDeviceState(message: DeviceMessage): Promise<void> {
   }
 }
 
+async function sendControllerCommandEvent(message: DeviceMessage): Promise<void> {
+  if (message.type === "commandResult" && message.commandResult) {
+    const clients = (await store.listWebSocketClients()).filter((client) =>
+      client.deviceIds?.includes(message.deviceId)
+    );
+    const event: DeviceControllerCommandResultEvent = {
+      type: "device/controllerCommandResult",
+      commandId: message.commandResult.commandId,
+      responseCode: message.commandResult.responseCode,
+      data: message.commandResult.data
+        ? Buffer.from(message.commandResult.data).toString("base64")
+        : undefined,
+    };
+    await Promise.all(
+      clients.map(async (client) =>
+        apigw.send(
+          new PostToConnectionCommand({
+            ConnectionId: client.connectionId,
+            Data: JSON.stringify(event),
+          })
+        )
+      )
+    );
+  }
+}
+
 export async function handleDeviceMessage(inputEvent: RawDeviceMessage): Promise<void> {
   const message = parseDeviceMessage(inputEvent);
 
@@ -351,6 +379,7 @@ export async function handleDeviceMessage(inputEvent: RawDeviceMessage): Promise
     sendNotifications(message),
     updateStateStore(message),
     requestDeviceState(message),
+    sendControllerCommandEvent(message),
   ]);
   for (const result of results) {
     if (result.status === "rejected") {

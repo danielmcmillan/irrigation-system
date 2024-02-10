@@ -1,3 +1,4 @@
+import { CommandResultDeviceMessage, parseControllerCommandResult } from "./commandResult.js";
 import { ErrorDeviceMessage, parseErrorDeviceMessage } from "./error.js";
 import { DeviceEvent, parseEventDeviceMessage } from "./event.js";
 import { PropertyDeviceMessage, parsePropertiesDeviceMessage } from "./properties.js";
@@ -21,6 +22,7 @@ export interface DeviceMessage {
   events?: DeviceEvent[];
   error?: ErrorDeviceMessage;
   properties?: PropertyDeviceMessage[];
+  commandResult?: CommandResultDeviceMessage;
   data?: ArrayBuffer;
 }
 
@@ -46,6 +48,8 @@ export function parseDeviceMessage(input: RawDeviceMessage): DeviceMessage {
         result.error = parseErrorDeviceMessage(buffer);
       } else if (input.type === "properties") {
         result.properties = parsePropertiesDeviceMessage(buffer);
+      } else if (input.type === "commandResult") {
+        result.commandResult = parseControllerCommandResult(buffer);
       } else {
         result.data = buffer;
       }

@@ -140,14 +140,13 @@ export class IrrigationStore {
         request: commandData,
       });
     });
-    // TODO
-    // const payload = new Uint8Array(3 + commandData.byteLength);
-    // const dataView = new DataView(payload.buffer);
-
-    // dataView.setUint16(0, commandId, true);
-    // dataView.setUint8(2, controllerId);
-    // payload.set(new Uint8Array(commandData), 3);
-    // this.publish(`icu-in/${this.controlDeviceId}/command`, payload.buffer);
+    this.sendJsonMessage?.({
+      action: "device/controllerCommand",
+      commandId,
+      deviceId: this.controlDeviceId,
+      controllerId,
+      data: arrayBufferToBase64(commandData),
+    });
   }
 
   private addLogEntries(entries: LogEntry[]) {
@@ -260,24 +259,21 @@ export class IrrigationStore {
       });
     }
 
-    // if (messageType === MqttMessageType.CommandResult) {
-    //   if (buffer.byteLength < 4) {
-    //     console.error("Received command result with invalid length", buffer);
-    //   } else {
-    //     const dataView = new DataView(buffer);
-    //     const commandId = dataView.getUint16(0, true);
-    //     const responseCode = dataView.getUint16(2, true);
-    //     if (this.controllerCommandResults[commandId]) {
-    //       runInAction(() => {
-    //         this.controllerCommandResults[commandId].responseCode = responseCode;
-    //         if (responseCode == 0) {
-    //           this.controllerCommandResults[commandId].data = buffer.slice(4);
-    //         }
-    //       });
-    //     } else {
-    //       console.error(`Received command result for unknown command ID ${commandId}`, buffer);
-    //     }
-    //   }
-    // }
+    if (message.type === "device/controllerCommandResult") {
+      const { commandId, responseCode, data } = message;
+      if (this.controllerCommandResults[commandId]) {
+        runInAction(() => {
+          this.controllerCommandResults[commandId].responseCode = responseCode;
+          this.controllerCommandResults[commandId].data = data
+            ? base64ToArrayBuffer(data)
+            : undefined;
+        });
+      } else {
+        console.error(
+          `Received controller command result for unknown command ID ${commandId}`,
+          message
+        );
+      }
+    }
   }
 }
