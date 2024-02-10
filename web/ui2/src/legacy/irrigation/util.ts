@@ -12,3 +12,14 @@ export function hexToBin(hex: string): Uint8Array {
 export function numberToHex(num: number, bytes: number): string {
   return num.toString(16).padStart(bytes * 2, "0");
 }
+
+export function base64ToArrayBuffer(base64: string): ArrayBuffer {
+  const binString = atob(base64);
+  const array = Uint8Array.from<string>(binString, (m) => m.codePointAt(0)!);
+  return array.buffer.slice(array.byteOffset, array.byteOffset + array.byteLength);
+}
+
+export function arrayBufferToBase64(buffer: ArrayBuffer): string {
+  const binString = String.fromCodePoint(...new Uint8Array(buffer));
+  return btoa(binString);
+}

@@ -72,6 +72,18 @@ export interface DeviceUpdate {
 }
 export type DeviceUpdateEvent = ServerEventMessage<"device/update", DeviceUpdate>;
 
+// Config
+export type DeviceGetConfigRequest = RequestMessage<"device/getConfig", { deviceId: string }>;
+export type DeviceGetConfigResponse = ResponseMessage<
+  "device/getConfig",
+  { config: string | undefined }
+>;
+export type DeviceSetConfigRequest = RequestMessage<
+  "device/setConfig",
+  { deviceId: string; config: string }
+>;
+export type DeviceSetConfigResponse = ResponseMessage<"device/setConfig">;
+
 // Web Push
 export type WebPushSubscribeRequest = RequestMessage<"webPush/subscribe", WebPushSubscription>;
 export type WebPushUnsubscribeRequest = RequestMessage<"webPush/unsubscribe", WebPushSubscription>;

@@ -1,6 +1,10 @@
 import { APIGatewayProxyResultV2, APIGatewayProxyWebsocketEventV2 } from "aws-lambda";
 import { getDevices, getPropertyValue, parsePropertyId } from "./lib/api/device.js";
 import {
+  DeviceGetConfigRequest,
+  DeviceGetConfigResponse,
+  DeviceSetConfigRequest,
+  DeviceSetConfigResponse,
   GetPropertyHistoryRequest,
   GetPropertyHistoryResponse,
   RequestMessage,
@@ -145,6 +149,51 @@ export async function handleWebSocketEvent(
               requestId: request.requestId,
               error: {
                 message: `Unknown property with id ${request.propertyId} for device ${request.deviceId}`,
+              },
+            };
+          }
+        } else if (data.action === "device/getConfig") {
+          const request = data as DeviceGetConfigRequest;
+          const {
+            devices: [device],
+          } = await store.getDeviceState(DeviceStateQueryType.Device, request.deviceId);
+          if (device) {
+            const getConfigResponse: DeviceGetConfigResponse = {
+              action: request.action,
+              requestId: request.requestId,
+              config: device.config ? Buffer.from(device.config).toString("base64") : undefined,
+            };
+            response = getConfigResponse;
+          } else {
+            response = {
+              action: request.action,
+              requestId: request.requestId,
+              error: {
+                message: `Unknown device ${request.deviceId}`,
+              },
+            };
+          }
+        } else if (data.action === "device/setConfig") {
+          const request = data as DeviceSetConfigRequest;
+          store.updateDeviceState;
+          const {
+            devices: [device],
+          } = await store.getDeviceState(DeviceStateQueryType.Device, request.deviceId);
+          if (device) {
+            await iotData.send(
+              new PublishCommand({
+                topic: `icu-in/${request.deviceId}/setConfig`,
+                payload: Buffer.from(request.config, "base64"),
+                qos: 1,
+              })
+            );
+            response = { action: request.action, requestId: request.requestId };
+          } else {
+            response = {
+              action: request.action,
+              requestId: request.requestId,
+              error: {
+                message: `Unknown device ${request.deviceId}`,
               },
             };
           }

@@ -2,6 +2,13 @@ import { action, computed, makeObservable, observable, runInAction } from "mobx"
 import { LogEntry, LogLevel } from "./log";
 import { IrrigationProperty } from "./property";
 import { ReadyState } from "react-use-websocket";
+import {
+  deserializeConfigEntriesFromBinary,
+  deserializeConfigEntriesFromIni,
+  serializeConfigEntriesToBinary,
+  serializeConfigEntriesToIni,
+} from "./config";
+import { arrayBufferToBase64, base64ToArrayBuffer } from "./util";
 
 export enum ControllerStatus {
   Unconfigured = "Unconfigured",
@@ -105,20 +112,21 @@ export class IrrigationStore {
       this.configIni = "";
       this.configLoaded = false;
     });
-    // TODO
-    // return this.publish(
-    //   `icu-in/${this.controlDeviceId}/getConfig`,
-    //   new TextEncoder().encode(this.clientId)
-    // );
+    this.sendJsonMessage?.({
+      action: "device/getConfig",
+      deviceId: this.controlDeviceId,
+    });
   }
 
   requestSetConfig() {
     if (this.configLoaded) {
-      // TODO
-      // this.publish(
-      //   `icu-in/${this.controlDeviceId}/setConfig`,
-      //   serializeConfigEntriesToBinary(deserializeConfigEntriesFromIni(this.configIni))
-      // );
+      this.sendJsonMessage?.({
+        action: "device/setConfig",
+        deviceId: this.controlDeviceId,
+        config: arrayBufferToBase64(
+          serializeConfigEntriesToBinary(deserializeConfigEntriesFromIni(this.configIni))
+        ),
+      });
     }
   }
 
@@ -171,7 +179,7 @@ export class IrrigationStore {
 
   public async handleJsonMessage(message: any): Promise<void> {
     let device: any;
-    if (message.action === "device/subscribe") {
+    if (message.action === "device/subscribe" && !message.error) {
       device = message.devices[0];
     } else if (message.type === "device/update") {
       device = message;
@@ -242,13 +250,17 @@ export class IrrigationStore {
       }
     }
 
-    // if (messageType === MqttMessageType.Config) {
-    //   const configIni = serializeConfigEntriesToIni(deserializeConfigEntriesFromBinary(buffer));
-    //   runInAction(() => {
-    //     this.configIni = configIni;
-    //     this.configLoaded = true;
-    //   });
-    // } else if (messageType === MqttMessageType.CommandResult) {
+    if (message.action === "device/getConfig" && !message.error) {
+      const configIni = serializeConfigEntriesToIni(
+        deserializeConfigEntriesFromBinary(base64ToArrayBuffer(message.config))
+      );
+      runInAction(() => {
+        this.configIni = configIni;
+        this.configLoaded = true;
+      });
+    }
+
+    // if (messageType === MqttMessageType.CommandResult) {
     //   if (buffer.byteLength < 4) {
     //     console.error("Received command result with invalid length", buffer);
     //   } else {

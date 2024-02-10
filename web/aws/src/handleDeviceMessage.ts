@@ -24,6 +24,7 @@ import {
 } from "@aws-sdk/client-apigatewaymanagementapi";
 import { getControllerErrorMessage, getPropertyErrorMessage } from "./lib/api/alert.js";
 import { WebSocketClient } from "./lib/webSocketClient.js";
+import { IoTDataPlaneClient, PublishCommand } from "@aws-sdk/client-iot-data-plane";
 
 const sqs = new SQSClient({});
 const store = new IrrigationDataStore({
@@ -32,6 +33,9 @@ const store = new IrrigationDataStore({
 const historyTtl = 3600 * 24 * 90; // 90 days
 const apigw = new ApiGatewayManagementApiClient({
   endpoint: process.env.API_GATEWAY_ENDPOINT,
+});
+const iotData = new IoTDataPlaneClient({
+  endpoint: process.env.IOT_ENDPOINT,
 });
 
 async function publishToSQS(message: DeviceMessage): Promise<void> {
@@ -314,6 +318,31 @@ async function updateStateStore(message: DeviceMessage): Promise<void> {
   }
 }
 
+async function requestDeviceState(message: DeviceMessage): Promise<void> {
+  // TODO maybe just have the device automatically send state on startup
+  if (
+    message.type === "event" &&
+    message.events?.some((event) => event.type === DeviceEventType.Ready)
+  ) {
+    await Promise.all([
+      iotData.send(
+        new PublishCommand({
+          topic: `icu-in/${message.deviceId}/getConfig`,
+          payload: "iot",
+          qos: 1,
+        })
+      ),
+      iotData.send(
+        new PublishCommand({
+          topic: `icu-in/${message.deviceId}/getProperties`,
+          payload: "iot",
+          qos: 1,
+        })
+      ),
+    ]);
+  }
+}
+
 export async function handleDeviceMessage(inputEvent: RawDeviceMessage): Promise<void> {
   const message = parseDeviceMessage(inputEvent);
 
@@ -321,6 +350,7 @@ export async function handleDeviceMessage(inputEvent: RawDeviceMessage): Promise
     publishToSQS(message),
     sendNotifications(message),
     updateStateStore(message),
+    requestDeviceState(message),
   ]);
   for (const result of results) {
     if (result.status === "rejected") {
@@ -331,6 +361,5 @@ export async function handleDeviceMessage(inputEvent: RawDeviceMessage): Promise
       );
     }
   }
-  // TODO send request for properties when needed and expire old properties
-  // TODO forward events to websocket clients
+  // TODO expire old properties
 }
