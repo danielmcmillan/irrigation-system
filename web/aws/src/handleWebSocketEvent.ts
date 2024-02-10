@@ -61,7 +61,7 @@ export async function handleWebSocketEvent(
             store
           );
           response = data;
-        } else if (data.action === "subscribe/device") {
+        } else if (data.action === "device/subscribe") {
           const request = data as SubscribeDeviceRequest;
           // Subscribe the client to updates for the requested devices
           await store.addWebSocketClient(
@@ -80,7 +80,7 @@ export async function handleWebSocketEvent(
             ),
           };
           response = subscribeResponse;
-        } else if (data.action === "set/property") {
+        } else if (data.action === "property/set") {
           const request = data as SetPropertyRequest;
           const { controllerId, propertyId } = parsePropertyId(request.propertyId);
           const payload = new DataView(new ArrayBuffer(4));
@@ -100,7 +100,7 @@ export async function handleWebSocketEvent(
             requestId: request.requestId,
           };
           response = setPropertyResponse;
-        } else if (data.action === "get/propertyHistory") {
+        } else if (data.action === "propertyHistory/get") {
           const request = data as GetPropertyHistoryRequest;
           const { controllerId, propertyId, bitIndex } = parsePropertyId(request.propertyId);
           // Query values for the last 7 days

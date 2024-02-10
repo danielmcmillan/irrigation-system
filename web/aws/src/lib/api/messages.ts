@@ -28,21 +28,21 @@ export interface DeviceList {
   devices: Device[];
 }
 export type InitialDeviceState = DeviceList;
-export type SubscribeDeviceRequest = RequestMessage<"subscribe/device", { deviceIds: string[] }>;
-export type SubscribeDeviceResponse = ResponseMessage<"subscribe/device", InitialDeviceState>;
+export type SubscribeDeviceRequest = RequestMessage<"device/subscribe", { deviceIds: string[] }>;
+export type SubscribeDeviceResponse = ResponseMessage<"device/subscribe", InitialDeviceState>;
 
 // Property requests
 export type SetPropertyRequest = RequestMessage<
-  "set/property",
+  "property/set",
   { deviceId: string; propertyId: string; value: number }
 >;
-export type SetPropertyResponse = ResponseMessage<"set/property">;
+export type SetPropertyResponse = ResponseMessage<"property/set">;
 export type GetPropertyHistoryRequest = RequestMessage<
-  "get/propertyHistory",
+  "propertyHistory/get",
   { deviceId: string; propertyId: string }
 >;
 export type GetPropertyHistoryResponse = ResponseMessage<
-  "get/propertyHistory",
+  "propertyHistory/get",
   {
     values: Array<{
       time: number;
@@ -70,7 +70,7 @@ export interface DeviceUpdate {
   }>;
   alerts?: Alert[];
 }
-export type DeviceUpdateEvent = ServerEventMessage<"update/device", DeviceUpdate>;
+export type DeviceUpdateEvent = ServerEventMessage<"device/update", DeviceUpdate>;
 
 // Web Push
 export type WebPushSubscribeRequest = RequestMessage<"webPush/subscribe", WebPushSubscription>;

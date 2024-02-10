@@ -288,7 +288,7 @@ async function updateStateStore(message: DeviceMessage): Promise<void> {
       return;
     }
     const event: DeviceUpdateEvent = {
-      type: "update/device",
+      type: "device/update",
       ...getDeviceUpdate(
         {
           deviceId: message.deviceId,

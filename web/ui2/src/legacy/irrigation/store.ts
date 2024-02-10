@@ -93,7 +93,7 @@ export class IrrigationStore {
   requestSetProperty(propertyId: string, value: number) {
     // TODO notify if publish fails
     this.sendJsonMessage?.({
-      action: "set/property",
+      action: "property/set",
       deviceId: this.controlDeviceId,
       propertyId,
       value,
@@ -171,9 +171,9 @@ export class IrrigationStore {
 
   public async handleJsonMessage(message: any): Promise<void> {
     let device: any;
-    if (message.action === "subscribe/device") {
+    if (message.action === "device/subscribe") {
       device = message.devices[0];
-    } else if (message.type === "update/device") {
+    } else if (message.type === "device/update") {
       device = message;
     }
     if (device) {

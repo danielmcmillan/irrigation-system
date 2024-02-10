@@ -69,7 +69,7 @@ const RootComponent = () => {
     retryOnError: true,
     shouldReconnect: () => true,
     onOpen: () => {
-      sendJsonMessage({ action: "subscribe/device", deviceIds: [deviceId] });
+      sendJsonMessage({ action: "device/subscribe", deviceIds: [deviceId] });
     },
     onMessage: (event) => {
       const json = JSON.parse(event.data);
@@ -94,15 +94,17 @@ const RootComponent = () => {
         <li>Last message: {JSON.stringify(lastJsonMessage)}</li>
       </ul>
       <h2>Websocket</h2>
-      {/* <button
-        onClick={() => sendJsonMessage({ action: "subscribe/device", deviceIds: ["icu-test"] })}
+      <button
+        onClick={() =>
+          sendJsonMessage({ action: "propertyHistory/get", deviceId: "icu-1", propertyId: "BBUC" })
+        }
       >
-        Subscribe State
-      </button> */}
+        Get history
+      </button>
       <button
         onClick={() =>
           sendJsonMessage({
-            action: "set/property",
+            action: "property/set",
             deviceId: "icu-test",
             propertyId: "AgEA",
             value: 1,
@@ -114,7 +116,7 @@ const RootComponent = () => {
       <button
         onClick={() =>
           sendJsonMessage({
-            action: "set/property",
+            action: "property/set",
             deviceId: "icu-test",
             propertyId: "AgEA",
             value: 0,
