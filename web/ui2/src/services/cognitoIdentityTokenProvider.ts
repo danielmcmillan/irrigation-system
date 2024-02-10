@@ -63,14 +63,13 @@ export class CognitoIdentityTokenProvider {
       });
       return true;
     } catch (err) {
+      // TODO check possible temporary errors that shouldn't result in login redirect
       console.warn("Failed to refresh tokens", err);
       return false;
     }
   }
 
-  private async requestToken(
-    grant: { code: string } | { refreshToken: string }
-  ): Promise<void> {
+  private async requestToken(grant: { code: string } | { refreshToken: string }): Promise<void> {
     const body = new URLSearchParams({
       client_id: this.options.clientId,
       redirect_uri: this.options.redirectUri,
@@ -82,33 +81,29 @@ export class CognitoIdentityTokenProvider {
       body.append("grant_type", "refresh_token");
       body.append("refresh_token", grant.refreshToken);
     }
-    const result = await fetch(
-      `https://${this.options.loginDomain}/oauth2/token`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-        body,
-      }
-    );
+    const result = await fetch(`https://${this.options.loginDomain}/oauth2/token`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body,
+    });
     if (result.ok) {
       const tokens: {
         access_token: string;
         expires_in: number;
         id_token: string;
-        refresh_token: string;
+        refresh_token?: string;
         token_type: string;
       } = await result.json();
       this.idToken = tokens.id_token;
       this.idTokenExpiryTime = Date.now() + tokens.expires_in * 1000;
-      this.refreshToken = tokens.refresh_token;
+      if (tokens.refresh_token) {
+        this.refreshToken = tokens.refresh_token;
+      }
       this.persist();
     } else {
-      console.error(
-        `Token request failed: ${result.status}`,
-        await result.text()
-      );
+      console.error(`Token request failed: ${result.status}`, await result.text());
       throw new Error("Token request failed");
     }
   }
