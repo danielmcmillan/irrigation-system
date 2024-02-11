@@ -13,7 +13,7 @@ concurrency:
 
 env:
   VITE_DEVICE_ID: ${{ vars.DEVICE_ID }}
-  VITE_IDENTITY_POOL_ID: ${{ vars.IDENTITY_POOL_ID }}
+  VITE_IDENTITY_POOL_ID: ${{ vars.UI1_IDENTITY_POOL_ID }}
   VITE_MQTT_ENDPOINT: ${{ vars.MQTT_ENDPOINT }}
   VITE_REGION: ${{ vars.REGION }}
 
