@@ -18,14 +18,13 @@ const config = {
   cognitoClientId: import.meta.env.VITE_CLIENT_ID,
   cognitoDomain: import.meta.env.VITE_COGNITO_DOMAIN,
   apiEndpoint: import.meta.env.VITE_API_ENDPOINT,
-  appUrl: import.meta.env.VITE_URL,
   vapidPublicKey: import.meta.env.VITE_VAPID_PUB_KEY,
 };
 
 const identityTokenProvider = new CognitoIdentityTokenProvider({
   clientId: config.cognitoClientId,
   loginDomain: config.cognitoDomain,
-  redirectUri: `${config.appUrl}/auth`,
+  redirectUri: `${window.location.origin}/auth`,
 });
 const apiRequestSigner = new ApiRequestSigner({
   region: config.region,
