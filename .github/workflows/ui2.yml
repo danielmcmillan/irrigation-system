@@ -1,4 +1,4 @@
-name: Deploy ui2 to Pages
+name: Deploy ui2
 
 on:
   push:
@@ -11,7 +11,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: "pages"
+  group: "ui2-pages"
   cancel-in-progress: false
 
 env:
@@ -45,17 +45,22 @@ jobs:
         run: npm run build
         working-directory: web/ui2
       - name: Upload ui2 artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
+          name: ui2-dev
           path: web/ui2/dist
 
   deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+    environment: cf-dev
     runs-on: ubuntu-latest
     needs: build
     steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+      - name: Download ui2 artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ui2-dev
+          path: web/ui2/dist
+      - name: Deploy to CloudFlare pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
