@@ -14,20 +14,21 @@ concurrency:
   group: "pages"
   cancel-in-progress: false
 
+env:
+  VITE_REGION: ${{ vars.REGION }}
+  VITE_USER_POOL_ID: ${{ vars.USER_POOL_ID }}
+  VITE_IDENTITY_POOL_ID: ${{ vars.IDENTITY_POOL_ID }}
+  VITE_CLIENT_ID: ${{ vars.CLIENT_ID }}
+  VITE_COGNITO_DOMAIN: ${{ vars.COGNITO_DOMAIN }}
+  VITE_API_ENDPOINT: ${{ vars.API_ENDPOINT }}
+  VITE_URL: ${{ vars.URL }}
+  VITE_VAPID_PUB_KEY: ${{ vars.VAPID_PUB_KEY }}
+  VITE_DEVICE_ID: ${{ vars.DEVICE_ID }}
+
 jobs:
   build:
     runs-on: ubuntu-latest
     environment: dev
-    env:
-      VITE_REGION: ${{ vars.REGION }}
-      VITE_USER_POOL_ID: ${{ vars.USER_POOL_ID }}
-      VITE_IDENTITY_POOL_ID: ${{ vars.IDENTITY_POOL_ID }}
-      VITE_CLIENT_ID: ${{ vars.CLIENT_ID }}
-      VITE_COGNITO_DOMAIN: ${{ vars.COGNITO_DOMAIN }}
-      VITE_API_ENDPOINT: ${{ vars.API_ENDPOINT }}
-      VITE_URL: ${{ vars.URL }}
-      VITE_VAPID_PUB_KEY: ${{ vars.VAPID_PUB_KEY }}
-      VITE_DEVICE_ID: ${{ vars.DEVICE_ID }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -36,8 +37,9 @@ jobs:
         with:
           node-version: "20"
           cache: npm
+          cache-dependency-path: web/ui2/package-lock.json
       - name: Install ui2 dependencies
-        run: npm install
+        run: npm ci
         working-directory: web/ui2
       - name: Build ui2
         run: npm run build
