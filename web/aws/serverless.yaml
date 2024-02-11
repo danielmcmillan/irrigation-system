@@ -232,6 +232,9 @@ resources:
         CallbackURLs:
           - http://localhost:5173/auth
           - https://irrigation.danielmcm.com/auth
+          - https://irrigation-ui1-dev.pages.dev/auth
+          - https://irrigation2.danielmcm.com/auth
+          - https://irrigation-ui2-dev.pages.dev/auth
         AllowedOAuthFlows:
           - code
         AllowedOAuthFlowsUserPoolClient: true
