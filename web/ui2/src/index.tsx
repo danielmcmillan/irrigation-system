@@ -38,7 +38,8 @@ const getWsUrl = async () => {
     return await apiRequestSigner.getWsApiUrl();
   } catch (err) {
     console.error("Failed to get WebSocket URL", err);
-    return "wss://null";
+    // Let react-use-websocket handle the error
+    throw err;
   }
 };
 const webPush = new WebPush({ vapidPublicKeyString: config.vapidPublicKey });
