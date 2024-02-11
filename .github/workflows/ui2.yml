@@ -3,6 +3,8 @@ name: Deploy ui2
 on:
   push:
     branches: ["master", "staging"]
+    paths:
+      - "web/ui2/**"
   workflow_dispatch:
 
 concurrency:
