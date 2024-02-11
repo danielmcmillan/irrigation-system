@@ -22,9 +22,10 @@ import {
   useTheme,
 } from "@aws-amplify/ui-react";
 import "@aws-amplify/ui-react/styles.css";
+import { intlFormatDistance } from "date-fns";
 import { runInAction } from "mobx";
 import { observer } from "mobx-react-lite";
-import { useCallback, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { ReadyState } from "react-use-websocket";
 import { LogEntry, LogLevel, getLogLevelString, logLevels } from "../irrigation/log";
 import { IrrigationProperty, PropertyType } from "../irrigation/property";
@@ -127,11 +128,38 @@ const PropertyBooleanControl = ({
   }
 
   return (
-    <Flex direction="row" justifyContent="space-between">
+    <Flex direction="row" justifyContent="flex-start" position="relative" gap="2px">
       <SwitchField isDisabled={disabled} label="" isChecked={localValue} onChange={handleChange} />
       {isChanging && <Loader />}
     </Flex>
   );
+};
+
+const RelativeTimeText = ({
+  time,
+  ...props
+}: { time: Date | undefined } & React.DetailedHTMLProps<
+  React.HTMLAttributes<HTMLElement>,
+  HTMLElement
+>) => {
+  const [text, setText] = useState("");
+  let timeout: number | undefined;
+  useEffect(() => {
+    const update = () => {
+      if (!time) {
+        return;
+      }
+      const now = new Date();
+      const diff = now.valueOf() - time.valueOf();
+      setText(diff < 60000 ? "now" : intlFormatDistance(time, now, { style: "narrow" }));
+      setTimeout(update, 60000);
+    };
+    update();
+    return () => {
+      clearTimeout(timeout);
+    };
+  }, [time]);
+  return <em {...props}>{text}</em>;
 };
 
 const PropertyControls = observer(({ icu }: { icu: IrrigationStore }) => {
@@ -170,78 +198,105 @@ const PropertyControls = observer(({ icu }: { icu: IrrigationStore }) => {
       </Flex>
       <Table variation="bordered">
         <TableBody>
-          {groups.flatMap(([group, properties]) => [
-            <TableRow key={group} backgroundColor={tokens.colors.background.tertiary}>
-              <TableCell as="th" colSpan={3}>
-                {group}
-              </TableCell>
-            </TableRow>,
-            ...properties.map((prop) => {
-              let value = prop.value;
-              if (value !== undefined && prop.type === PropertyType.Boolean) {
-                value = Boolean(value);
-              }
-              const desiredValue =
-                prop.desired?.value === undefined ? undefined : Boolean(prop.desired?.value);
-              return (
-                <TableRow key={prop.id}>
-                  <TableCell as="th">
-                    <Text>
-                      {prop.component?.name} {prop.name}
-                    </Text>
-                  </TableCell>
-                  {!prop.mutable && (
-                    <TableCell colSpan={2}>
-                      {(() => {
-                        let suffix = "";
-                        if (
-                          typeof value === "number" &&
-                          prop.name === "Sensor" &&
-                          value >= 0x7ff0 &&
-                          value <= 0x7fff
-                        ) {
-                          value = value & 0x000f;
-                          suffix = " (no value)";
-                        } else if (prop.unit) {
-                          suffix = " " + prop.unit;
-                        }
-                        let text =
-                          value === undefined
-                            ? "-"
-                            : (typeof value === "number"
-                                ? (+value.toFixed(2)).toString()
-                                : value.toString()) + suffix;
-                        // const relText =
-                        //   prop.lastChanged !== undefined
-                        //     ? intlFormatDistance(prop.lastChanged * 1000, new Date())
-                        //     : undefined;
-                        return <Text>{text}</Text>;
-                      })()}
+          {groups.flatMap(
+            ([group, properties]): React.ReactNode => [
+              <TableRow key={group} backgroundColor={tokens.colors.background.tertiary}>
+                <TableCell as="th" colSpan={3}>
+                  {group}
+                </TableCell>
+              </TableRow>,
+              ...properties.map((prop): React.ReactNode => {
+                let value = prop.value;
+                if (value !== undefined && prop.type === PropertyType.Boolean) {
+                  value = Boolean(value);
+                }
+                const desiredValue =
+                  prop.desired?.value === undefined ? undefined : Boolean(prop.desired?.value);
+                const lastUpdated = prop.lastUpdated
+                  ? new Date(prop.lastUpdated * 1000)
+                  : undefined;
+                const lastChanged = prop.lastChanged
+                  ? new Date(prop.lastChanged * 1000)
+                  : undefined;
+                const relTooltip = `Changed at ${lastChanged?.toLocaleString()}. Updated at ${lastUpdated?.toLocaleString()}`;
+                return (
+                  <TableRow key={prop.id}>
+                    <TableCell as="th" overflow="hidden">
+                      <Text whiteSpace="nowrap">
+                        {prop.component?.name} {prop.name}
+                      </Text>
                     </TableCell>
-                  )}
-                  {prop.mutable && (
-                    <>
-                      <TableCell width="27%">
-                        <Flex direction="row" justifyContent="space-between">
-                          {value?.toString()}
-                          {value !== desiredValue && <Loader />}
-                        </Flex>
-                      </TableCell>
-                      <TableCell width="33%">
-                        <PropertyBooleanControl
-                          disabled={!icu.ready}
-                          desiredValue={desiredValue ?? false}
-                          onDesiredValueChange={(value) =>
-                            icu.requestSetProperty(prop.id, value ? 1 : 0)
+                    {!prop.mutable && (
+                      <TableCell colSpan={2}>
+                        {(() => {
+                          let suffix = "";
+                          if (
+                            typeof value === "number" &&
+                            prop.name === "Sensor" &&
+                            value >= 0x7ff0 &&
+                            value <= 0x7fff
+                          ) {
+                            value = value & 0x000f;
+                            suffix = " (no value)";
+                          } else if (prop.unit) {
+                            suffix = " " + prop.unit;
                           }
-                        />
+                          let text =
+                            value === undefined
+                              ? "-"
+                              : (typeof value === "number"
+                                  ? (+value.toFixed(2)).toString()
+                                  : value.toString()) + suffix;
+                          return (
+                            <Text>
+                              {text}{" "}
+                              <RelativeTimeText
+                                time={lastChanged}
+                                title={relTooltip}
+                                style={{ color: "gray", fontSize: "0.7em" }}
+                              />
+                            </Text>
+                          );
+                        })()}
                       </TableCell>
-                    </>
-                  )}
-                </TableRow>
-              );
-            }),
-          ])}
+                    )}
+                    {prop.mutable && (
+                      <>
+                        <TableCell
+                          width="40%"
+                          position="relative"
+                          whiteSpace="nowrap"
+                          overflow="hidden"
+                          paddingRight="0"
+                        >
+                          <Flex direction="row" justifyContent="flex-start" gap="2px">
+                            <Text whiteSpace="nowrap">
+                              {value?.toString()}{" "}
+                              <RelativeTimeText
+                                time={lastChanged}
+                                title={relTooltip}
+                                style={{ color: "gray", fontSize: "0.7em" }}
+                              />
+                            </Text>
+                            {value !== desiredValue && <Loader />}
+                          </Flex>
+                        </TableCell>
+                        <TableCell width="20%" overflow="hidden" paddingLeft="0" paddingRight="0">
+                          <PropertyBooleanControl
+                            disabled={!icu.ready}
+                            desiredValue={desiredValue ?? false}
+                            onDesiredValueChange={(value) =>
+                              icu.requestSetProperty(prop.id, value ? 1 : 0)
+                            }
+                          />
+                        </TableCell>
+                      </>
+                    )}
+                  </TableRow>
+                );
+              }),
+            ]
+          )}
         </TableBody>
       </Table>
     </Flex>
