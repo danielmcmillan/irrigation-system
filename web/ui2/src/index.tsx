@@ -1,13 +1,13 @@
-import React, { useCallback, useEffect, useMemo } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import ReactDOM from "react-dom/client";
-import { createBrowserRouter, redirect, RouterProvider, useLoaderData } from "react-router-dom";
+import { RouterProvider, createBrowserRouter, redirect } from "react-router-dom";
+import useWebSocket, { ReadyState } from "react-use-websocket";
+import "./index.css";
+import LegacyApp from "./legacy/components/App";
+import { IrrigationStore } from "./legacy/irrigation/store";
 import { ApiRequestSigner } from "./services/apiRequestSigner";
 import { CognitoIdentityTokenProvider } from "./services/cognitoIdentityTokenProvider";
-import "./index.css";
 import { WebPush } from "./services/webPush";
-import useWebSocket, { ReadyState } from "react-use-websocket";
-import { IrrigationStore } from "./legacy/irrigation/store";
-import LegacyApp from "./legacy/components/App";
 
 const config = {
   region: import.meta.env.VITE_REGION,
@@ -33,7 +33,14 @@ const apiRequestSigner = new ApiRequestSigner({
   userPoolId: config.userPoolId,
   wsApiUrl: config.apiEndpoint,
 });
-const getWsUrl = () => apiRequestSigner.getWsApiUrl();
+const getWsUrl = async () => {
+  try {
+    return await apiRequestSigner.getWsApiUrl();
+  } catch (err) {
+    console.error("Failed to get WebSocket URL", err);
+    return "wss://null";
+  }
+};
 const webPush = new WebPush({ vapidPublicKeyString: config.vapidPublicKey });
 async function webPushSubscribe(send: (msg: object) => void) {
   const subscription = await webPush.subscribe();
@@ -64,26 +71,39 @@ const deviceId = import.meta.env.VITE_DEVICE_ID;
 const legacyStore = new IrrigationStore(deviceId);
 
 const RootComponent = () => {
-  const { readyState, lastJsonMessage, sendJsonMessage } = useWebSocket(getWsUrl, {
-    retryOnError: true,
-    shouldReconnect: () => true,
-    onOpen: () => {
-      sendJsonMessage({ action: "device/subscribe", deviceIds: [deviceId] });
+  const [connect, setConnect] = useState(true);
+  const { readyState, lastJsonMessage, sendJsonMessage } = useWebSocket(
+    getWsUrl,
+    {
+      retryOnError: true,
+      shouldReconnect: () => true,
+      onOpen() {
+        sendJsonMessage({ action: "device/subscribe", deviceIds: [deviceId] });
+      },
+      onMessage(event) {
+        const json = JSON.parse(event.data);
+        // Forward to legacy store
+        legacyStore.handleJsonMessage(json);
+      },
+      onReconnectStop() {
+        setConnect(false);
+        console.error("Stopped reconnecting to websocket");
+      },
     },
-    onMessage: (event) => {
-      const json = JSON.parse(event.data);
-      // Forward to legacy store
-      legacyStore.handleJsonMessage(json);
-    },
-  });
+    connect
+  );
+  const reconnect = useCallback(() => setConnect(true), [setConnect]);
   useEffect(() => {
     legacyStore.setSendJsonMessage(sendJsonMessage);
   }, [sendJsonMessage]);
   useEffect(() => {
     legacyStore.setReadyState(readyState);
   }, [readyState]);
+  useEffect(() => {
+    legacyStore.setConnectEnabled(connect);
+  }, [connect]);
 
-  return <LegacyApp icu={legacyStore} />;
+  return <LegacyApp icu={legacyStore} reconnect={reconnect} />;
 
   return (
     <div>

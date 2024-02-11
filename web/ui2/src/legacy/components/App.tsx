@@ -303,16 +303,9 @@ const PropertyControls = observer(({ icu }: { icu: IrrigationStore }) => {
   );
 });
 
-const App = observer(({ icu }: { icu: IrrigationStore }) => {
+const App = observer(({ icu, reconnect }: { icu: IrrigationStore; reconnect: () => void }) => {
   const { tokens } = useTheme();
   const [tabIndex, setTabIndex] = useState(0);
-
-  // useEffect(() => {
-  //   icu.start();
-  //   return () => {
-  //     icu.stop();
-  //   };
-  // }, []);
 
   const [openPage, setOpenPage] = useState<"config" | "vaconTool" | "remoteUnitTool" | null>(null);
 
@@ -370,7 +363,9 @@ const App = observer(({ icu }: { icu: IrrigationStore }) => {
     >
       <TabItem title="Properties">
         <Alert variation={icu.ready ? "info" : "error"}>
-          Browser: {ReadyState[icu.readyState]}. Controller: {icu.controllerStatus}
+          Browser: {ReadyState[icu.readyState]}.
+          {icu.readyState === ReadyState.OPEN && <> Controller: {icu.controllerStatus}.</>}
+          {!icu.connectEnabled && <Button onClick={reconnect}>Reconnect</Button>}
         </Alert>
         <PropertyControls icu={icu} />
       </TabItem>

@@ -52,6 +52,7 @@ export class IrrigationStore {
   configLoaded = false;
   controllerCommandResults: ControllerCommandResult[] = [];
   readyState: ReadyState = ReadyState.CLOSED;
+  connectEnabled: boolean = true;
   controllerConnected: boolean = false;
   controllerStatus: ControllerStatus = ControllerStatus.Unconfigured;
   private sendJsonMessage: ((message: object) => void) | undefined;
@@ -66,6 +67,8 @@ export class IrrigationStore {
       configLoaded: observable,
       controllerCommandResults: observable,
       readyState: observable,
+      connectEnabled: observable,
+      setConnectEnabled: action,
       controllerConnected: observable,
       controllerStatus: observable,
       ready: computed,
@@ -87,6 +90,10 @@ export class IrrigationStore {
 
   setReadyState(readyState: ReadyState) {
     this.readyState = readyState;
+  }
+
+  setConnectEnabled(connectEnabled: boolean) {
+    this.connectEnabled = connectEnabled;
   }
 
   clearLog() {
