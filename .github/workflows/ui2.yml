@@ -2,13 +2,8 @@ name: Deploy ui2
 
 on:
   push:
-    branches: ["master"]
+    branches: ["master", "staging"]
   workflow_dispatch:
-
-permissions:
-  contents: read
-  pages: write
-  id-token: write
 
 concurrency:
   group: "ui2-pages"
@@ -21,7 +16,6 @@ env:
   VITE_CLIENT_ID: ${{ vars.CLIENT_ID }}
   VITE_COGNITO_DOMAIN: ${{ vars.COGNITO_DOMAIN }}
   VITE_API_ENDPOINT: ${{ vars.API_ENDPOINT }}
-  VITE_URL: ${{ vars.URL }}
   VITE_VAPID_PUB_KEY: ${{ vars.VAPID_PUB_KEY }}
   VITE_DEVICE_ID: ${{ vars.DEVICE_ID }}
 
@@ -64,4 +58,4 @@ jobs:
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          command: pages deploy --env prod --project-name irrigation-ui2-dev web/ui2/dist
+          command: pages deploy --project-name irrigation-ui2-dev web/ui2/dist
