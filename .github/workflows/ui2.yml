@@ -64,3 +64,4 @@ jobs:
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          command: pages deploy --env prod --project-name irrigation-ui2-dev web/ui2/dist
