@@ -34,6 +34,7 @@ import "./App.css";
 import { IniConfigEditor } from "./IniConfigEditor";
 import { RemoteUnitTool } from "./RemoteUnitTool";
 import { Vacon100Tool } from "./Vacon100Tool";
+import { PropertyHistory } from "./PropertyHistory";
 
 const LogEntryCard = ({ entry }: { entry: LogEntry }) => {
   const variation = (
@@ -162,152 +163,166 @@ const RelativeTimeText = ({
   return <em {...props}>{text}</em>;
 };
 
-const PropertyControls = observer(({ icu }: { icu: IrrigationStore }) => {
-  const { tokens } = useTheme();
-  const [filter, setFilter] = useState("all");
-  const properties: Record<
-    string,
-    (IrrigationProperty & { component?: DeviceComponentDefinition })[]
-  > = {};
-  for (const prop of icu.properties) {
-    const component = icu.components.find((c) => c.id === prop.componentId);
-    const type = prop.mutable ? "control" : "monitor";
-    if (filter === "all" || filter === type) {
-      const group = component?.typeName ?? "Properties";
-      properties[group] ??= [];
-      properties[group].push({ ...prop, component });
+const PropertyControls = observer(
+  ({ icu, openHistory }: { icu: IrrigationStore; openHistory: (propertyId: string) => void }) => {
+    const { tokens } = useTheme();
+    const [filter, setFilter] = useState("all");
+    const properties: Record<
+      string,
+      (IrrigationProperty & { component?: DeviceComponentDefinition })[]
+    > = {};
+    for (const prop of icu.properties) {
+      const component = icu.components.find((c) => c.id === prop.componentId);
+      const type = prop.mutable ? "control" : "monitor";
+      if (filter === "all" || filter === type) {
+        const group = component?.typeName ?? "Properties";
+        properties[group] ??= [];
+        properties[group].push({ ...prop, component });
+      }
     }
-  }
-  const groups = Object.entries(properties);
+    const groups = Object.entries(properties);
 
-  return (
-    <Flex direction="column">
-      <div></div>
-      <Flex direction="row" justifyContent="space-evenly">
-        <RadioGroupField
-          label=""
-          name="filter"
-          direction="row"
-          value={filter}
-          onChange={(e) => setFilter(e.target.value)}
-        >
-          <Radio value="all">All</Radio>
-          <Radio value="control">Control</Radio>
-          <Radio value="monitor">Monitor</Radio>
-        </RadioGroupField>
-      </Flex>
-      <Table variation="bordered">
-        <TableBody>
-          {groups.flatMap(
-            ([group, properties]): React.ReactNode => [
-              <TableRow key={group} backgroundColor={tokens.colors.background.tertiary}>
-                <TableCell as="th" colSpan={3}>
-                  {group}
-                </TableCell>
-              </TableRow>,
-              ...properties.map((prop): React.ReactNode => {
-                let value = prop.value;
-                if (value !== undefined && prop.type === PropertyType.Boolean) {
-                  value = Boolean(value);
-                }
-                const desiredValue =
-                  prop.desired?.value === undefined ? undefined : Boolean(prop.desired?.value);
-                const lastUpdated = prop.lastUpdated
-                  ? new Date(prop.lastUpdated * 1000)
-                  : undefined;
-                const lastChanged = prop.lastChanged
-                  ? new Date(prop.lastChanged * 1000)
-                  : undefined;
-                const relTooltip = `Changed at ${lastChanged?.toLocaleString()}. Updated at ${lastUpdated?.toLocaleString()}`;
-                return (
-                  <TableRow key={prop.id}>
-                    <TableCell as="th" overflow="hidden">
-                      <Text whiteSpace="nowrap">
-                        {prop.component?.name} {prop.name}
-                      </Text>
-                    </TableCell>
-                    {!prop.mutable && (
-                      <TableCell colSpan={2}>
-                        {(() => {
-                          let suffix = "";
-                          if (
-                            typeof value === "number" &&
-                            prop.name === "Sensor" &&
-                            value >= 0x7ff0 &&
-                            value <= 0x7fff
-                          ) {
-                            value = value & 0x000f;
-                            suffix = " (no value)";
-                          } else if (prop.unit) {
-                            suffix = " " + prop.unit;
-                          }
-                          let text =
-                            value === undefined
-                              ? "-"
-                              : (typeof value === "number"
-                                  ? (+value.toFixed(2)).toString()
-                                  : value.toString()) + suffix;
-                          return (
-                            <Text>
-                              {text}{" "}
-                              <RelativeTimeText
-                                time={lastChanged}
-                                title={relTooltip}
-                                style={{ color: "gray", fontSize: "0.7em" }}
-                              />
-                            </Text>
-                          );
-                        })()}
+    return (
+      <Flex direction="column">
+        <div></div>
+        <Flex direction="row" justifyContent="space-evenly">
+          <RadioGroupField
+            label=""
+            name="filter"
+            direction="row"
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+          >
+            <Radio value="all">All</Radio>
+            <Radio value="control">Control</Radio>
+            <Radio value="monitor">Monitor</Radio>
+          </RadioGroupField>
+        </Flex>
+        <Table variation="bordered">
+          <TableBody>
+            {groups.flatMap(
+              ([group, properties]): React.ReactNode => [
+                <TableRow key={group} backgroundColor={tokens.colors.background.tertiary}>
+                  <TableCell as="th" colSpan={3}>
+                    {group}
+                  </TableCell>
+                </TableRow>,
+                ...properties.map((prop): React.ReactNode => {
+                  let value = prop.value;
+                  if (value !== undefined && prop.type === PropertyType.Boolean) {
+                    value = Boolean(value);
+                  }
+                  const desiredValue =
+                    prop.desired?.value === undefined ? undefined : Boolean(prop.desired?.value);
+                  const lastUpdated = prop.lastUpdated
+                    ? new Date(prop.lastUpdated * 1000)
+                    : undefined;
+                  const lastChanged = prop.lastChanged
+                    ? new Date(prop.lastChanged * 1000)
+                    : undefined;
+                  const relTooltip = `Changed at ${lastChanged?.toLocaleString()}. Updated at ${lastUpdated?.toLocaleString()}`;
+                  return (
+                    <TableRow key={prop.id}>
+                      <TableCell as="th" overflow="hidden">
+                        <Text whiteSpace="nowrap">
+                          {prop.component?.name} {prop.name}
+                        </Text>
                       </TableCell>
-                    )}
-                    {prop.mutable && (
-                      <>
-                        <TableCell
-                          width="40%"
-                          position="relative"
-                          whiteSpace="nowrap"
-                          overflow="hidden"
-                          paddingRight="0"
-                        >
-                          <Flex direction="row" justifyContent="flex-start" gap="2px">
-                            <Text whiteSpace="nowrap">
-                              {value?.toString()}{" "}
-                              <RelativeTimeText
-                                time={lastChanged}
-                                title={relTooltip}
-                                style={{ color: "gray", fontSize: "0.7em" }}
-                              />
-                            </Text>
-                            {value !== desiredValue && <Loader />}
-                          </Flex>
-                        </TableCell>
-                        <TableCell width="20%" overflow="hidden" paddingLeft="0" paddingRight="0">
-                          <PropertyBooleanControl
-                            disabled={!icu.ready}
-                            desiredValue={desiredValue ?? false}
-                            onDesiredValueChange={(value) =>
-                              icu.requestSetProperty(prop.id, value ? 1 : 0)
+                      {!prop.mutable && (
+                        <TableCell colSpan={2}>
+                          {(() => {
+                            let suffix = "";
+                            if (
+                              typeof value === "number" &&
+                              prop.name === "Sensor" &&
+                              value >= 0x7ff0 &&
+                              value <= 0x7fff
+                            ) {
+                              value = value & 0x000f;
+                              suffix = " (no value)";
+                            } else if (prop.unit) {
+                              suffix = " " + prop.unit;
                             }
-                          />
+                            let text =
+                              value === undefined
+                                ? "-"
+                                : (typeof value === "number"
+                                    ? (+value.toFixed(2)).toString()
+                                    : value.toString()) + suffix;
+                            return (
+                              <Text>
+                                {text}{" "}
+                                <RelativeTimeText
+                                  onClick={() => openHistory(prop.id)}
+                                  time={lastChanged}
+                                  title={relTooltip}
+                                  style={{ color: "gray", fontSize: "0.7em" }}
+                                />
+                              </Text>
+                            );
+                          })()}
                         </TableCell>
-                      </>
-                    )}
-                  </TableRow>
-                );
-              }),
-            ]
-          )}
-        </TableBody>
-      </Table>
-    </Flex>
-  );
-});
+                      )}
+                      {prop.mutable && (
+                        <>
+                          <TableCell
+                            width="40%"
+                            position="relative"
+                            whiteSpace="nowrap"
+                            overflow="hidden"
+                            paddingRight="0"
+                          >
+                            <Flex direction="row" justifyContent="flex-start" gap="2px">
+                              <Text whiteSpace="nowrap">
+                                {value?.toString()}{" "}
+                                <RelativeTimeText
+                                  onClick={() => openHistory(prop.id)}
+                                  time={lastChanged}
+                                  title={relTooltip}
+                                  style={{ color: "gray", fontSize: "0.7em" }}
+                                />
+                              </Text>
+                              {value !== desiredValue && <Loader />}
+                            </Flex>
+                          </TableCell>
+                          <TableCell width="20%" overflow="hidden" paddingLeft="0" paddingRight="0">
+                            <PropertyBooleanControl
+                              disabled={!icu.ready}
+                              desiredValue={desiredValue ?? false}
+                              onDesiredValueChange={(value) =>
+                                icu.requestSetProperty(prop.id, value ? 1 : 0)
+                              }
+                            />
+                          </TableCell>
+                        </>
+                      )}
+                    </TableRow>
+                  );
+                }),
+              ]
+            )}
+          </TableBody>
+        </Table>
+      </Flex>
+    );
+  }
+);
 
 const App = observer(({ icu, reconnect }: { icu: IrrigationStore; reconnect: () => void }) => {
   const { tokens } = useTheme();
   const [tabIndex, setTabIndex] = useState(0);
 
-  const [openPage, setOpenPage] = useState<"config" | "vaconTool" | "remoteUnitTool" | null>(null);
+  const [openPage, setOpenPage] = useState<
+    "config" | "vaconTool" | "remoteUnitTool" | "history" | null
+  >(null);
+  const onClose = useCallback(() => setOpenPage(null), [setOpenPage]);
+  const openPropertyHistory = useCallback(
+    (propertyId: string) => {
+      icu.requestPropertyHistory(propertyId);
+      setOpenPage("history");
+    },
+    [setOpenPage]
+  );
 
   if (openPage === "config") {
     return (
@@ -352,6 +367,19 @@ const App = observer(({ icu, reconnect }: { icu: IrrigationStore; reconnect: () 
         results={icu.controllerCommandResults.filter((result) => result.controllerId === 4)}
       />
     );
+  } else if (openPage === "history" && icu.propertyHistory) {
+    const property = icu.properties.find((p) => p.id === icu.propertyHistory?.propertyId);
+    const component = icu.components.find((c) => c.id === property?.componentId);
+    return (
+      property && (
+        <PropertyHistory
+          property={property}
+          component={component}
+          onClose={onClose}
+          items={icu.propertyHistory.items}
+        />
+      )
+    );
   }
 
   return (
@@ -367,7 +395,7 @@ const App = observer(({ icu, reconnect }: { icu: IrrigationStore; reconnect: () 
           {icu.readyState === ReadyState.OPEN && <> Controller: {icu.controllerStatus}.</>}
           {!icu.connectEnabled && <Button onClick={reconnect}>Reconnect</Button>}
         </Alert>
-        <PropertyControls icu={icu} />
+        <PropertyControls icu={icu} openHistory={openPropertyHistory} />
       </TabItem>
       <TabItem
         title={

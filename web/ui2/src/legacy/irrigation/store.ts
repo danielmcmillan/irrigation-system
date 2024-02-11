@@ -41,6 +41,11 @@ export interface Alert {
   message: string;
 }
 
+export interface PropertyHistoryItem {
+  time: number;
+  value: number | undefined;
+}
+
 const maxLogEntries = 100;
 
 export class IrrigationStore {
@@ -55,6 +60,13 @@ export class IrrigationStore {
   connectEnabled: boolean = true;
   controllerConnected: boolean = false;
   controllerStatus: ControllerStatus = ControllerStatus.Unconfigured;
+  propertyHistory:
+    | undefined
+    | {
+        requestId: number;
+        propertyId: string;
+        items?: PropertyHistoryItem[];
+      };
   private sendJsonMessage: ((message: object) => void) | undefined;
 
   constructor(public readonly controlDeviceId: string) {
@@ -71,6 +83,7 @@ export class IrrigationStore {
       setConnectEnabled: action,
       controllerConnected: observable,
       controllerStatus: observable,
+      propertyHistory: observable,
       ready: computed,
       errorLogCount: computed,
       setReadyState: action,
@@ -156,6 +169,22 @@ export class IrrigationStore {
     });
   }
 
+  requestPropertyHistory(propertyId: string) {
+    const requestId = (Math.random() * 2 ** 31) | 0;
+    runInAction(() => {
+      this.propertyHistory = {
+        propertyId,
+        requestId,
+      };
+    });
+    this.sendJsonMessage?.({
+      action: "propertyHistory/get",
+      requestId,
+      deviceId: this.controlDeviceId,
+      propertyId,
+    });
+  }
+
   private addLogEntries(entries: LogEntry[]) {
     for (const entry of entries) {
       this.log.push({
@@ -185,7 +214,11 @@ export class IrrigationStore {
 
   public async handleJsonMessage(message: any): Promise<void> {
     let device: any;
-    if (message.action === "device/subscribe" && !message.error) {
+    if (message.error) {
+      console.error("Received error message", message);
+      return;
+    }
+    if (message.action === "device/subscribe") {
       device = message.devices[0];
     } else if (message.type === "device/update") {
       device = message;
@@ -280,6 +313,20 @@ export class IrrigationStore {
           `Received controller command result for unknown command ID ${commandId}`,
           message
         );
+      }
+    }
+
+    if (message.action === "propertyHistory/get") {
+      if (this.propertyHistory && message.requestId === this.propertyHistory.requestId) {
+        const history = this.propertyHistory;
+        runInAction(() => {
+          history.items = message.values;
+        });
+      } else {
+        console.error("Received unexpected property history message", {
+          message,
+          state: this.propertyHistory,
+        });
       }
     }
   }
