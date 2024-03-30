@@ -392,7 +392,9 @@ const App = observer(({ icu, reconnect }: { icu: IrrigationStore; reconnect: () 
       <TabItem title="Properties">
         <Alert variation={icu.ready ? "info" : "error"}>
           Browser: {ReadyState[icu.readyState]}.
-          {icu.readyState === ReadyState.OPEN && <> Controller: {icu.controllerStatus}.</>}
+          {icu.readyState === ReadyState.OPEN && (
+            <> Controller: {icu.controllerConnected ? icu.controllerStatus : "Disconnected"}.</>
+          )}
           {!icu.connectEnabled && <Button onClick={reconnect}>Reconnect</Button>}
         </Alert>
         <PropertyControls icu={icu} openHistory={openPropertyHistory} />

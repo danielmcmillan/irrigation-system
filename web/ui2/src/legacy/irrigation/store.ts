@@ -98,7 +98,11 @@ export class IrrigationStore {
   }
 
   get ready(): boolean {
-    return this.readyState === ReadyState.OPEN && this.controllerStatus === ControllerStatus.Ready;
+    return (
+      this.readyState === ReadyState.OPEN &&
+      this.controllerConnected &&
+      this.controllerStatus === ControllerStatus.Ready
+    );
   }
 
   setReadyState(readyState: ReadyState) {
