@@ -10,21 +10,22 @@ import {
   TableHead,
   TableRow,
 } from "@aws-amplify/ui-react";
-import { observer } from "mobx-react-lite";
-import React, { useMemo, useState } from "react";
-import { IrrigationProperty } from "../irrigation/property";
-import { DeviceComponentDefinition, PropertyHistoryItem } from "../irrigation/store";
-import { Line } from "react-chartjs-2";
 import {
-  CategoryScale,
   Chart,
   Legend,
   LineElement,
   LinearScale,
   PointElement,
+  TimeScale,
   Title,
   Tooltip,
 } from "chart.js";
+import "chartjs-adapter-luxon";
+import { observer } from "mobx-react-lite";
+import React, { useMemo, useState } from "react";
+import { Line } from "react-chartjs-2";
+import { IrrigationProperty } from "../irrigation/property";
+import { DeviceComponentDefinition, PropertyHistoryItem } from "../irrigation/store";
 
 interface PropertyHistoryProps {
   property: IrrigationProperty;
@@ -33,7 +34,7 @@ interface PropertyHistoryProps {
   onClose: () => void;
 }
 
-Chart.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
+Chart.register(LinearScale, TimeScale, PointElement, LineElement, Title, Tooltip, Legend);
 
 export const PropertyHistory: React.FC<PropertyHistoryProps> = observer(
   ({ property, component, items, onClose }) => {
@@ -48,7 +49,8 @@ export const PropertyHistory: React.FC<PropertyHistoryProps> = observer(
     const [labels, data] = useMemo(() => {
       const source = (items ?? []).toReversed();
       return [
-        source.map((h) => new Date(h.time * 1000).toLocaleString()),
+        source.map((h) => h.time * 1000),
+        // source.map((h) => new Date(h.time * 1000).toLocaleString()),
         source.map((h) => h.value),
       ];
     }, [items]);
@@ -71,7 +73,11 @@ export const PropertyHistory: React.FC<PropertyHistoryProps> = observer(
             },
             scales: {
               x: {
-                display: false,
+                type: "time",
+                max: Date.now(),
+                time: {
+                  unit: "day",
+                },
               },
             },
           }}
