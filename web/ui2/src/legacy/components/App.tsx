@@ -315,142 +315,153 @@ const PropertyControls = observer(
   }
 );
 
-const App = observer(({ icu, reconnect }: { icu: IrrigationStore; reconnect: () => void }) => {
-  const { tokens } = useTheme();
-  const [tabIndex, setTabIndex] = useState(0);
+const App = observer(
+  ({
+    icu,
+    reconnect,
+    logout,
+  }: {
+    icu: IrrigationStore;
+    reconnect: () => void;
+    logout: () => void;
+  }) => {
+    const { tokens } = useTheme();
+    const [tabIndex, setTabIndex] = useState(0);
 
-  const [openPage, setOpenPage] = useState<
-    "config" | "vaconTool" | "remoteUnitTool" | "history" | null
-  >(null);
-  const onClose = useCallback(() => setOpenPage(null), [setOpenPage]);
-  const openPropertyHistory = useCallback(
-    (propertyId: string) => {
-      icu.requestPropertyHistory(propertyId);
-      setOpenPage("history");
-    },
-    [setOpenPage]
-  );
+    const [openPage, setOpenPage] = useState<
+      "config" | "vaconTool" | "remoteUnitTool" | "history" | null
+    >(null);
+    const onClose = useCallback(() => setOpenPage(null), [setOpenPage]);
+    const openPropertyHistory = useCallback(
+      (propertyId: string) => {
+        icu.requestPropertyHistory(propertyId);
+        setOpenPage("history");
+      },
+      [setOpenPage]
+    );
 
-  if (openPage === "config") {
-    return (
-      <IniConfigEditor
-        configIni={icu.configIni}
-        loading={!icu.configLoaded}
-        onUpdate={(configIni) =>
-          runInAction(() => {
-            icu.configIni = configIni;
-          })
-        }
-        onCancel={() => setOpenPage(null)}
-        onSave={() => {
-          icu.requestSetConfig();
-          setOpenPage(null);
-        }}
-      />
-    );
-  } else if (openPage === "vaconTool") {
-    return (
-      <Vacon100Tool
-        onRunRequest={(address, value) => {
-          const command =
-            value === undefined
-              ? new Uint8Array([1, address & 0xff, address >> 8])
-              : new Uint8Array([2, address & 0xff, address >> 8, value & 0xff, value >> 8]);
-          icu.requestControllerCommand(2, command.buffer);
-        }}
-        onClose={() => setOpenPage(null)}
-        result={
-          icu.controllerCommandResults.filter((result) => result.controllerId === 2).at(-1)?.data
-        }
-      />
-    );
-  } else if (openPage === "remoteUnitTool") {
-    return (
-      <RemoteUnitTool
-        onRunRequest={(commandData) => {
-          icu.requestControllerCommand(4, commandData);
-        }}
-        onClose={() => setOpenPage(null)}
-        results={icu.controllerCommandResults.filter((result) => result.controllerId === 4)}
-      />
-    );
-  } else if (openPage === "history" && icu.propertyHistory) {
-    const property = icu.properties.find((p) => p.id === icu.propertyHistory?.propertyId);
-    const component = icu.components.find((c) => c.id === property?.componentId);
-    return (
-      property && (
-        <PropertyHistory
-          property={property}
-          component={component}
-          onClose={onClose}
-          items={icu.propertyHistory.items}
+    if (openPage === "config") {
+      return (
+        <IniConfigEditor
+          configIni={icu.configIni}
+          loading={!icu.configLoaded}
+          onUpdate={(configIni) =>
+            runInAction(() => {
+              icu.configIni = configIni;
+            })
+          }
+          onCancel={() => setOpenPage(null)}
+          onSave={() => {
+            icu.requestSetConfig();
+            setOpenPage(null);
+          }}
         />
-      )
+      );
+    } else if (openPage === "vaconTool") {
+      return (
+        <Vacon100Tool
+          onRunRequest={(address, value) => {
+            const command =
+              value === undefined
+                ? new Uint8Array([1, address & 0xff, address >> 8])
+                : new Uint8Array([2, address & 0xff, address >> 8, value & 0xff, value >> 8]);
+            icu.requestControllerCommand(2, command.buffer);
+          }}
+          onClose={() => setOpenPage(null)}
+          result={
+            icu.controllerCommandResults.filter((result) => result.controllerId === 2).at(-1)?.data
+          }
+        />
+      );
+    } else if (openPage === "remoteUnitTool") {
+      return (
+        <RemoteUnitTool
+          onRunRequest={(commandData) => {
+            icu.requestControllerCommand(4, commandData);
+          }}
+          onClose={() => setOpenPage(null)}
+          results={icu.controllerCommandResults.filter((result) => result.controllerId === 4)}
+        />
+      );
+    } else if (openPage === "history" && icu.propertyHistory) {
+      const property = icu.properties.find((p) => p.id === icu.propertyHistory?.propertyId);
+      const component = icu.components.find((c) => c.id === property?.componentId);
+      return (
+        property && (
+          <PropertyHistory
+            property={property}
+            component={component}
+            onClose={onClose}
+            items={icu.propertyHistory.items}
+          />
+        )
+      );
+    }
+
+    return (
+      <Tabs
+        spacing="relative"
+        backgroundColor={tokens.colors.background.primary}
+        currentIndex={tabIndex}
+        onChange={(index) => setTabIndex(Number(index))}
+      >
+        <TabItem title="Properties">
+          <Alert variation={icu.ready ? "info" : "error"}>
+            Browser: {ReadyState[icu.readyState]}.
+            {icu.readyState === ReadyState.OPEN && (
+              <> Controller: {icu.controllerConnected ? icu.controllerStatus : "Disconnected"}.</>
+            )}
+            {!icu.connectEnabled && <Button onClick={reconnect}>Reconnect</Button>}
+          </Alert>
+          <PropertyControls icu={icu} openHistory={openPropertyHistory} />
+        </TabItem>
+        <TabItem
+          title={
+            <Flex direction="row" gap="0rem" justifyContent="center">
+              Log
+              {icu.errorLogCount > 0 && (
+                <>
+                  {" "}
+                  <Badge size="small" variation="error">
+                    {icu.errorLogCount}
+                  </Badge>
+                </>
+              )}
+            </Flex>
+          }
+        >
+          <LogEntries icu={icu} />
+        </TabItem>
+        <TabItem title="System">
+          <ButtonGroup direction="column" margin="1rem">
+            <Button
+              onClick={() => {
+                icu.requestConfig();
+                setOpenPage("config");
+              }}
+            >
+              Configure devices
+            </Button>
+            <Button
+              onClick={() => {
+                setOpenPage("vaconTool");
+              }}
+            >
+              Vacon100 Tool
+            </Button>
+            <Button
+              onClick={() => {
+                setOpenPage("remoteUnitTool");
+              }}
+            >
+              Remote Unit Tool
+            </Button>
+            <Button onClick={logout}>Logout</Button>
+          </ButtonGroup>
+        </TabItem>
+      </Tabs>
     );
   }
-
-  return (
-    <Tabs
-      spacing="relative"
-      backgroundColor={tokens.colors.background.primary}
-      currentIndex={tabIndex}
-      onChange={(index) => setTabIndex(Number(index))}
-    >
-      <TabItem title="Properties">
-        <Alert variation={icu.ready ? "info" : "error"}>
-          Browser: {ReadyState[icu.readyState]}.
-          {icu.readyState === ReadyState.OPEN && (
-            <> Controller: {icu.controllerConnected ? icu.controllerStatus : "Disconnected"}.</>
-          )}
-          {!icu.connectEnabled && <Button onClick={reconnect}>Reconnect</Button>}
-        </Alert>
-        <PropertyControls icu={icu} openHistory={openPropertyHistory} />
-      </TabItem>
-      <TabItem
-        title={
-          <Flex direction="row" gap="0rem" justifyContent="center">
-            Log
-            {icu.errorLogCount > 0 && (
-              <>
-                {" "}
-                <Badge size="small" variation="error">
-                  {icu.errorLogCount}
-                </Badge>
-              </>
-            )}
-          </Flex>
-        }
-      >
-        <LogEntries icu={icu} />
-      </TabItem>
-      <TabItem title="System">
-        <ButtonGroup direction="column" margin="1rem">
-          <Button
-            onClick={() => {
-              icu.requestConfig();
-              setOpenPage("config");
-            }}
-          >
-            Configure devices
-          </Button>
-          <Button
-            onClick={() => {
-              setOpenPage("vaconTool");
-            }}
-          >
-            Vacon100 Tool
-          </Button>
-          <Button
-            onClick={() => {
-              setOpenPage("remoteUnitTool");
-            }}
-          >
-            Remote Unit Tool
-          </Button>
-        </ButtonGroup>
-      </TabItem>
-    </Tabs>
-  );
-});
+);
 
 export default App;

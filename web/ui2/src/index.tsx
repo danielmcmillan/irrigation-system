@@ -26,6 +26,7 @@ const identityTokenProvider = new CognitoIdentityTokenProvider({
   loginDomain: config.cognitoDomain,
   redirectUri: `${window.location.origin}/auth`,
 });
+const logout = () => identityTokenProvider.logout();
 const apiRequestSigner = new ApiRequestSigner({
   region: config.region,
   identityTokenProvider,
@@ -104,7 +105,7 @@ const RootComponent = () => {
     legacyStore.setConnectEnabled(connect);
   }, [connect]);
 
-  return <LegacyApp icu={legacyStore} reconnect={reconnect} />;
+  return <LegacyApp icu={legacyStore} reconnect={reconnect} logout={logout} />;
 
   return (
     <div>

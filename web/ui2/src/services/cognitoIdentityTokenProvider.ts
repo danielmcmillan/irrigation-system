@@ -47,9 +47,17 @@ export class CognitoIdentityTokenProvider {
     return undefined;
   }
 
+  logout() {
+    localStorage.removeItem("auth");
+    this.idToken = undefined;
+    this.idTokenExpiryTime = undefined;
+    this.refreshToken = undefined;
+    this.login(true);
+  }
+
   private async refreshTokens(): Promise<boolean> {
     if (!this.refreshToken) {
-      this.authenticate();
+      this.login();
       return false;
     }
     try {
@@ -68,19 +76,20 @@ export class CognitoIdentityTokenProvider {
         "reauthRequired" in err.cause &&
         err.cause.reauthRequired
       ) {
-        this.authenticate();
+        this.login();
       }
       return false;
     }
   }
 
-  private authenticate() {
+  private login(logout = false) {
     const authorizeParams = new URLSearchParams({
       response_type: "code",
       client_id: this.options.clientId,
       redirect_uri: this.options.redirectUri,
     });
-    window.location.href = `https://${this.options.loginDomain}/oauth2/authorize?${authorizeParams}`;
+    const endpoint = logout ? "logout" : "oauth2/authorize";
+    window.location.href = `https://${this.options.loginDomain}/${endpoint}?${authorizeParams}`;
   }
 
   private async requestToken(grant: { code: string } | { refreshToken: string }): Promise<void> {
