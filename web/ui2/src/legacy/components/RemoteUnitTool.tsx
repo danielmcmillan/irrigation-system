@@ -99,16 +99,17 @@ const RemoteUnitResult: React.FC<{ result: ControllerCommandResult }> = observer
 
 export const RemoteUnitTool: React.FC<RemoteUnitToolProps> = observer(
   ({ onRunRequest, onClose, results }) => {
-    const [nodeNumber, setNodeNumber] = useState(1);
+    const [nodeNumber, setNodeNumber] = useState("01");
     const [type, setType] = useState<CommandType>("getBattery");
     const [rawCommand, setRawCommand] = useState<string>("");
 
     const handleRunRequest = () => {
+      const node = hexToBin(nodeNumber);
       const rawBinary = hexToBin(rawCommand);
       const command = type ? getCommand(type, rawBinary) : undefined;
       if (command) {
         const commandData = new Uint8Array(3 + command.length);
-        commandData.set([1, nodeNumber, nodeNumber >> 8]);
+        commandData.set([1, node[0], node[1]]);
         commandData.set(command, 3);
         onRunRequest(commandData.buffer);
       }
@@ -132,12 +133,11 @@ export const RemoteUnitTool: React.FC<RemoteUnitToolProps> = observer(
             <option value="raw">Raw command</option>
           </SelectField>
 
-          <StepperField
-            label="Node Number"
-            min={1}
-            max={65535}
+          <TextField
+            name="nodeNumber"
+            label="Node Number (hex)"
             value={nodeNumber}
-            onStepChange={setNodeNumber}
+            onChange={(e) => setNodeNumber(e.target.value)}
           />
 
           {type === "raw" && (
