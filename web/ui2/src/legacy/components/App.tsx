@@ -167,20 +167,27 @@ const PropertyControls = observer(
   ({ icu, openHistory }: { icu: IrrigationStore; openHistory: (propertyId: string) => void }) => {
     const { tokens } = useTheme();
     const [filter, setFilter] = useState("all");
-    const properties: Record<
-      string,
-      (IrrigationProperty & { component?: DeviceComponentDefinition })[]
-    > = {};
-    for (const prop of icu.properties) {
-      const component = icu.components.find((c) => c.id === prop.componentId);
-      const type = prop.mutable ? "control" : "monitor";
-      if (filter === "all" || filter === type) {
-        const group = component?.typeName ?? "Properties";
-        properties[group] ??= [];
-        properties[group].push({ ...prop, component });
+
+    const groups = React.useMemo(() => {
+      const properties: Record<
+        string,
+        (IrrigationProperty & { component?: DeviceComponentDefinition })[]
+      > = {};
+      for (const prop of icu.properties) {
+        const component = icu.components.find((c) => c.id === prop.componentId);
+        const type = prop.mutable ? "control" : "monitor";
+        if (filter === "all" || filter === type) {
+          const group = component?.typeName ?? "Properties";
+          properties[group] ??= [];
+          properties[group].push({ ...prop, component });
+        }
       }
-    }
-    const groups = Object.entries(properties);
+      const groups = Object.entries(properties).sort((a, b) => {
+        const components = ["Node", "Sensor", "Zone", "Pump"];
+        return components.indexOf(b[0]) - components.indexOf(a[0]);
+      });
+      return groups;
+    }, [icu.properties, icu.components]);
 
     return (
       <Flex direction="column">
