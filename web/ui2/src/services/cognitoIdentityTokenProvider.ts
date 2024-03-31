@@ -43,18 +43,13 @@ export class CognitoIdentityTokenProvider {
   async getIdToken(): Promise<string | undefined> {
     if (this.available || (await this.refreshTokens())) {
       return this.idToken;
-    } else {
-      const authorizeParams = new URLSearchParams({
-        response_type: "code",
-        client_id: this.options.clientId,
-        redirect_uri: this.options.redirectUri,
-      });
-      window.location.href = `https://${this.options.loginDomain}/oauth2/authorize?${authorizeParams}`;
     }
+    return undefined;
   }
 
   private async refreshTokens(): Promise<boolean> {
     if (!this.refreshToken) {
+      this.authenticate();
       return false;
     }
     try {
@@ -63,10 +58,29 @@ export class CognitoIdentityTokenProvider {
       });
       return true;
     } catch (err) {
-      // TODO check possible temporary errors that shouldn't result in login redirect
-      console.warn("Failed to refresh tokens", err);
+      console.error("Failed to refresh tokens", err);
+      if (
+        typeof err === "object" &&
+        err &&
+        "cause" in err &&
+        typeof err?.cause === "object" &&
+        err.cause &&
+        "reauthRequired" in err.cause &&
+        err.cause.reauthRequired
+      ) {
+        this.authenticate();
+      }
       return false;
     }
+  }
+
+  private authenticate() {
+    const authorizeParams = new URLSearchParams({
+      response_type: "code",
+      client_id: this.options.clientId,
+      redirect_uri: this.options.redirectUri,
+    });
+    window.location.href = `https://${this.options.loginDomain}/oauth2/authorize?${authorizeParams}`;
   }
 
   private async requestToken(grant: { code: string } | { refreshToken: string }): Promise<void> {
@@ -103,8 +117,9 @@ export class CognitoIdentityTokenProvider {
       }
       this.persist();
     } else {
-      console.error(`Token request failed: ${result.status}`, await result.text());
-      throw new Error("Token request failed");
+      throw new Error(`Token request failed: ${result.status}. ${await result.text()}`, {
+        cause: { reauthRequired: result.status === 400 },
+      });
     }
   }
 
