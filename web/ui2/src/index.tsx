@@ -14,7 +14,7 @@ const config = {
   userPoolId: import.meta.env.VITE_USER_POOL_ID,
   identityPoolId: import.meta.env.VITE_IDENTITY_POOL_ID,
   mqttEndpoint: import.meta.env.VITE_MQTT_ENDPOINT,
-  deviceId: import.meta.env.VITE_DEVICE_ID,
+  deviceId: localStorage.getItem("DEVICE_ID") ?? import.meta.env.VITE_DEVICE_ID,
   cognitoClientId: import.meta.env.VITE_CLIENT_ID,
   cognitoDomain: import.meta.env.VITE_COGNITO_DOMAIN,
   apiEndpoint: import.meta.env.VITE_API_ENDPOINT,
@@ -69,8 +69,7 @@ async function webPushUnsubscribe(send: (msg: object) => void) {
   }
 }
 
-const deviceId = import.meta.env.VITE_DEVICE_ID;
-const legacyStore = new IrrigationStore(deviceId);
+const legacyStore = new IrrigationStore(config.deviceId);
 
 const RootComponent = () => {
   const [connect, setConnect] = useState(true);
@@ -80,7 +79,7 @@ const RootComponent = () => {
       retryOnError: true,
       shouldReconnect: () => true,
       onOpen() {
-        sendJsonMessage({ action: "device/subscribe", deviceIds: [deviceId] });
+        sendJsonMessage({ action: "device/subscribe", deviceIds: [config.deviceId] });
       },
       onMessage(event) {
         const json = JSON.parse(event.data);

@@ -454,6 +454,17 @@ const App = observer(
             >
               Remote Unit Tool
             </Button>
+            <Button
+              onClick={() => {
+                const newDeviceId = prompt("Enter a new device id", icu.controlDeviceId);
+                if (newDeviceId) {
+                  localStorage.setItem("DEVICE_ID", newDeviceId);
+                  location.reload();
+                }
+              }}
+            >
+              Device: {icu.controlDeviceId}
+            </Button>
             <Button onClick={logout}>Logout</Button>
           </ButtonGroup>
         </TabItem>
