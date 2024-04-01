@@ -168,7 +168,7 @@ const PropertyControls = observer(
     const { tokens } = useTheme();
     const [filter, setFilter] = useState("all");
 
-    const groups = React.useMemo(() => {
+    const groups = (() => {
       const properties: Record<
         string,
         (IrrigationProperty & { component?: DeviceComponentDefinition })[]
@@ -187,7 +187,7 @@ const PropertyControls = observer(
         return components.indexOf(b[0]) - components.indexOf(a[0]);
       });
       return groups;
-    }, [icu.properties, icu.components, filter]);
+    })();
 
     return (
       <Flex direction="column">
