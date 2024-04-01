@@ -50,7 +50,10 @@ export class RemoteUnitController implements DeviceControllerDefinition {
           type: "rmu",
           id: `rmu_${remoteUnit.id}`,
           typeName: "Node",
-          name: `${remoteUnit.id}`,
+          name: `${remoteUnit.id} (Z${this.solenoids
+            .filter((s) => s.remoteUnitId === remoteUnit.id)
+            .map((z) => z.id)
+            .join("/")})`,
         })
       ),
       ...this.remoteUnits
@@ -59,7 +62,10 @@ export class RemoteUnitController implements DeviceControllerDefinition {
           type: "sensor",
           id: `snr_${remoteUnit.id}`,
           typeName: "Sensor",
-          name: `${remoteUnit.id}`,
+          name: `${remoteUnit.id} (Z${this.solenoids
+            .filter((s) => s.remoteUnitId === remoteUnit.id)
+            .map((z) => z.id)
+            .join("/")})`,
         })),
       ...this.solenoids.map(
         (solenoid): DeviceComponentDefinition => ({
