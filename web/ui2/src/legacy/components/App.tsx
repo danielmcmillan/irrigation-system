@@ -241,21 +241,19 @@ const PropertyControls = observer(
                             let suffix = "";
                             if (
                               typeof value === "number" &&
-                              prop.name === "Sensor" &&
-                              value >= 0x7ff0 &&
-                              value <= 0x7fff
+                              prop.name === "Moisture" &&
+                              ((value * 10) | 0) == 0x7fff
                             ) {
-                              value = value & 0x000f;
-                              suffix = " (no value)";
+                              value = undefined;
                             } else if (prop.unit) {
                               suffix = " " + prop.unit;
                             }
                             let text =
-                              value === undefined
+                              (value === undefined
                                 ? "-"
-                                : (typeof value === "number"
-                                    ? (+value.toFixed(2)).toString()
-                                    : value.toString()) + suffix;
+                                : typeof value === "number"
+                                ? (+value.toFixed(2)).toString()
+                                : value.toString()) + suffix;
                             return (
                               <Text>
                                 {text}{" "}
