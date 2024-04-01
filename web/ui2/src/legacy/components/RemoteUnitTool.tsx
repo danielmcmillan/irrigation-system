@@ -9,7 +9,7 @@ import {
   Text,
   TextField,
 } from "@aws-amplify/ui-react";
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { binToHex, hexToBin, numberToHex } from "../irrigation/util";
 import { ControllerCommandResult } from "../irrigation/store";
 import { observer } from "mobx-react-lite";
@@ -132,6 +132,139 @@ const commandTypes = [
     },
   },
   {
+    type: "getConfig",
+    name: "Get config",
+    getCommand(state: unknown): ArrayLike<number> | undefined {
+      return [0x15];
+    },
+    matchRequest(request: DataView): boolean {
+      return request.byteLength >= 3 && request.getUint8(3) == 0x15;
+    },
+    resultString(resultData: DataView): string | undefined {
+      if (resultData.byteLength === 17) {
+        return `config`;
+      }
+    },
+    inputView(state: unknown, setState: (state: unknown) => void): React.ReactNode | undefined {
+      return undefined;
+    },
+  },
+  {
+    type: "setConfig",
+    name: "Set config",
+    getCommand(state: unknown): ArrayLike<number> | undefined {
+      return typeof state === "string" ? hexToBin("25" + state) : undefined;
+    },
+    matchRequest(request: DataView): boolean {
+      return request.byteLength >= 3 && request.getUint8(3) == 0x25;
+    },
+    resultString(resultData: DataView): string | undefined {
+      if (resultData.byteLength === 17) {
+        return `config`;
+      }
+    },
+    initState(pastResults: ControllerCommandResult[]): unknown {
+      const pastConfig = pastResults.find(
+        (r) => r.request.byteLength >= 3 && new Uint8Array(r.request)[3] == 0x15
+      );
+      if (pastConfig && !pastConfig.responseCode && pastConfig.data) {
+        return binToHex(pastConfig.data.slice(1));
+      }
+      return undefined;
+    },
+    inputView(state: unknown, setState: (state: unknown) => void): React.ReactNode | undefined {
+      const configData = typeof state === "string" ? state : "";
+      const configBin = hexToBin(configData);
+      const setConfigBin = (configBin: Uint8Array) => setState(binToHex(configBin));
+      return (
+        <>
+          <TextField
+            name="configData"
+            label="Config"
+            value={configData}
+            onChange={(e) => setState(e.target.value)}
+          />
+          <StepperField
+            name="configSignalStrength"
+            label="Signal strength"
+            min={1}
+            max={7}
+            defaultValue={7}
+            value={configBin.byteLength >= 5 ? configBin[5] : undefined}
+            onStepChange={(value) => {
+              if (configBin.byteLength >= 5) {
+                const newConfig = new Uint8Array(configBin);
+                newConfig[5] = value;
+                setConfigBin(newConfig);
+              }
+            }}
+          />
+          <StepperField
+            name="configSensorInterval"
+            label="Sensor read interval"
+            min={0}
+            max={15}
+            defaultValue={0}
+            value={
+              configBin.byteLength >= 15
+                ? (configBin[12] & 0x01) |
+                  ((configBin[13] & 0x01) << 1) |
+                  ((configBin[14] & 0x01) << 2) |
+                  ((configBin[15] & 0x01) << 3)
+                : undefined
+            }
+            onStepChange={(value) => {
+              if (configBin.byteLength >= 15) {
+                const newConfig = new Uint8Array(configBin);
+                newConfig[12] = (newConfig[12] & 0xfe) | (value & 0x01);
+                newConfig[13] = (newConfig[13] & 0xfe) | (value & 0x02 ? 0x01 : 0x00);
+                newConfig[14] = (newConfig[14] & 0xfe) | (value & 0x04 ? 0x01 : 0x00);
+                newConfig[15] = (newConfig[15] & 0xfe) | (value & 0x08 ? 0x01 : 0x00);
+                setConfigBin(newConfig);
+              }
+            }}
+          />
+        </>
+      );
+    },
+  },
+  {
+    type: "applyRfConfig",
+    name: "Apply RF config",
+    getCommand(state: unknown): ArrayLike<number> | undefined {
+      return [0x31];
+    },
+    matchRequest(request: DataView): boolean {
+      return request.byteLength >= 3 && request.getUint8(3) == 0x31;
+    },
+    resultString(resultData: DataView): string | undefined {
+      if (resultData.byteLength === 17) {
+        return `config`;
+      }
+    },
+    inputView(state: unknown, setState: (state: unknown) => void): React.ReactNode | undefined {
+      return undefined;
+    },
+  },
+  {
+    type: "persistConfig",
+    name: "Persist config",
+    getCommand(state: unknown): ArrayLike<number> | undefined {
+      return [0x30];
+    },
+    matchRequest(request: DataView): boolean {
+      return request.byteLength >= 3 && request.getUint8(3) == 0x30;
+    },
+    resultString(resultData: DataView): string | undefined {
+      if (resultData.byteLength === 17) {
+        return `config`;
+      }
+    },
+    inputView(state: unknown, setState: (state: unknown) => void): React.ReactNode | undefined {
+      return undefined;
+    },
+  },
+  {
     type: "raw",
     name: "Raw command",
     getCommand(state: unknown): ArrayLike<number> | undefined {
@@ -181,9 +314,7 @@ const RemoteUnitResult: React.FC<{ result: ControllerCommandResult }> = observer
       <td>{result.id}</td>
       <td>{new Date(result.time).toLocaleTimeString()}</td>
       <td>{requestType.type}</td>
-      <td>
-        {node} (0x{numberToHex(node, 2)})
-      </td>
+      <td>0x{numberToHex(node, 2)}</td>
       <td>0x{requestData}</td>
       <td>{resultString}</td>
       <td>{resultHex ?? "-"}</td>
@@ -196,6 +327,7 @@ export const RemoteUnitTool: React.FC<RemoteUnitToolProps> = observer(
     const [nodeNumber, setNodeNumber] = useState("01");
     const [type, setType] = useState<CommandType>(commandTypes[0]);
     const [commandState, setCommandState] = useState<unknown>(undefined);
+    const resultsDescending = useMemo(() => results.toReversed(), [results]);
 
     const handleRunRequest = () => {
       const node = hexToBin(nodeNumber);
@@ -225,8 +357,9 @@ export const RemoteUnitTool: React.FC<RemoteUnitToolProps> = observer(
             label="Type"
             value={type.type}
             onChange={(e) => {
-              setCommandState(undefined);
-              setType(commandTypes.find((t) => t.type === e.target.value)!);
+              const type = commandTypes.find((t) => t.type === e.target.value)!;
+              setCommandState(type.initState?.(resultsDescending));
+              setType(type);
             }}
           >
             {commandTypes.map((t) => (
@@ -236,12 +369,14 @@ export const RemoteUnitTool: React.FC<RemoteUnitToolProps> = observer(
             ))}
           </SelectField>
 
-          <TextField
-            name="nodeNumber"
-            label="Node Number (hex)"
-            value={nodeNumber}
-            onChange={(e) => setNodeNumber(e.target.value)}
-          />
+          {type.isRemoteUnitCommand !== false && (
+            <TextField
+              name="nodeNumber"
+              label="Node Number (hex)"
+              value={nodeNumber}
+              onChange={(e) => setNodeNumber(e.target.value)}
+            />
+          )}
           {type.inputView(commandState, setCommandState)}
           <Button onClick={handleRunRequest}>Run Request</Button>
           <ScrollView>
@@ -258,7 +393,7 @@ export const RemoteUnitTool: React.FC<RemoteUnitToolProps> = observer(
                 </tr>
               </thead>
               <tbody>
-                {results.toReversed().map((result, i) => (
+                {resultsDescending.map((result, i) => (
                   <RemoteUnitResult key={i} result={result} />
                 ))}
               </tbody>
