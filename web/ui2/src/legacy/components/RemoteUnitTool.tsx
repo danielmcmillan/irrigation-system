@@ -27,8 +27,8 @@ const commandTypes = [
     getCommand(state: unknown): ArrayLike<number> | undefined {
       return [0x13];
     },
-    matchCommand(cmd: number): boolean {
-      return cmd === 0x13;
+    matchRequest(request: DataView): boolean {
+      return request.byteLength >= 3 && request.getUint8(3) == 0x13;
     },
     resultString(resultData: DataView): string | undefined {
       if (resultData.byteLength === 3) {
@@ -40,17 +40,36 @@ const commandTypes = [
     },
   },
   {
-    type: "getSignalStrength",
-    name: "Get signal strength",
+    type: "getNodeReceiveStrength",
+    name: "Get node receive strength",
     getCommand(state: unknown): ArrayLike<number> | undefined {
       return [0x14];
     },
-    matchCommand(cmd: number): boolean {
-      return cmd === 0x14;
+    matchRequest(request: DataView): boolean {
+      return request.byteLength >= 3 && request.getUint8(3) == 0x14;
     },
     resultString(resultData: DataView): string | undefined {
       if (resultData.byteLength === 2) {
         return `${resultData.getUint8(1) - 164} dBm (note -120=weak, -30=strong)`;
+      }
+    },
+    inputView(state: unknown, setState: (state: unknown) => void): React.ReactNode | undefined {
+      return undefined;
+    },
+  },
+  {
+    type: "getReceiveStrength",
+    name: "Get receive strength",
+    isRemoteUnitCommand: false,
+    getCommand(state: unknown): ArrayLike<number> | undefined {
+      return [0x02];
+    },
+    matchRequest(request: DataView): boolean {
+      return request.byteLength == 1 && request.getUint8(0) == 0x02;
+    },
+    resultString(resultData: DataView): string | undefined {
+      if (resultData.byteLength === 1) {
+        return `${resultData.getUint8(0) - 164} dBm (note -120=weak, -30=strong)`;
       }
     },
     inputView(state: unknown, setState: (state: unknown) => void): React.ReactNode | undefined {
@@ -63,8 +82,8 @@ const commandTypes = [
     getCommand(state: unknown): ArrayLike<number> | undefined {
       return [0x16];
     },
-    matchCommand(cmd: number): boolean {
-      return cmd === 0x16;
+    matchRequest(request: DataView): boolean {
+      return request.byteLength >= 3 && request.getUint8(3) == 0x16;
     },
     resultString(resultData: DataView): string | undefined {
       if (resultData.byteLength === 5) {
@@ -76,13 +95,13 @@ const commandTypes = [
     },
   },
   {
-    type: "readSensor",
-    name: "Read sensor",
+    type: "getSensorValue",
+    name: "Get sensor value",
     getCommand(state: unknown): ArrayLike<number> | undefined {
       return [0x18, state === true ? 0xff : 0x00];
     },
-    matchCommand(cmd: number): boolean {
-      return cmd === 0x18;
+    matchRequest(request: DataView): boolean {
+      return request.byteLength >= 3 && request.getUint8(3) == 0x18;
     },
     resultString(resultData: DataView): string | undefined {
       if (resultData.byteLength === 4) {
@@ -118,7 +137,7 @@ const commandTypes = [
     getCommand(state: unknown): ArrayLike<number> | undefined {
       return typeof state === "string" ? hexToBin(state) : undefined;
     },
-    matchCommand(cmd: number): boolean {
+    matchRequest(request: DataView): boolean {
       return true;
     },
     resultString(resultData: DataView): string | undefined {
@@ -139,17 +158,16 @@ const commandTypes = [
 ];
 type CommandType = typeof commandTypes extends readonly (infer ElementType)[] ? ElementType : never;
 
-function getType(commandType: number): CommandType {
-  const type = commandTypes.find((t) => t.matchCommand(commandType));
+function getType(request: DataView): CommandType {
+  const type = commandTypes.find((t) => t.matchRequest(request));
   return type ?? commandTypes.at(-1)!;
 }
 
 const RemoteUnitResult: React.FC<{ result: ControllerCommandResult }> = observer(({ result }) => {
   const resultHex = result.data !== undefined ? `0x${binToHex(result.data)}` : undefined;
   const request = new DataView(result.request);
-  const commandType = request.getUint8(3);
-  const requestType = getType(commandType);
-  const node = request.getUint16(1, true);
+  const requestType = getType(request);
+  const node = requestType.isRemoteUnitCommand !== false ? request.getUint16(1, true) : 0;
   const requestData = binToHex(result.request.slice(3));
   let resultString = "Pending...";
   if (result.responseCode) {
@@ -183,10 +201,16 @@ export const RemoteUnitTool: React.FC<RemoteUnitToolProps> = observer(
       const node = hexToBin(nodeNumber);
       const command = type ? type.getCommand(commandState) : undefined;
       if (command) {
-        const commandData = new Uint8Array(3 + command.length);
-        commandData.set([1, node[0], node[1]]);
-        commandData.set(command, 3);
-        onRunRequest(commandData.buffer);
+        if (type.isRemoteUnitCommand !== false) {
+          const commandData = new Uint8Array(3 + command.length);
+          commandData.set([1, node[0], node[1]]);
+          commandData.set(command, 3);
+          onRunRequest(commandData.buffer);
+        } else {
+          const commandData = new Uint8Array(command.length);
+          commandData.set(command, 0);
+          onRunRequest(commandData.buffer);
+        }
       }
     };
 

@@ -286,6 +286,23 @@ namespace IrrigationSystem
             SERIAL_OBJ.flush();
             return 0;
         }
+        else if (inputSize == 1 && input[0] == 2)
+        {
+            SERIAL_OBJ.setTimeout(RF_MODULE_RESPONSE_TIMEOUT);
+            uint8_t message[25] = {0};
+            uint8_t length = yl800tSendReadSignalStrength(message);
+            while (SERIAL_OBJ.available())
+            {
+                SERIAL_OBJ.read();
+            }
+            SERIAL_OBJ.write(message, length);
+            SERIAL_OBJ.flush();
+            SERIAL_OBJ.readBytes(message, 25);
+            uint8_t strength;
+            int result = yl800tReceiveReadSignalStrength(message, responseOut);
+            *responseSizeOut = 1;
+            return result;
+        }
         else
         {
             return 1;
