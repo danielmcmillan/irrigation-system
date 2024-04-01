@@ -19,34 +19,91 @@ interface RemoteUnitToolProps {
   results: ControllerCommandResult[];
 }
 
-type CommandType = "getBattery" | "getSignalStrength" | "getUpTime" | "raw";
-
-function getCommand(type: CommandType, input?: Uint8Array): Uint8Array | number[] | undefined {
-  switch (type) {
-    case "getBattery":
+const commandTypes = [
+  {
+    type: "getBattery",
+    name: "Get battery",
+    getCommand(state: unknown): ArrayLike<number> | undefined {
       return [0x13];
-    case "getSignalStrength":
-      return [0x14];
-    case "getUpTime":
-      return [0x16];
-    case "raw":
-      return input;
-    default:
+    },
+    matchCommand(cmd: number): boolean {
+      return cmd === 0x13;
+    },
+    resultString(resultData: DataView): string | undefined {
+      if (resultData.byteLength === 3) {
+        return `${resultData.getUint16(1, true)} (raw value)`;
+      }
+    },
+    inputView(state: unknown, setState: (state: unknown) => void): React.ReactNode | undefined {
       return undefined;
-  }
-}
+    },
+  },
+  {
+    type: "getSignalStrength",
+    name: "Get signal strength",
+    getCommand(state: unknown): ArrayLike<number> | undefined {
+      return [0x14];
+    },
+    matchCommand(cmd: number): boolean {
+      return cmd === 0x14;
+    },
+    resultString(resultData: DataView): string | undefined {
+      if (resultData.byteLength === 2) {
+        return `${resultData.getUint8(1) - 164} dBm (note -120=weak, -30=strong)`;
+      }
+    },
+    inputView(state: unknown, setState: (state: unknown) => void): React.ReactNode | undefined {
+      return undefined;
+    },
+  },
+  {
+    type: "getUpTime",
+    name: "Get up time",
+    getCommand(state: unknown): ArrayLike<number> | undefined {
+      return [0x16];
+    },
+    matchCommand(cmd: number): boolean {
+      return cmd === 0x16;
+    },
+    resultString(resultData: DataView): string | undefined {
+      if (resultData.byteLength === 5) {
+        return `~${((resultData.getUint32(1, true) * 8.75) / 3600 / 24).toFixed(3)} days`;
+      }
+    },
+    inputView(state: unknown, setState: (state: unknown) => void): React.ReactNode | undefined {
+      return undefined;
+    },
+  },
+  {
+    type: "raw",
+    name: "Raw command",
+    getCommand(state: unknown): ArrayLike<number> | undefined {
+      return typeof state === "string" ? hexToBin(state) : undefined;
+    },
+    matchCommand(cmd: number): boolean {
+      return true;
+    },
+    resultString(resultData: DataView): string | undefined {
+      return "Successful";
+    },
+    inputView(state: unknown, setState: (state: unknown) => void): React.ReactNode | undefined {
+      const rawCommand = typeof state === "string" ? state : "";
+      return (
+        <TextField
+          name="rawCommand"
+          label="Raw Command"
+          value={rawCommand}
+          onChange={(e) => setState(e.target.value)}
+        />
+      );
+    },
+  },
+];
+type CommandType = typeof commandTypes extends readonly (infer ElementType)[] ? ElementType : never;
 
 function getType(commandType: number): CommandType {
-  switch (commandType) {
-    case 0x13:
-      return "getBattery";
-    case 0x14:
-      return "getSignalStrength";
-    case 0x16:
-      return "getUpTime";
-    default:
-      return "raw";
-  }
+  const type = commandTypes.find((t) => t.matchCommand(commandType));
+  return type ?? commandTypes.at(-1)!;
 }
 
 const RemoteUnitResult: React.FC<{ result: ControllerCommandResult }> = observer(({ result }) => {
@@ -61,32 +118,13 @@ const RemoteUnitResult: React.FC<{ result: ControllerCommandResult }> = observer
     resultString = `Error: ${result.responseCode}`;
   } else if (result.data) {
     const view = new DataView(result.data);
-    switch (requestType) {
-      case "getBattery":
-        if (result.data.byteLength === 3) {
-          resultString = `${view.getUint16(1, true)} (raw value)`;
-          break;
-        }
-      case "getSignalStrength":
-        if (result.data.byteLength === 2) {
-          resultString = `${view.getUint8(1) - 164} dBm (note -120=weak, -30=strong)`;
-          break;
-        }
-      case "getUpTime":
-        if (result.data.byteLength === 5) {
-          resultString = `~${((view.getUint32(1, true) * 8.75) / 3600 / 24).toFixed(3)} days`;
-          break;
-        }
-      case "raw":
-        resultString = "Successful";
-        break;
-    }
+    resultString = requestType.resultString(view) ?? "Invalid";
   }
   return (
     <tr>
       <td>{result.id}</td>
       <td>{new Date(result.time).toLocaleTimeString()}</td>
-      <td>{requestType}</td>
+      <td>{requestType.type}</td>
       <td>
         {node} (0x{numberToHex(node, 2)})
       </td>
@@ -100,13 +138,12 @@ const RemoteUnitResult: React.FC<{ result: ControllerCommandResult }> = observer
 export const RemoteUnitTool: React.FC<RemoteUnitToolProps> = observer(
   ({ onRunRequest, onClose, results }) => {
     const [nodeNumber, setNodeNumber] = useState("01");
-    const [type, setType] = useState<CommandType>("getBattery");
-    const [rawCommand, setRawCommand] = useState<string>("");
+    const [type, setType] = useState<CommandType>(commandTypes[0]);
+    const [commandState, setCommandState] = useState<unknown>(undefined);
 
     const handleRunRequest = () => {
       const node = hexToBin(nodeNumber);
-      const rawBinary = hexToBin(rawCommand);
-      const command = type ? getCommand(type, rawBinary) : undefined;
+      const command = type ? type.getCommand(commandState) : undefined;
       if (command) {
         const commandData = new Uint8Array(3 + command.length);
         commandData.set([1, node[0], node[1]]);
@@ -124,13 +161,17 @@ export const RemoteUnitTool: React.FC<RemoteUnitToolProps> = observer(
           <SelectField
             name="type"
             label="Type"
-            value={type}
-            onChange={(e) => setType(e.target.value as CommandType)}
+            value={type.type}
+            onChange={(e) => {
+              setCommandState(undefined);
+              setType(commandTypes.find((t) => t.type === e.target.value)!);
+            }}
           >
-            <option value="getBattery">Get battery</option>
-            <option value="getSignalStrength">Get signal strength</option>
-            <option value="getUpTime">Get up time</option>
-            <option value="raw">Raw command</option>
+            {commandTypes.map((t) => (
+              <option key={t.type} value={t.type}>
+                {t.name}
+              </option>
+            ))}
           </SelectField>
 
           <TextField
@@ -139,16 +180,7 @@ export const RemoteUnitTool: React.FC<RemoteUnitToolProps> = observer(
             value={nodeNumber}
             onChange={(e) => setNodeNumber(e.target.value)}
           />
-
-          {type === "raw" && (
-            <TextField
-              name="rawCommand"
-              label="Raw Command"
-              value={rawCommand}
-              onChange={(e) => setRawCommand(e.target.value)}
-            />
-          )}
-
+          {type.inputView(commandState, setCommandState)}
           <Button onClick={handleRunRequest}>Run Request</Button>
           <ScrollView>
             <table style={{ textAlign: "left" }}>
