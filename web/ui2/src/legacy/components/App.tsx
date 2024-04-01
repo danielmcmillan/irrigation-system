@@ -187,7 +187,7 @@ const PropertyControls = observer(
         return components.indexOf(b[0]) - components.indexOf(a[0]);
       });
       return groups;
-    }, [icu.properties, icu.components]);
+    }, [icu.properties, icu.components, filter]);
 
     return (
       <Flex direction="column">
