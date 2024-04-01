@@ -1,5 +1,6 @@
 import {
   Button,
+  CheckboxField,
   Flex,
   Heading,
   ScrollView,
@@ -72,6 +73,43 @@ const commandTypes = [
     },
     inputView(state: unknown, setState: (state: unknown) => void): React.ReactNode | undefined {
       return undefined;
+    },
+  },
+  {
+    type: "readSensor",
+    name: "Read sensor",
+    getCommand(state: unknown): ArrayLike<number> | undefined {
+      return [0x18, state === true ? 0xff : 0x00];
+    },
+    matchCommand(cmd: number): boolean {
+      return cmd === 0x18;
+    },
+    resultString(resultData: DataView): string | undefined {
+      if (resultData.byteLength === 4) {
+        const value = resultData.getInt16(2, true);
+        const success = (resultData.getUint8(1) & 0x80) > 0;
+        const unread = (resultData.getUint8(1) & 0x40) > 0;
+        const error = resultData.getUint8(1) & 0x3f;
+        let result = value == 0x7fff ? "no value" : `${value * 0.1} kPa`;
+        if (!success) {
+          result += ` error ${error}`;
+        }
+        if (unread) {
+          result += ` (unread)`;
+        }
+        return result;
+      }
+    },
+    inputView(state: unknown, setState: (state: unknown) => void): React.ReactNode | undefined {
+      const requestRead = state === true;
+      return (
+        <CheckboxField
+          name="requestRead"
+          label="Request read"
+          checked={requestRead}
+          onChange={(e) => setState(e.target.checked)}
+        />
+      );
     },
   },
   {
