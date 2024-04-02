@@ -10,6 +10,7 @@ provider:
   region: ap-southeast-2
   stackTags:
     project: irrigation
+  logRetentionInDays: 14
   iam:
     role:
       statements:

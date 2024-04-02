@@ -373,6 +373,7 @@ async function sendControllerCommandEvent(message: DeviceMessage): Promise<void>
 
 export async function handleDeviceMessage(inputEvent: RawDeviceMessage): Promise<void> {
   const message = parseDeviceMessage(inputEvent);
+  console.info(`Received message ${message.type}`, message);
 
   const results = await Promise.allSettled([
     publishToSQS(message),
