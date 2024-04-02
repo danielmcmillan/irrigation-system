@@ -45,6 +45,7 @@ const LogEntryCard = ({ entry }: { entry: LogEntry }) => {
     } as Record<LogLevel, BadgeVariations>
   )[entry.level];
   const detail = Object.entries(entry.detail)
+    .filter(([_, value]) => value !== undefined)
     .map(([key, value]) => `${key}=${value}`)
     .join(" ");
 
