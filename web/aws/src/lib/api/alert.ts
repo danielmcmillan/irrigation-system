@@ -80,7 +80,7 @@ export function getPropertyErrorMessage(
 ): string {
   let message: string;
   if (controllerId === 4 && (propertyId & 0xff00) === 0x0400) {
-    message = `Failed to read from sensor: ${Buffer.from(errorData).toString("hex")}`;
+    message = `Failed to read from sensor. Error: ${Buffer.from(errorData).toString("hex")}`;
   } else {
     message = `Unknown property ${controllerId}/${propertyId} error: ${Buffer.from(
       errorData

@@ -283,12 +283,21 @@ export class IrrigationStore {
       }
       if (device.alerts) {
         this.addLogEntries(
-          device.alerts.map((alert: Alert) => ({
-            time: new Date(alert.time * 1000),
-            level: alert.severity,
-            summary: alert.message,
-            detail: alert.propertyId ? { property: this.getProperty(alert.propertyId)?.name } : {},
-          }))
+          device.alerts.map((alert: Alert) => {
+            const property = alert.propertyId ? this.getProperty(alert.propertyId) : undefined;
+            const component = property
+              ? this.components.find((c) => c.id === property.componentId)
+              : undefined;
+            return {
+              time: new Date(alert.time * 1000),
+              level: alert.severity,
+              summary: alert.message,
+              detail: {
+                property: property?.name,
+                component: component ? `${component.typeName} ${component.name}` : undefined,
+              },
+            };
+          })
         );
       }
     }
