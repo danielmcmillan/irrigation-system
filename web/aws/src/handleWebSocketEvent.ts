@@ -122,7 +122,7 @@ export async function handleWebSocketEvent(
                 controllerId,
                 propertyId,
               },
-              Date.now() / 1000 - 7 * 24 * 3600,
+              Date.now() / 1000 - 14 * 24 * 3600,
               Date.now() / 1000
             ),
           ]);
