@@ -137,8 +137,8 @@ async function updateStateStore(message: DeviceMessage): Promise<void> {
     const existingProperty = properties?.find(propertyPredicate);
     const isValueUnchanged =
       existingProperty && Buffer.from(existingProperty.value).equals(Buffer.from(property.value));
-    // We can ignore an update for a "property" message if the value didn't change
-    const isValueUpdated = message.type !== "property" || !isValueUnchanged;
+    // We can ignore an update for a "properties" message if the value didn't change
+    const isValueUpdated = message.type !== "properties" || !isValueUnchanged;
     const lastChanged = isValueUnchanged ? existingProperty.lastChanged : messageTimeSeconds;
     // Property from previous event in same message
     const previousProperty = newPropertyStates.find(propertyPredicate);

@@ -96,7 +96,7 @@ namespace IrrigationSystem
         return definition;
     }
 
-    uint32_t RemoteUnitController::getPropertyValue(uint16_t id) const
+    bool RemoteUnitController::getPropertyValue(uint16_t id, uint32_t *value) const
     {
         uint8_t type = id >> 8;
         uint8_t subId = id & 0xff;
@@ -108,21 +108,24 @@ namespace IrrigationSystem
             index = definition.getRemoteUnitIndex(subId);
             if (index >= 0)
             {
-                return remoteUnits[index].available;
+                *value = remoteUnits[index].available;
+                return remoteUnits[index].hasAvailable;
             }
             break;
         case RemoteUnitPropertyType::RemoteUnitBattery:
             index = definition.getRemoteUnitIndex(subId);
             if (index >= 0)
             {
-                return remoteUnits[index].batteryVoltage;
+                *value = remoteUnits[index].batteryVoltage;
+                return *value != 0;
             }
             break;
         case RemoteUnitPropertyType::RemoteUnitSensor:
             index = definition.getRemoteUnitIndex(subId);
             if (index >= 0)
             {
-                return remoteUnits[index].sensorValue;
+                *value = remoteUnits[index].sensorValue;
+                return remoteUnits[index].hasSensorValue;
             }
             break;
         case RemoteUnitPropertyType::RemoteUnitSolenoidOn:
@@ -132,12 +135,13 @@ namespace IrrigationSystem
                 Solenoid const &solenoid = definition.getSolenoidAt(index);
                 index = definition.getRemoteUnitIndex(solenoid.remoteUnitId);
                 // index must be valid, assuming valid configuration
-                return (remoteUnits[index].solenoidOn & (1u << solenoid.numberAtRemoteUnit)) > 0;
+                *value = (remoteUnits[index].solenoidOn & (1u << solenoid.numberAtRemoteUnit)) > 0;
+                return remoteUnits[index].hasSolenoidOn;
             }
             break;
         }
         LOG_ERROR("getPropertyValue with unknown Remote Unit property");
-        return 0;
+        return false;
     }
 
     uint32_t RemoteUnitController::getPropertyDesiredValue(uint16_t id) const
@@ -412,6 +416,7 @@ namespace IrrigationSystem
     void RemoteUnitController::setRemoteUnitAvailable(int index, bool available)
     {
         remoteUnits[index].available = available;
+        remoteUnits[index].hasAvailable = true;
         if (eventHandler != nullptr)
         {
             eventHandler->handlePropertyValueChanged(controllerId, definition.getPropertyId(RemoteUnitPropertyType::RemoteUnitAvailable, index), 1, available);
@@ -521,7 +526,7 @@ namespace IrrigationSystem
         uint8_t previousBatteryVoltage = remoteUnits[remoteUnitIndex].batteryVoltage;
         uint8_t batteryVoltage = responseData[0];
         remoteUnits[remoteUnitIndex].batteryVoltage = batteryVoltage;
-        if (eventHandler != nullptr && previousBatteryVoltage != batteryVoltage)
+        if (eventHandler != nullptr && batteryVoltage != 0 && previousBatteryVoltage != batteryVoltage)
         {
             eventHandler->handlePropertyValueChanged(controllerId, definition.getPropertyId(RemoteUnitPropertyType::RemoteUnitBattery, remoteUnitIndex), 1, batteryVoltage);
         }
@@ -550,11 +555,13 @@ namespace IrrigationSystem
             return false;
         }
         uint8_t previousSolenoidOn = remoteUnits[remoteUnitIndex].solenoidOn;
+        bool previousHasSolenoidOn = remoteUnits[remoteUnitIndex].hasSolenoidOn;
+        remoteUnits[remoteUnitIndex].hasSolenoidOn = true;
         remoteUnits[remoteUnitIndex].solenoidOn = responseData[0];
         uint8_t previousSolenoidDesiredOn = remoteUnits[remoteUnitIndex].solenoidDesiredOn;
         remoteUnits[remoteUnitIndex].solenoidDesiredOn = responseData[0];
         // Send events for any solenoid that changed state
-        handleSolenoidValuesChanged(remoteUnit, remoteUnitIndex, previousSolenoidOn, previousSolenoidDesiredOn);
+        handleSolenoidValuesChanged(remoteUnit, remoteUnitIndex, previousHasSolenoidOn, previousSolenoidOn, previousSolenoidDesiredOn);
 
         if (remoteUnit.hasSensor)
         {
@@ -565,21 +572,27 @@ namespace IrrigationSystem
             }
             uint16_t previousSensorValue = remoteUnits[remoteUnitIndex].sensorValue;
             uint8_t sensorReadResult = responseData[0];
+            bool success = (sensorReadResult & 0x80) > 0;
+            bool unread = (sensorReadResult & 0x40) > 0;
             uint8_t sensorError = sensorReadResult & 0x3f;
             uint16_t sensorValue = read16LE(&responseData[1]);
-            remoteUnits[remoteUnitIndex].sensorValue = sensorValue;
+            if (success)
+            {
+                remoteUnits[remoteUnitIndex].hasSensorValue = true;
+                remoteUnits[remoteUnitIndex].sensorValue = sensorValue;
+            }
             if (eventHandler != nullptr)
             {
                 uint16_t propertyId = definition.getPropertyId(RemoteUnitPropertyType::RemoteUnitSensor, remoteUnitIndex);
                 // Send sensor value update event if it has been read successfully since last check or the actual value has changed
-                if ((sensorReadResult & 0xc0) == 0xc0 /*=success&unread*/ || previousSensorValue != sensorValue)
+                if (success && (unread || previousSensorValue != sensorValue))
                 {
                     eventHandler->handlePropertyValueChanged(controllerId, propertyId, 2, sensorValue);
                 }
                 // Send property error if sensor read failed since last check
-                if ((sensorReadResult & 0xc0) == 0x40 /*=!success&unread*/)
+                if (!success && unread)
                 {
-                    eventHandler->handlePropertyError(controllerId, propertyId, 1, sensorReadResult & 0x3f);
+                    eventHandler->handlePropertyError(controllerId, propertyId, 1, sensorError);
                 }
             }
         }
@@ -588,7 +601,7 @@ namespace IrrigationSystem
     }
 
     // Handle updated solenoidOn and solenoidDesiredOn value for a remote unit.
-    void RemoteUnitController::handleSolenoidValuesChanged(const RemoteUnit &remoteUnit, int remoteUnitIndex, uint8_t previousSolenoidOn, uint8_t previousSolenoidDesiredOn)
+    void RemoteUnitController::handleSolenoidValuesChanged(const RemoteUnit &remoteUnit, int remoteUnitIndex, bool previousHasSolenoidOn, uint8_t previousSolenoidOn, uint8_t previousSolenoidDesiredOn)
     {
         if (eventHandler == nullptr)
         {
@@ -611,11 +624,11 @@ namespace IrrigationSystem
                                                    ? previousValue
                                                    : (previousSolenoidDesiredOn & mask) > 0;
 
-                if (value != previousValue)
+                if (value != previousValue || !previousHasSolenoidOn)
                 {
                     eventHandler->handlePropertyValueChanged(controllerId, propertyId, 1, value);
                 }
-                if (desiredValue != previousDesiredValue)
+                if (desiredValue != previousDesiredValue || (previousSolenoidDesiredOn == SOLENOID_ON_INDETERMINATE && !previousHasSolenoidOn))
                 {
                     eventHandler->handlePropertyDesiredValueChanged(controllerId, propertyId, 1, value);
                 }

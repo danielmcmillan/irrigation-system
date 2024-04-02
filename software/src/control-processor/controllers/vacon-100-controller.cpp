@@ -101,11 +101,11 @@ namespace IrrigationSystem
         return definition;
     }
 
-    uint32_t Vacon100Controller::getPropertyValue(uint16_t id) const
+    bool Vacon100Controller::getPropertyValue(uint16_t id, uint32_t *value) const
     {
         if (id == Vacon100ControllerProperties::available)
         {
-            return errorCount <= MAX_ERROR_COUNT;
+            *value = errorCount <= MAX_ERROR_COUNT;
         }
         else
         {
@@ -113,11 +113,13 @@ namespace IrrigationSystem
             // Motor run value reflects current state of relay rather than value reported from modbus
             if (id == Vacon100ControllerProperties::motorOn)
             {
-                return motorRelayOn;
+                *value = motorRelayOn;
+                return true;
             }
 #endif
-            return this->getPropertyValueFromValues(values, id);
+            *value = this->getPropertyValueFromValues(values, id);
         }
+        return true;
     }
 
     uint32_t Vacon100Controller::getPropertyDesiredValue(uint16_t id) const
@@ -214,7 +216,9 @@ namespace IrrigationSystem
         }
 
         // Read values if update is due or current value doesn't match desired
-        if (idMapUpdated && ((!desiredMotorOnIndeterminate && getPropertyValue(Vacon100ControllerProperties::motorOn) != desiredMotorOn) ||
+        uint32_t motorOn;
+        getPropertyValue(Vacon100ControllerProperties::motorOn, &motorOn);
+        if (idMapUpdated && ((!desiredMotorOnIndeterminate && motorOn != desiredMotorOn) ||
                              (uint8_t)(now - lastUpdateTime) > VACON_UPDATE_INTERVAL))
         {
             Vacon100Data oldValues = values;
@@ -259,7 +263,9 @@ namespace IrrigationSystem
         }
 #else
         // Write value if current value doesn't match desired
-        if (idMapUpdated && !desiredMotorOnIndeterminate && getPropertyValue(Vacon100ControllerProperties::motorOn) != desiredMotorOn)
+        uint32_t motorOn;
+        getPropertyValue(Vacon100ControllerProperties::motorOn, &motorOn);
+        if (idMapUpdated && !desiredMotorOnIndeterminate && motorOn != desiredMotorOn)
         {
             bool successful = false;
             for (int attempt = 0; attempt <= MAX_ERROR_COUNT; ++attempt)

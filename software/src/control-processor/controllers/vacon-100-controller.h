@@ -18,7 +18,7 @@ namespace IrrigationSystem
 
         const IrrigationSystem::ControllerDefinition &getDefinition() const override;
 
-        uint32_t getPropertyValue(uint16_t id) const override;
+        bool getPropertyValue(uint16_t id, uint32_t *value) const;
         uint32_t getPropertyDesiredValue(uint16_t id) const override;
         void setPropertyDesiredValue(uint16_t id, uint32_t value) override;
         uint16_t runCommand(const uint8_t *input, size_t inputSize, uint8_t *responseOut, size_t *responseSizeOut) override;

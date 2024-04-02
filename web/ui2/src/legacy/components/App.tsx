@@ -143,7 +143,7 @@ const RelativeTimeText = ({
   React.HTMLAttributes<HTMLElement>,
   HTMLElement
 >) => {
-  const [text, setText] = useState("");
+  const [text, setText] = useState("never");
   let timeout: number | undefined;
   useEffect(() => {
     const update = () => {
@@ -228,6 +228,15 @@ const PropertyControls = observer(
                     ? new Date(prop.lastChanged * 1000)
                     : undefined;
                   const relTooltip = `Changed at ${lastChanged?.toLocaleString()}. Updated at ${lastUpdated?.toLocaleString()}`;
+                  const suffix = prop.unit ? ` ${prop.unit}` : "";
+                  const valueText =
+                    (value === undefined
+                      ? "-"
+                      : typeof value === "number"
+                      ? (+value.toFixed(2)).toString()
+                      : value.toString()) +
+                    suffix +
+                    " ";
                   return (
                     <TableRow key={prop.id}>
                       <TableCell as="th" overflow="hidden">
@@ -237,35 +246,15 @@ const PropertyControls = observer(
                       </TableCell>
                       {!prop.mutable && (
                         <TableCell colSpan={2}>
-                          {(() => {
-                            let suffix = "";
-                            if (
-                              typeof value === "number" &&
-                              prop.name === "Moisture" &&
-                              ((value * 10) | 0) == 0x7fff
-                            ) {
-                              value = undefined;
-                            } else if (prop.unit) {
-                              suffix = " " + prop.unit;
-                            }
-                            let text =
-                              (value === undefined
-                                ? "-"
-                                : typeof value === "number"
-                                ? (+value.toFixed(2)).toString()
-                                : value.toString()) + suffix;
-                            return (
-                              <Text>
-                                {text}{" "}
-                                <RelativeTimeText
-                                  onClick={() => openHistory(prop.id)}
-                                  time={lastChanged}
-                                  title={relTooltip}
-                                  style={{ color: "gray", fontSize: "0.7em" }}
-                                />
-                              </Text>
-                            );
-                          })()}
+                          <Text>
+                            {valueText}
+                            <RelativeTimeText
+                              onClick={() => openHistory(prop.id)}
+                              time={lastChanged}
+                              title={relTooltip}
+                              style={{ color: "gray", fontSize: "0.7em" }}
+                            />
+                          </Text>
                         </TableCell>
                       )}
                       {prop.mutable && (
@@ -279,7 +268,7 @@ const PropertyControls = observer(
                           >
                             <Flex direction="row" justifyContent="flex-start" gap="2px">
                               <Text whiteSpace="nowrap">
-                                {value?.toString()}{" "}
+                                {valueText}
                                 <RelativeTimeText
                                   onClick={() => openHistory(prop.id)}
                                   time={lastChanged}

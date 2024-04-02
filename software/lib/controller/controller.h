@@ -37,7 +37,7 @@ namespace IrrigationSystem
          */
         virtual void reset() = 0;
 
-        virtual uint32_t getPropertyValue(uint16_t id) const = 0;
+        virtual bool getPropertyValue(uint16_t id, uint32_t *value) const = 0;
         virtual uint32_t getPropertyDesiredValue(uint16_t id) const = 0;
         virtual void setPropertyDesiredValue(uint16_t id, uint32_t value) = 0;
         virtual uint16_t runCommand(const uint8_t *input, unsigned int inputSize, uint8_t *responseOut, unsigned int *responseSizeOut) = 0;

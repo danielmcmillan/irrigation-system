@@ -17,7 +17,7 @@
 /**
  * Software revision number.
  */
-#define CONTROL_PROCESSOR_REVISION 20
+#define CONTROL_PROCESSOR_REVISION 21
 
 using namespace IrrigationSystem;
 
@@ -169,7 +169,7 @@ bool sendPropertyState(const uint8_t *subTopic, uint8_t length)
             size_t result = writePropertyDetail(definition, controllerId, propertyId, &buffer[size]);
             if (result == 0)
             {
-                return false;
+                continue;
             }
             size += result;
 

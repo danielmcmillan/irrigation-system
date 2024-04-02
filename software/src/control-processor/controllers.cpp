@@ -102,7 +102,11 @@ bool Controllers::getPropertyValue(uint8_t controllerId, uint16_t propertyId, ui
     unsigned int valueLength = definition.getPropertyLength(propertyId);
     bool readOnly = definition.getPropertyReadOnly(propertyId);
 
-    uint32_t value = controller->getPropertyValue(propertyId);
+    uint32_t value;
+    if (!controller->getPropertyValue(propertyId, &value))
+    {
+        return false;
+    }
     for (unsigned int i = 0; i < valueLength; ++i)
     {
         valuesOut[i] = value; // LSB

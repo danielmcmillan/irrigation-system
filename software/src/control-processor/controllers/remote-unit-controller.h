@@ -8,16 +8,17 @@ namespace IrrigationSystem
 {
     struct RemoteUnitState
     {
-        bool available;
+        bool available : 1;
+        bool hasAvailable : 1;
+        bool hasSolenoidOn : 1;
+        bool hasSensorValue : 1;
+
         /** Tenths of a volt */
         uint8_t batteryVoltage;
 
         uint8_t solenoidOn;
         uint8_t solenoidDesiredOn;
         uint16_t sensorValue;
-
-        /** Last update time, as multiples of 2^14 milliseconds (~16s) */
-        // uint8_t lastUpdated;
 
         /** The time it should next be updated, as multiples of 2^14 milliseconds (~16s). */
         uint16_t nextUpdateTime;
@@ -38,7 +39,7 @@ namespace IrrigationSystem
 
         const IrrigationSystem::ControllerDefinition &getDefinition() const override;
 
-        uint32_t getPropertyValue(uint16_t id) const override;
+        bool getPropertyValue(uint16_t id, uint32_t *value) const;
         uint32_t getPropertyDesiredValue(uint16_t id) const override;
         void setPropertyDesiredValue(uint16_t id, uint32_t value) override;
         uint16_t runCommand(const uint8_t *input, size_t inputSize, uint8_t *responseOut, size_t *responseSizeOut) override;
@@ -57,7 +58,7 @@ namespace IrrigationSystem
         void setRemoteUnitAvailable(int index, bool available);
         bool updateRemoteUnit(int index);
         bool handleRemoteUnitResponse(const RemoteUnit &remoteUnit, int remoteUnitIndex, uint8_t *packet);
-        void handleSolenoidValuesChanged(const RemoteUnit &remoteUnit, int remoteUnitIndex, uint8_t previousSolenoidOn, uint8_t previousSolenoidDesiredOn);
+        void handleSolenoidValuesChanged(const RemoteUnit &remoteUnit, int remoteUnitIndex, bool previousHasSolenoidOn, uint8_t previousSolenoidOn, uint8_t previousSolenoidDesiredOn);
     };
 }
 

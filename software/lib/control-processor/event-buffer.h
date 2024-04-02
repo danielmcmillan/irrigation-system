@@ -3,7 +3,7 @@
 
 #include "event-handler.h"
 
-#define EVENT_BUFFER_CAPACITY 256
+#define EVENT_BUFFER_CAPACITY 512
 #define EVENT_HEADER_SIZE 4
 
 namespace IrrigationSystem
