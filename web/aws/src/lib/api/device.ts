@@ -106,7 +106,7 @@ export function getPropertyValue(
   } else if (definition.format.type === DevicePropertyValueType.UnsignedInt) {
     result = 0;
     for (let i = 0; i < view.byteLength; ++i) {
-      result |= view.getUint8(i) >> (i * 8);
+      result |= view.getUint8(i) << (i * 8);
     }
   } else if (definition.format.type === DevicePropertyValueType.SignedInt) {
     if (view.byteLength === 1) {

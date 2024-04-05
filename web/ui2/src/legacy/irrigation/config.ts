@@ -2,6 +2,7 @@ import { ConfigIniParser } from "config-ini-parser";
 
 export enum ConfigType {
   MotorDriver = 0x0201,
+  Fertigation = 0x0301,
   RemoteUnitNode = 0x0401,
   RemoteUnitSolenoid = 0x0402,
   RemoteUnitSensor = 0x0403,
@@ -9,6 +10,10 @@ export enum ConfigType {
 export interface ConfigEntryMotorDriver {
   type: ConfigType.MotorDriver;
   modbusEnabled: boolean;
+}
+export interface ConfigEntryFertigation {
+  type: ConfigType.Fertigation;
+  enabled: boolean;
 }
 export interface ConfigEntryRemoteUnitNode {
   type: ConfigType.RemoteUnitNode;
@@ -27,6 +32,7 @@ export interface ConfigEntryRemoteUnitSensor {
 }
 export type ConfigEntry =
   | ConfigEntryMotorDriver
+  | ConfigEntryFertigation
   | ConfigEntryRemoteUnitNode
   | ConfigEntryRemoteUnitSolenoid
   | ConfigEntryRemoteUnitSensor;
@@ -46,6 +52,11 @@ export function serializeConfigEntriesToBinary(entries: ConfigEntry[]): ArrayBuf
       case ConfigType.MotorDriver: {
         size = 4;
         view.setUint8(3, entry.modbusEnabled ? 1 : 0);
+        break;
+      }
+      case ConfigType.Fertigation: {
+        size = 4;
+        view.setUint8(3, entry.enabled ? 1 : 0);
         break;
       }
       case ConfigType.RemoteUnitNode: {
@@ -100,6 +111,12 @@ export function deserializeConfigEntriesFromBinary(data: ArrayBuffer): ConfigEnt
           entries.push({ type, modbusEnabled });
         }
         break;
+      case ConfigType.Fertigation:
+        if (length == 4) {
+          const enabled = view.getUint8(idx++) > 0;
+          entries.push({ type, enabled });
+        }
+        break;
       case ConfigType.RemoteUnitNode:
         if (length === 6) {
           const remoteUnitId = view.getUint8(idx++);
@@ -149,6 +166,7 @@ export function deserializeConfigEntriesFromBinary(data: ArrayBuffer): ConfigEnt
 export function serializeConfigEntriesToIni(entries: ConfigEntry[]): string {
   const ini = new ConfigIniParser("\n");
   ini.addSection("Motor");
+  ini.addSection("Fertigation");
   ini.addSection("Zones");
   ini.addSection("Sensors");
 
@@ -156,6 +174,10 @@ export function serializeConfigEntriesToIni(entries: ConfigEntry[]): string {
     switch (entry.type) {
       case ConfigType.MotorDriver: {
         ini.set("Motor", "EnableModbus", entry.modbusEnabled ? "true" : "false");
+        break;
+      }
+      case ConfigType.Fertigation: {
+        ini.set("Fertigation", "Enabled", entry.enabled ? "true" : "false");
         break;
       }
       case ConfigType.RemoteUnitNode: {
@@ -191,6 +213,12 @@ export function deserializeConfigEntriesFromIni(iniConfig: string): ConfigEntry[
     entries.push({
       type: ConfigType.MotorDriver,
       modbusEnabled: true,
+    });
+  }
+  if (ini.get("Fertigation", "Enabled", "").toLowerCase() == "true") {
+    entries.push({
+      type: ConfigType.Fertigation,
+      enabled: true,
     });
   }
   for (const [key, value] of ini.items("Zones")) {
