@@ -24,7 +24,7 @@ env:
 jobs:
   build:
     runs-on: ubuntu-latest
-    environment: dev
+    environment: ${{ github.ref == 'refs/heads/master' && 'dev' || 'staging' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
