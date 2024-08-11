@@ -1,11 +1,14 @@
 import { APIGatewayProxyResultV2, APIGatewayProxyWebsocketEventV2 } from "aws-lambda";
-import { getDevices, getPropertyValue, parsePropertyId } from "./lib/api/device.js";
+import { getDevices, getPropertyId, getPropertyValue, parsePropertyId } from "./lib/api/device.js";
 import {
   DeviceControllerCommandRequest,
   DeviceGetConfigRequest,
   DeviceGetConfigResponse,
+  DeviceGetScheduleRequest,
+  DeviceGetScheduleResponse,
   DeviceSetConfigRequest,
   DeviceSetConfigResponse,
+  DeviceSetScheduleRequest,
   GetPropertyHistoryRequest,
   GetPropertyHistoryResponse,
   RequestMessage,
@@ -18,7 +21,7 @@ import {
   WebPushUnsubscribeRequest,
 } from "./lib/api/messages.js";
 import { sendPushNotification } from "./lib/pushNotifications.js";
-import { DeviceStateQueryType, IrrigationDataStore } from "./lib/store.js";
+import { DeviceStateQueryType, IrrigationDataStore, ScheduleState } from "./lib/store.js";
 import { IoTDataPlaneClient, PublishCommand } from "@aws-sdk/client-iot-data-plane";
 import { getConfiguredDeviceControllerDefinitions } from "./lib/deviceControllers/configureDeviceControllers.js";
 
@@ -212,6 +215,39 @@ export async function handleWebSocketEvent(
               qos: 1,
             })
           );
+          response = { action: request.action, requestId: request.requestId };
+        } else if (data.action === "device/getSchedule") {
+          const request = data as DeviceGetScheduleRequest;
+          const schedule = await store.getSchedule(request.deviceId);
+          const getScheduleResponse: DeviceGetScheduleResponse = {
+            action: request.action,
+            deviceId: request.deviceId,
+            requestId: request.requestId,
+            entries: schedule.entries.map((entry) => ({
+              propertyIds: entry.properties.map(([controllerId, propertyId]) =>
+                getPropertyId(controllerId, propertyId, undefined)
+              ),
+              startTime: entry.startTime,
+              endTime: entry.endTime,
+              abortOnFailure: entry.abortOnFailure,
+            })),
+          };
+          response = getScheduleResponse;
+        } else if (data.action === "device/setSchedule") {
+          const request = data as DeviceSetScheduleRequest;
+          const schedule: ScheduleState = {
+            deviceId: request.deviceId,
+            entries: request.entries.map((entry) => ({
+              properties: entry.propertyIds.map((propertyId) => {
+                const parsed = parsePropertyId(propertyId);
+                return [parsed.controllerId, parsed.propertyId];
+              }),
+              startTime: entry.startTime,
+              endTime: entry.endTime,
+              abortOnFailure: entry.abortOnFailure,
+            })),
+          };
+          await store.setSchedule(schedule);
           response = { action: request.action, requestId: request.requestId };
         } else {
           response = {

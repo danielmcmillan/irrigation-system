@@ -35,6 +35,19 @@ export enum DeviceStateQueryType {
   Properties = 1,
 }
 
+export interface ScheduleState {
+  deviceId: string;
+  entries: Array<{
+    properties: Array<[number, number]>;
+    startTime: number;
+    endTime: number;
+    abortOnFailure?: boolean;
+    applyStatus?: boolean;
+    applyTimestamp?: number;
+    applyCount?: number;
+  }>;
+}
+
 const tableKeys: {
   devicePropertyState: {
     pk: KeyDefinition<{}>;
@@ -61,6 +74,10 @@ const tableKeys: {
       propertyId: number;
     }>;
     sk: KeyDefinition<{ lastUpdated: number }>;
+  };
+  schedule: {
+    pk: KeyDefinition<{}>;
+    sk: KeyDefinition<{ deviceId: string }>;
   };
   webSocketClient: {
     pk: KeyDefinition<{}>;
@@ -110,6 +127,13 @@ const tableKeys: {
       { field: "propertyId", type: KeyPartType.uint16le },
     ],
     sk: [{ field: "lastUpdated", type: KeyPartType.uint32be }],
+  },
+  schedule: {
+    pk: [
+      { value: 0x00, type: KeyPartType.uint8 },
+      { value: 0x03, type: KeyPartType.uint8 },
+    ],
+    sk: [{ field: "deviceId", type: KeyPartType.utf8 }],
   },
   webSocketClient: {
     pk: [
@@ -501,5 +525,56 @@ export class IrrigationDataStore {
         keys: item.keys,
       };
     });
+  }
+
+  /**
+   * Get the scheduled property changes for a device.
+   */
+  async getSchedule(deviceId: string): Promise<ScheduleState> {
+    const result = await this.db.send(
+      new QueryCommand({
+        TableName: this.tableName,
+        KeyConditionExpression: "pk = :pk AND sk = :sk",
+        ExpressionAttributeValues: {
+          ":pk": buildBinaryKey(tableKeys.schedule.pk, {}),
+          ":sk": buildBinaryKey(tableKeys.schedule.sk, { deviceId }),
+        },
+      })
+    );
+    const schedule = result.Items?.[0] as ScheduleState;
+    return (
+      schedule ?? {
+        deviceId,
+        entries: [],
+      }
+    );
+  }
+
+  /**
+   * Set the scheduled property changes for a device.
+   */
+  async setSchedule(schedule: ScheduleState): Promise<void> {
+    const names: Record<string, string> = {
+      "#e": "e",
+    };
+    const values: Record<string, unknown> = {
+      ":e": schedule.entries,
+    };
+    let updateExpression = "SET #e = :e";
+
+    await this.db.send(
+      new UpdateCommand({
+        TableName: this.tableName,
+        Key: {
+          pk: buildBinaryKey(tableKeys.schedule.pk, {}),
+          sk: buildBinaryKey(tableKeys.schedule.sk, {
+            deviceId: schedule.deviceId,
+          }),
+        },
+        ExpressionAttributeNames: names,
+        ExpressionAttributeValues: values,
+        UpdateExpression: updateExpression,
+      })
+    );
   }
 }

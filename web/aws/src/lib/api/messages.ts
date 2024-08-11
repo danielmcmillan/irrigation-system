@@ -1,5 +1,6 @@
 import { DeviceStatus } from "../deviceStatus.js";
 import { Alert, Device } from "./device.js";
+import { DeviceSchedule } from "./schedule.js";
 import { WebPushSubscription } from "./webPush.js";
 
 export type RequestMessage<Action extends string = string, Params extends object = {}> = Params & {
@@ -106,3 +107,9 @@ export type DeviceControllerCommandResultEvent = ServerEventMessage<
 // Web Push
 export type WebPushSubscribeRequest = RequestMessage<"webPush/subscribe", WebPushSubscription>;
 export type WebPushUnsubscribeRequest = RequestMessage<"webPush/unsubscribe", WebPushSubscription>;
+
+// Scheduling
+export type DeviceGetScheduleRequest = RequestMessage<"device/getSchedule", { deviceId: string }>;
+export type DeviceGetScheduleResponse = ResponseMessage<"device/getSchedule", DeviceSchedule>;
+export type DeviceSetScheduleRequest = RequestMessage<"device/setSchedule", DeviceSchedule>;
+export type DeviceSetScheduleResponse = ResponseMessage<"device/setSchedule">;
