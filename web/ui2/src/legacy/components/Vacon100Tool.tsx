@@ -43,7 +43,7 @@ export const Vacon100Tool: React.FC<Vacon100ToolProps> = ({ onRunRequest, onClos
       <Flex direction="column" gap="1rem">
         <RadioGroupField
           name="mode"
-          label="Mode"
+          legend="Mode"
           value={isRead ? "read" : "write"}
           onChange={(e) => setIsRead(e.target.value === "read")}
         >
