@@ -8,17 +8,17 @@ import {
   CheckboxField,
   Collection,
   Flex,
+  Icon,
   Loader,
-  Radio,
-  RadioGroupField,
   SwitchField,
-  TabItem,
   Table,
   TableBody,
   TableCell,
   TableRow,
   Tabs,
   Text,
+  ToggleButton,
+  ToggleButtonGroup,
   useTheme,
 } from "@aws-amplify/ui-react";
 import "@aws-amplify/ui-react/styles.css";
@@ -194,17 +194,18 @@ const PropertyControls = observer(
       <Flex direction="column">
         <div></div>
         <Flex direction="row" justifyContent="space-evenly">
-          <RadioGroupField
-            label=""
-            name="filter"
-            direction="row"
+          <ToggleButtonGroup
             value={filter}
-            onChange={(e) => setFilter(e.target.value)}
+            onChange={(e) => e && setFilter(e as string)}
+            isExclusive
           >
-            <Radio value="all">All</Radio>
-            <Radio value="control">Control</Radio>
-            <Radio value="monitor">Monitor</Radio>
-          </RadioGroupField>
+            <ToggleButton value="all">All</ToggleButton>
+            <ToggleButton value="control">Control</ToggleButton>
+            <ToggleButton value="monitor">Monitor</ToggleButton>
+          </ToggleButtonGroup>
+          <Button size="large">
+            <Icon pathData="M12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22C6.47,22 2,17.5 2,12A10,10 0 0,1 12,2M12.5,7V12.25L17,14.92L16.25,16.15L11,13V7H12.5Z" />
+          </Button>
         </Flex>
         <Table variation="bordered">
           <TableBody>
@@ -314,7 +315,7 @@ const App = observer(
     logout: () => void;
   }) => {
     const { tokens } = useTheme();
-    const [tabIndex, setTabIndex] = useState(0);
+    const [tabValue, setTabValue] = useState<string>("properties");
 
     const [openPage, setOpenPage] = useState<
       "config" | "vaconTool" | "remoteUnitTool" | "history" | null
@@ -390,75 +391,91 @@ const App = observer(
       <Tabs
         spacing="relative"
         backgroundColor={tokens.colors.background.primary}
-        currentIndex={tabIndex}
-        onChange={(index) => setTabIndex(Number(index))}
-      >
-        <TabItem title="Properties">
-          <Alert variation={icu.ready ? "info" : "error"}>
-            Browser: {ReadyState[icu.readyState]}.
-            {icu.readyState === ReadyState.OPEN && (
-              <> Controller: {icu.controllerConnected ? icu.controllerStatus : "Disconnected"}.</>
-            )}
-            {!icu.connectEnabled && <Button onClick={reconnect}>Reconnect</Button>}
-          </Alert>
-          <PropertyControls icu={icu} openHistory={openPropertyHistory} />
-        </TabItem>
-        <TabItem
-          title={
-            <Flex direction="row" gap="0rem" justifyContent="center">
-              Log
-              {icu.errorLogCount > 0 && (
-                <>
-                  {" "}
-                  <Badge size="small" variation="error">
-                    {icu.errorLogCount}
-                  </Badge>
-                </>
-              )}
-            </Flex>
-          }
-        >
-          <LogEntries icu={icu} />
-        </TabItem>
-        <TabItem title="System">
-          <ButtonGroup direction="column" margin="1rem">
-            <Button
-              onClick={() => {
-                icu.requestConfig();
-                setOpenPage("config");
-              }}
-            >
-              Configure devices
-            </Button>
-            <Button
-              onClick={() => {
-                setOpenPage("vaconTool");
-              }}
-            >
-              Vacon100 Tool
-            </Button>
-            <Button
-              onClick={() => {
-                setOpenPage("remoteUnitTool");
-              }}
-            >
-              Remote Unit Tool
-            </Button>
-            <Button
-              onClick={() => {
-                const newDeviceId = prompt("Enter a new device id", icu.controlDeviceId);
-                if (newDeviceId) {
-                  localStorage.setItem("DEVICE_ID", newDeviceId);
-                  location.reload();
-                }
-              }}
-            >
-              Device: {icu.controlDeviceId}
-            </Button>
-            <Button onClick={logout}>Logout</Button>
-          </ButtonGroup>
-        </TabItem>
-      </Tabs>
+        value={tabValue}
+        onValueChange={(value) => setTabValue(value)}
+        items={[
+          {
+            label: "Properties",
+            value: "properties",
+            content: (
+              <>
+                <Alert variation={icu.ready ? "info" : "error"}>
+                  Browser: {ReadyState[icu.readyState]}.
+                  {icu.readyState === ReadyState.OPEN && (
+                    <>
+                      {" "}
+                      Controller: {icu.controllerConnected ? icu.controllerStatus : "Disconnected"}.
+                    </>
+                  )}
+                  {!icu.connectEnabled && <Button onClick={reconnect}>Reconnect</Button>}
+                </Alert>
+                <PropertyControls icu={icu} openHistory={openPropertyHistory} />
+              </>
+            ),
+          },
+          {
+            label: (
+              <Flex direction="row" gap="0rem" justifyContent="center">
+                Log
+                {icu.errorLogCount > 0 && (
+                  <>
+                    {" "}
+                    <Badge size="small" variation="error">
+                      {icu.errorLogCount}
+                    </Badge>
+                  </>
+                )}
+              </Flex>
+            ),
+            value: "log",
+            content: <LogEntries icu={icu} />,
+          },
+          {
+            label: "System",
+            value: "system",
+            content: (
+              <>
+                <ButtonGroup direction="column" margin="1rem">
+                  <Button
+                    onClick={() => {
+                      icu.requestConfig();
+                      setOpenPage("config");
+                    }}
+                  >
+                    Configure devices
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      setOpenPage("vaconTool");
+                    }}
+                  >
+                    Vacon100 Tool
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      setOpenPage("remoteUnitTool");
+                    }}
+                  >
+                    Remote Unit Tool
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      const newDeviceId = prompt("Enter a new device id", icu.controlDeviceId);
+                      if (newDeviceId) {
+                        localStorage.setItem("DEVICE_ID", newDeviceId);
+                        location.reload();
+                      }
+                    }}
+                  >
+                    Device: {icu.controlDeviceId}
+                  </Button>
+                  <Button onClick={logout}>Logout</Button>
+                </ButtonGroup>
+              </>
+            ),
+          },
+        ]}
+      ></Tabs>
     );
   }
 );
