@@ -6,21 +6,12 @@ import {
   Fieldset,
   Flex,
   Grid,
-  Heading,
   Label,
   SliderField,
 } from "@aws-amplify/ui-react";
-import {
-  format,
-  formatDistance,
-  formatDistanceToNow,
-  formatDistanceToNowStrict,
-  formatDuration,
-  intlFormatDistance,
-} from "date-fns";
+import { formatDuration, formatRelative } from "date-fns";
 import { observer } from "mobx-react-lite";
 import { useEffect, useState } from "react";
-import { IrrigationProperty } from "../irrigation/property";
 import { ScheduleEntry } from "../irrigation/schedule";
 import { IrrigationPropertyWithComponent } from "../irrigation/store";
 
@@ -149,13 +140,14 @@ export const TimeDurationInput: React.FC<{
     const minutes = (value % 3600000) / 60000;
     const formatValue = () => {
       const relative =
-        value <= 0
-          ? "now"
-          : formatDuration({
+        value > 0
+          ? formatDuration({
               hours: Math.floor(value / 3600000),
               minutes: (value % 3600000) / 60000,
-            });
-      return `${relative}, ${new Date(calculatedAbsoluteTime).toLocaleTimeString()}`;
+            })
+          : undefined;
+      const absolute = formatRelative(calculatedAbsoluteTime, Date.now());
+      return relative ? `${relative}, ${absolute}` : absolute;
     };
 
     return (
@@ -175,14 +167,16 @@ export const TimeDurationInput: React.FC<{
             min={0}
             max={23}
             value={hours}
-            onChange={(newHours) => onChange(newHours * 3600000 + minutes * 60000)}
+            onChange={(newHours) =>
+              onChange(Math.max(min ?? 0, newHours * 3600000 + minutes * 60000))
+            }
             labelHidden
           />
           <Label columnStart="1">Minutes</Label>
           <SliderField
             columnStart="2"
             label="Minutes"
-            min={0}
+            min={hours === 0 && min !== undefined ? min / 60000 : 0}
             max={59}
             value={minutes}
             onChange={(newMinutes) => onChange(hours * 3600000 + newMinutes * 60000)}
@@ -231,13 +225,12 @@ export const ScheduleEntryEditor: React.FC<EntryEntryProps> = observer(
       <Flex direction="column" margin="1rem">
         <ButtonGroup direction="row">
           <Button flex={1} onClick={onCancel}>
-            Cancel
+            {editing ? "Close" : "Cancel"}
           </Button>
           <Button flex={1} onClick={handleSave} isDisabled={!valid}>
-            Save
+            {editing ? "Update" : "Add"}
           </Button>
         </ButtonGroup>
-        <Heading level={3}>{editing ? "Edit" : "New"} Schedule</Heading>
         <PropertySelector
           selected={entry.propertyIds}
           properties={properties}

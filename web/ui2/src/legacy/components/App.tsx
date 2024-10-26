@@ -465,6 +465,7 @@ const App = observer(
           onEditEntry={(index) => {
             setScheduleEntryIndex(index);
           }}
+          properties={icu.propertiesWithComponents}
         />
       );
     }

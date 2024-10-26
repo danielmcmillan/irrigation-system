@@ -1,5 +1,8 @@
 import {
+  Badge,
   Button,
+  Card,
+  Collection,
   Flex,
   Heading,
   Loader,
@@ -10,46 +13,127 @@ import {
 } from "@aws-amplify/ui-react";
 import EditIcon from "@mui/icons-material/Edit";
 import AddScheduleIcon from "@mui/icons-material/MoreTime";
-import { format } from "date-fns";
+import {
+  format,
+  formatDistance,
+  formatDistanceStrict,
+  formatDuration,
+  formatRelative,
+} from "date-fns";
 import { observer } from "mobx-react-lite";
 import { ScheduleEntry } from "../irrigation/schedule";
+import { IrrigationPropertyWithComponent } from "../irrigation/store";
+import { useState, useEffect } from "react";
 
 export interface ScheduleProps {
   entries: ScheduleEntry[];
   loading: boolean;
   onClose: () => void;
   onEditEntry: (index: number) => void;
+  properties: IrrigationPropertyWithComponent[];
 }
 
+const useNow = (period = 1000) => {
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => {
+    const interval = setInterval(() => setNow(Date.now()), period);
+    return () => clearInterval(interval);
+  }, []);
+  return now;
+};
+
 export const ScheduleList: React.FC<ScheduleProps> = observer(
-  ({ entries, loading, onClose, onEditEntry }) => {
+  ({ entries, loading, onClose, onEditEntry, properties }) => {
+    const now = useNow();
+    const sortedEntries = entries
+      .map((entry, index) => ({ ...entry, index }))
+      .sort((a, b) => {
+        const startA = a.startTime < now ? 0 : a.startTime;
+        const startB = b.startTime < now ? 0 : b.startTime;
+        if (startA === startB) {
+          return a.endTime - b.endTime;
+        } else {
+          return startA - startB;
+        }
+      });
     return (
       <Flex direction="column" margin="1rem">
         <Button onClick={onClose}>Close</Button>
-        <Heading level={3}>Scheduled Changes</Heading>
+        <Heading level={3}>Schedule</Heading>
         {loading && <Loader alignSelf="center" />}
-        <Table variation="bordered">
-          <TableBody>
-            {entries.map((entry, index) => (
-              <TableRow key={index}>
-                <TableCell>
-                  Id: {entry.id ?? "none"}
-                  <br />
-                  {entry.propertyIds.join(", ")}
-                  <br />
-                  {format(entry.startTime, "yyyy-MM-dd hh:mm:ss")}
-                  <br />
-                  {format(entry.endTime, "yyyy-MM-dd hh:mm:ss")}
-                </TableCell>
-                <TableCell>
-                  <Button size="small" variation="link" disabled={loading}>
-                    <EditIcon onClick={() => onEditEntry(index)} fontSize="small" />
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+        <Collection items={sortedEntries} type="list" direction="column">
+          {(entry) => {
+            const stopped = entry.endTime <= now;
+            const started = entry.startTime <= now && !stopped;
+            const pending = !started && !stopped;
+            const [relativeStartText, relativeEndText] = [entry.startTime, entry.endTime].map(
+              (time) => {
+                const relativeTime = Math.abs(time - now);
+                if (relativeTime < 30000) {
+                  return "now";
+                }
+                const durationText = formatDuration({
+                  hours: Math.floor(relativeTime / 3600000),
+                  minutes: Math.round((relativeTime % 3600000) / 60000),
+                });
+                return time < now ? `${durationText} ago` : `in ${durationText}`;
+              }
+            );
+            const runTime = entry.endTime - entry.startTime;
+            const runTimeText = formatDuration({
+              hours: Math.floor(runTime / 3600000),
+              minutes: Math.round((runTime % 3600000) / 60000),
+            });
+            const [startTimeText, endTimeText] = [entry.startTime, entry.endTime].map((time) => {
+              return format(time, "hh:mm a");
+            });
+            return (
+              <Button
+                key={entry.index}
+                disabled={stopped}
+                onClick={stopped ? undefined : () => onEditEntry(entry.index)}
+                direction="column"
+                alignItems="flex-start"
+                gap="0.5em"
+              >
+                {pending && (
+                  <span>
+                    Starting {relativeStartText} ({startTimeText})
+                  </span>
+                )}
+                {started && (
+                  <Flex alignItems="flex-start">
+                    <Badge variation="success">Started</Badge>
+                    <span>
+                      {relativeStartText} ({startTimeText})
+                    </span>
+                  </Flex>
+                )}
+                {stopped && (
+                  <span>
+                    Done {relativeEndText} ({endTimeText})
+                  </span>
+                )}
+                {entry.propertyIds
+                  .map((id) => {
+                    const p = properties.find((p) => p.id === id);
+                    return p ? `${p.component?.name} ${p.name}` : id;
+                  })
+                  .join(", ")}
+                {pending && (
+                  <span>
+                    For {runTimeText} ({endTimeText})
+                  </span>
+                )}
+                {started && (
+                  <span>
+                    Stopping {relativeEndText} ({endTimeText})
+                  </span>
+                )}
+              </Button>
+            );
+          }}
+        </Collection>
         {!loading && (
           <Button onClick={() => onEditEntry(-1)} gap="0.2em">
             New
