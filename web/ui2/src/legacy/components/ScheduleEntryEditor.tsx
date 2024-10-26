@@ -5,7 +5,9 @@ import {
   CheckboxField,
   Fieldset,
   Flex,
+  Grid,
   Heading,
+  Label,
   SliderField,
 } from "@aws-amplify/ui-react";
 import {
@@ -140,26 +142,52 @@ export const TimeDurationInput: React.FC<{
       return () => clearInterval(interval);
     }, [relativeTime, absoluteTime, relativeTo, timeOffset]);
 
+    const value = relativeTime ?? calculatedRelativeTime;
+    const hours = Math.floor(value / 3600000);
+    const minutes = (value % 3600000) / 60000;
+    const formatValue = () => {
+      const relative =
+        value <= 0
+          ? "now"
+          : formatDuration({
+              hours: Math.floor(value / 3600000),
+              minutes: (value % 3600000) / 60000,
+            });
+      return `${relative}, ${new Date(calculatedAbsoluteTime).toLocaleTimeString()}`;
+    };
+
     return (
-      <SliderField
-        label={label}
-        min={min ?? 0}
-        max={max ?? 3600000 * 6}
-        step={60000}
-        value={relativeTime ?? calculatedRelativeTime}
-        onChange={onChange}
-        formatValue={() => {
-          const value = relativeTime ?? calculatedRelativeTime;
-          const relative =
-            value <= 0
-              ? "now"
-              : formatDuration({
-                  hours: Math.floor(value / 3600000),
-                  minutes: (value % 3600000) / 60000,
-                });
-          return `${relative}, ${new Date(calculatedAbsoluteTime).toLocaleTimeString()}`;
-        }}
-      />
+      <Fieldset
+        legend={
+          <Flex justifyContent="space-between">
+            <span>{label}</span>
+            <span style={{ fontWeight: "normal" }}>{formatValue()}</span>
+          </Flex>
+        }
+      >
+        <Grid rowGap="1em" columnGap="1em" templateColumns="min-content 1fr">
+          <Label columnStart="1">Hours</Label>
+          <SliderField
+            columnStart="2"
+            label="Hours"
+            min={0}
+            max={23}
+            value={hours}
+            onChange={(newHours) => onChange(newHours * 3600000 + minutes * 60000)}
+            labelHidden
+          />
+          <Label columnStart="1">Minutes</Label>
+          <SliderField
+            columnStart="2"
+            label="Minutes"
+            min={0}
+            max={59}
+            value={minutes}
+            onChange={(newMinutes) => onChange(hours * 3600000 + newMinutes * 60000)}
+            labelHidden
+          />
+        </Grid>
+      </Fieldset>
     );
   }
 );
