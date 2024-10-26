@@ -48,13 +48,14 @@ const PropertySelector: React.FC<{
   onChange: (selected: string[]) => void;
   properties: IrrigationPropertyWithComponent[];
 }> = observer(({ selected, onChange, properties }) => {
+  const [expanded, setExpanded] = useState(selected.length === 0);
   const options = properties.map((p) => ({
     label: `${p.component?.name} ${p.name}`,
     value: p.id,
     checked: selected.includes(p.id),
   }));
   const summary =
-    selected.length > 0
+    !expanded && selected.length > 0
       ? "Schedule " +
         options
           .filter((o) => o.checked)
@@ -81,7 +82,8 @@ const PropertySelector: React.FC<{
   );
   return (
     <Accordion
-      defaultValue={selected.length === 0 ? ["properties"] : undefined}
+      value={expanded ? ["properties"] : []}
+      onValueChange={(v) => setExpanded(v !== undefined && v.includes("properties"))}
       items={[
         {
           value: "properties",
