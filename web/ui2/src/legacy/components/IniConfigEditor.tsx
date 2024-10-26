@@ -1,19 +1,6 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
-import { ConfigEntry, ConfigType } from "../irrigation/config";
-import {
-  Heading,
-  Button,
-  Flex,
-  RadioGroupField,
-  Radio,
-  TextField,
-  Loader,
-  ButtonGroup,
-  Text,
-  StepperField,
-  TextAreaField,
-} from "@aws-amplify/ui-react";
+import { Button, ButtonGroup, Flex, Loader, Text, TextAreaField } from "@aws-amplify/ui-react";
 import { observer } from "mobx-react-lite";
+import React, { useEffect, useState } from "react";
 
 interface ConfigEditorProps {
   configIni: string;

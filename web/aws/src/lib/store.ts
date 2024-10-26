@@ -38,6 +38,7 @@ export enum DeviceStateQueryType {
 export interface ScheduleState {
   deviceId: string;
   entries: Array<{
+    id?: string;
     properties: Array<[number, number]>;
     startTime: number;
     endTime: number;
@@ -156,7 +157,9 @@ export class IrrigationDataStore {
   private tableName: string;
 
   constructor(config: { tableName: string; region?: string }) {
-    this.db = DynamoDBDocumentClient.from(new DynamoDBClient({ region: config.region }));
+    this.db = DynamoDBDocumentClient.from(new DynamoDBClient({ region: config.region }), {
+      marshallOptions: { removeUndefinedValues: true },
+    });
     this.tableName = config.tableName;
   }
 
@@ -541,13 +544,10 @@ export class IrrigationDataStore {
         },
       })
     );
-    const schedule = result.Items?.[0] as ScheduleState;
-    return (
-      schedule ?? {
-        deviceId,
-        entries: [],
-      }
-    );
+    return {
+      deviceId,
+      entries: result.Items?.[0]?.e ?? [],
+    };
   }
 
   /**

@@ -9,3 +9,9 @@
   flex-direction: column;
   align-items: stretch;
 }
+
+.amplify-checkbox {
+    align-self: stretch;
+    justify-content: flex-end;
+    padding: 8px;
+}

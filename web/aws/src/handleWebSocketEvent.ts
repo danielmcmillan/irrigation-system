@@ -9,6 +9,7 @@ import {
   DeviceSetConfigRequest,
   DeviceSetConfigResponse,
   DeviceSetScheduleRequest,
+  DeviceSetScheduleResponse,
   GetPropertyHistoryRequest,
   GetPropertyHistoryResponse,
   RequestMessage,
@@ -224,6 +225,7 @@ export async function handleWebSocketEvent(
             deviceId: request.deviceId,
             requestId: request.requestId,
             entries: schedule.entries.map((entry) => ({
+              id: entry.id,
               propertyIds: entry.properties.map(([controllerId, propertyId]) =>
                 getPropertyId(controllerId, propertyId, undefined)
               ),
@@ -235,20 +237,58 @@ export async function handleWebSocketEvent(
           response = getScheduleResponse;
         } else if (data.action === "device/setSchedule") {
           const request = data as DeviceSetScheduleRequest;
+          const existingSchedule = await store.getSchedule(request.deviceId);
+          const entries = request.entries
+            // Omit entries from the request where the corresponding entry in the store has been removed
+            .filter(
+              (entry) =>
+                entry.id === undefined ||
+                existingSchedule.entries.some((existing) => existing.id === entry.id)
+            )
+            // Assign an id to new entries
+            .map((entry) =>
+              entry.id
+                ? entry
+                : {
+                    ...entry,
+                    id: Math.floor(Math.random() * 2 ** 52)
+                      .toString(16)
+                      .padStart(13, "0"),
+                  }
+            );
           const schedule: ScheduleState = {
             deviceId: request.deviceId,
-            entries: request.entries.map((entry) => ({
-              properties: entry.propertyIds.map((propertyId) => {
-                const parsed = parsePropertyId(propertyId);
-                return [parsed.controllerId, parsed.propertyId];
-              }),
-              startTime: entry.startTime,
-              endTime: entry.endTime,
-              abortOnFailure: entry.abortOnFailure,
-            })),
+            entries: entries.map((entry) => {
+              const existing = existingSchedule.entries.find(
+                (existing) => existing.id === entry.id
+              );
+              const newEntry: ScheduleState["entries"][number] = {
+                id: entry.id,
+                properties: entry.propertyIds.map((propertyId) => {
+                  const parsed = parsePropertyId(propertyId);
+                  return [parsed.controllerId, parsed.propertyId];
+                }),
+                startTime: entry.startTime,
+                endTime: entry.endTime,
+                abortOnFailure: entry.abortOnFailure ?? false,
+              };
+              // Merge state with the existing entry if there is one
+              if (existing) {
+                newEntry.applyTimestamp = existing.applyTimestamp;
+                newEntry.applyStatus = existing.applyStatus;
+                newEntry.applyCount = existing.applyCount;
+              }
+              return newEntry;
+            }),
           };
           await store.setSchedule(schedule);
-          response = { action: request.action, requestId: request.requestId };
+          const setScheduleResponse: DeviceSetScheduleResponse = {
+            action: request.action,
+            requestId: request.requestId,
+            deviceId: request.deviceId,
+            entries: entries,
+          };
+          response = setScheduleResponse;
         } else {
           response = {
             action: data.action,

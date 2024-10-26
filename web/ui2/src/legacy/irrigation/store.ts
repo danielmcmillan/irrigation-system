@@ -9,6 +9,7 @@ import {
   serializeConfigEntriesToIni,
 } from "./config";
 import { arrayBufferToBase64, base64ToArrayBuffer } from "./util";
+import { ScheduleEntry } from "./schedule";
 
 export enum ControllerStatus {
   Unconfigured = "Unconfigured",
@@ -33,6 +34,10 @@ export interface DeviceComponentDefinition {
   name: string;
 }
 
+export interface IrrigationPropertyWithComponent extends IrrigationProperty {
+  component: DeviceComponentDefinition | undefined;
+}
+
 export interface Alert {
   time: number;
   severity: LogLevel;
@@ -55,6 +60,8 @@ export class IrrigationStore {
   properties: IrrigationProperty[] = [];
   configIni: string = "";
   configLoaded = false;
+  scheduleEntries: ScheduleEntry[] = [];
+  scheduleLoaded = false;
   controllerCommandResults: ControllerCommandResult[] = [];
   readyState: ReadyState = ReadyState.CLOSED;
   connectEnabled: boolean = true;
@@ -75,8 +82,11 @@ export class IrrigationStore {
       log: observable,
       components: observable,
       properties: observable,
+      propertiesWithComponents: computed,
       configIni: observable,
       configLoaded: observable,
+      scheduleEntries: observable,
+      scheduleLoaded: observable,
       controllerCommandResults: observable,
       readyState: observable,
       connectEnabled: observable,
@@ -103,6 +113,13 @@ export class IrrigationStore {
       this.controllerConnected &&
       this.controllerStatus === ControllerStatus.Ready
     );
+  }
+
+  get propertiesWithComponents(): IrrigationPropertyWithComponent[] {
+    return this.properties.map((p) => ({
+      ...p,
+      component: this.components.find((c) => c.id === p.componentId),
+    }));
   }
 
   setReadyState(readyState: ReadyState) {
@@ -150,6 +167,41 @@ export class IrrigationStore {
         config: arrayBufferToBase64(
           serializeConfigEntriesToBinary(deserializeConfigEntriesFromIni(this.configIni))
         ),
+      });
+    }
+  }
+
+  requestSchedule() {
+    runInAction(() => {
+      this.scheduleLoaded = false;
+    });
+    this.sendJsonMessage?.({
+      action: "device/getSchedule",
+      deviceId: this.controlDeviceId,
+    });
+  }
+
+  requestAddScheduleEntry(entry: ScheduleEntry) {
+    this.requestSetSchedule([...this.scheduleEntries, entry]);
+  }
+
+  requestUpdateScheduleEntry(index: number, entry: ScheduleEntry) {
+    this.requestSetSchedule(this.scheduleEntries.map((e, i) => (i === index ? entry : e)));
+  }
+
+  requestDeleteScheduleEntry(index: number) {
+    this.requestSetSchedule(this.scheduleEntries.filter((_, i) => i !== index));
+  }
+
+  requestSetSchedule(entries: ScheduleEntry[]) {
+    if (this.scheduleLoaded) {
+      this.sendJsonMessage?.({
+        action: "device/setSchedule",
+        deviceId: this.controlDeviceId,
+        entries,
+      });
+      runInAction(() => {
+        this.scheduleLoaded = false;
       });
     }
   }
@@ -326,6 +378,18 @@ export class IrrigationStore {
           `Received controller command result for unknown command ID ${commandId}`,
           message
         );
+      }
+    }
+
+    if (message.action === "device/getSchedule" || message.action === "device/setSchedule") {
+      if (message.deviceId === this.controlDeviceId && Array.isArray(message.entries)) {
+        console.debug("Got schedule entries", message.entries);
+        runInAction(() => {
+          this.scheduleEntries = message.entries;
+          this.scheduleLoaded = true;
+        });
+      } else {
+        console.error("Received unexpected device schedule message", message);
       }
     }
 

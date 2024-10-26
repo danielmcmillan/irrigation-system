@@ -112,4 +112,4 @@ export type WebPushUnsubscribeRequest = RequestMessage<"webPush/unsubscribe", We
 export type DeviceGetScheduleRequest = RequestMessage<"device/getSchedule", { deviceId: string }>;
 export type DeviceGetScheduleResponse = ResponseMessage<"device/getSchedule", DeviceSchedule>;
 export type DeviceSetScheduleRequest = RequestMessage<"device/setSchedule", DeviceSchedule>;
-export type DeviceSetScheduleResponse = ResponseMessage<"device/setSchedule">;
+export type DeviceSetScheduleResponse = ResponseMessage<"device/setSchedule", DeviceSchedule>;

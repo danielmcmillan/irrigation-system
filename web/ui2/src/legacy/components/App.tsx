@@ -8,7 +8,6 @@ import {
   CheckboxField,
   Collection,
   Flex,
-  Icon,
   Loader,
   SwitchField,
   Table,
@@ -22,6 +21,8 @@ import {
   useTheme,
 } from "@aws-amplify/ui-react";
 import "@aws-amplify/ui-react/styles.css";
+import AddScheduleIcon from "@mui/icons-material/MoreTime";
+import ScheduleIcon from "@mui/icons-material/Schedule";
 import { intlFormatDistance } from "date-fns";
 import { runInAction } from "mobx";
 import { observer } from "mobx-react-lite";
@@ -32,9 +33,11 @@ import { IrrigationProperty, PropertyType } from "../irrigation/property";
 import { DeviceComponentDefinition, IrrigationStore } from "../irrigation/store";
 import "./App.css";
 import { IniConfigEditor } from "./IniConfigEditor";
-import { RemoteUnitTool } from "./RemoteUnitTool";
-import { Vacon100Tool } from "./Vacon100Tool";
 import { PropertyHistory } from "./PropertyHistory";
+import { RemoteUnitTool } from "./RemoteUnitTool";
+import { ScheduleEntryEditor } from "./ScheduleEntryEditor";
+import { ScheduleList } from "./ScheduleList";
+import { Vacon100Tool } from "./Vacon100Tool";
 
 const LogEntryCard = ({ entry }: { entry: LogEntry }) => {
   const variation = (
@@ -165,7 +168,15 @@ const RelativeTimeText = ({
 };
 
 const PropertyControls = observer(
-  ({ icu, openHistory }: { icu: IrrigationStore; openHistory: (propertyId: string) => void }) => {
+  ({
+    icu,
+    openHistory,
+    openScheduleList,
+  }: {
+    icu: IrrigationStore;
+    openHistory: (propertyId: string) => void;
+    openScheduleList: (propertyId?: string) => void;
+  }) => {
     const { tokens } = useTheme();
     const [filter, setFilter] = useState("all");
 
@@ -174,13 +185,12 @@ const PropertyControls = observer(
         string,
         (IrrigationProperty & { component?: DeviceComponentDefinition })[]
       > = {};
-      for (const prop of icu.properties) {
-        const component = icu.components.find((c) => c.id === prop.componentId);
+      for (const prop of icu.propertiesWithComponents) {
         const type = prop.mutable ? "control" : "monitor";
         if (filter === "all" || filter === type) {
-          const group = component?.typeName ?? "Properties";
+          const group = prop.component?.typeName ?? "Properties";
           properties[group] ??= [];
-          properties[group].push({ ...prop, component });
+          properties[group].push(prop);
         }
       }
       const groups = Object.entries(properties).sort((a, b) => {
@@ -203,8 +213,8 @@ const PropertyControls = observer(
             <ToggleButton value="control">Control</ToggleButton>
             <ToggleButton value="monitor">Monitor</ToggleButton>
           </ToggleButtonGroup>
-          <Button size="large">
-            <Icon pathData="M12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22C6.47,22 2,17.5 2,12A10,10 0 0,1 12,2M12.5,7V12.25L17,14.92L16.25,16.15L11,13V7H12.5Z" />
+          <Button onClick={() => openScheduleList()} size="large" variation="link">
+            <ScheduleIcon fontSize="small" />
           </Button>
         </Flex>
         <Table variation="bordered">
@@ -241,10 +251,21 @@ const PropertyControls = observer(
                     " ";
                   return (
                     <TableRow key={prop.id}>
-                      <TableCell as="th" overflow="hidden">
-                        <Text whiteSpace="nowrap">
-                          {prop.component?.name} {prop.name}
-                        </Text>
+                      <TableCell
+                        as="th"
+                        overflow="hidden"
+                        style={prop.mutable ? { paddingBlock: 0 } : undefined}
+                      >
+                        <Flex direction="row" justifyContent="space-between" alignItems="center">
+                          <Text whiteSpace="nowrap">
+                            {prop.component?.name} {prop.name}
+                          </Text>
+                          {prop.mutable && (
+                            <Button onClick={() => openScheduleList(prop.id)} variation="link">
+                              <AddScheduleIcon fontSize="small" />
+                            </Button>
+                          )}
+                        </Flex>
                       </TableCell>
                       {!prop.mutable && (
                         <TableCell colSpan={2}>
@@ -318,8 +339,12 @@ const App = observer(
     const [tabValue, setTabValue] = useState<string>("properties");
 
     const [openPage, setOpenPage] = useState<
-      "config" | "vaconTool" | "remoteUnitTool" | "history" | null
+      "config" | "vaconTool" | "remoteUnitTool" | "history" | "schedule" | null
     >(null);
+    const [scheduleEntryIndex, setScheduleEntryIndex] = useState<number | undefined>();
+    const [scheduleEntryDefaultPropertyIds, setScheduleEntryDefaultPropertyIds] = useState<
+      string[]
+    >([]);
     const onClose = useCallback(() => setOpenPage(null), [setOpenPage]);
     const openPropertyHistory = useCallback(
       (propertyId: string) => {
@@ -328,7 +353,53 @@ const App = observer(
       },
       [setOpenPage]
     );
+    const openScheduleList = useCallback(
+      (propertyId?: string) => {
+        icu.requestSchedule();
+        setOpenPage("schedule");
+        if (propertyId) {
+          setScheduleEntryDefaultPropertyIds([propertyId]);
+          setScheduleEntryIndex(-1);
+        } else {
+          setScheduleEntryDefaultPropertyIds([]);
+        }
+      },
+      [setOpenPage]
+    );
 
+    if (scheduleEntryIndex !== undefined && icu.scheduleLoaded) {
+      return (
+        <ScheduleEntryEditor
+          properties={icu.propertiesWithComponents.filter((p) => p.mutable)}
+          defaultEntry={
+            scheduleEntryIndex >= 0
+              ? icu.scheduleEntries[scheduleEntryIndex]
+              : { propertyIds: scheduleEntryDefaultPropertyIds }
+          }
+          editing={scheduleEntryIndex >= 0}
+          onSave={(entry) => {
+            if (scheduleEntryIndex >= 0 && scheduleEntryIndex < icu.scheduleEntries.length) {
+              icu.requestUpdateScheduleEntry(scheduleEntryIndex, entry);
+            } else if (scheduleEntryIndex === -1) {
+              icu.requestAddScheduleEntry(entry);
+            }
+            setScheduleEntryIndex(undefined);
+          }}
+          onCancel={() => setScheduleEntryIndex(undefined)}
+          onDelete={() => {
+            if (
+              !confirm(
+                "This will cancel the scheduled changes. If it had already started, it will not be stopped."
+              )
+            ) {
+              return;
+            }
+            icu.requestDeleteScheduleEntry(scheduleEntryIndex);
+            setScheduleEntryIndex(undefined);
+          }}
+        />
+      );
+    }
     if (openPage === "config") {
       return (
         <IniConfigEditor
@@ -385,6 +456,17 @@ const App = observer(
           />
         )
       );
+    } else if (openPage === "schedule") {
+      return (
+        <ScheduleList
+          entries={icu.scheduleEntries}
+          loading={!icu.scheduleLoaded}
+          onClose={onClose}
+          onEditEntry={(index) => {
+            setScheduleEntryIndex(index);
+          }}
+        />
+      );
     }
 
     return (
@@ -409,7 +491,11 @@ const App = observer(
                   )}
                   {!icu.connectEnabled && <Button onClick={reconnect}>Reconnect</Button>}
                 </Alert>
-                <PropertyControls icu={icu} openHistory={openPropertyHistory} />
+                <PropertyControls
+                  icu={icu}
+                  openHistory={openPropertyHistory}
+                  openScheduleList={openScheduleList}
+                />
               </>
             ),
           },
