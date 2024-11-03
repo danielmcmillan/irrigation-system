@@ -25,9 +25,9 @@ export const ScheduleList: React.FC<ScheduleProps> = observer(
         const startA = a.startTime < now ? 0 : a.startTime;
         const startB = b.startTime < now ? 0 : b.startTime;
         if (startA === startB) {
-          return a.endTime - b.endTime;
+          return b.endTime - a.endTime;
         } else {
-          return startA - startB;
+          return startB - startA;
         }
       });
     return (
@@ -41,6 +41,12 @@ export const ScheduleList: React.FC<ScheduleProps> = observer(
           marginRight="-1em"
         />
         {loading && <Loader alignSelf="center" />}
+        {!loading && (
+          <Button onClick={() => onEditEntry(-1)} gap="0.2em">
+            New
+            <AddScheduleIcon fontSize="small" />
+          </Button>
+        )}
         <Collection
           items={sortedEntries}
           searchNoResultsFound="Press New to start a schedule"
@@ -54,7 +60,7 @@ export const ScheduleList: React.FC<ScheduleProps> = observer(
             const [relativeStartText, relativeEndText] = [entry.startTime, entry.endTime].map(
               (time) => {
                 const relativeTime = Math.abs(time - now);
-                if (relativeTime < 30000) {
+                if (relativeTime < 5000) {
                   return "now";
                 }
                 const durationText = formatDuration({
@@ -70,7 +76,7 @@ export const ScheduleList: React.FC<ScheduleProps> = observer(
               minutes: Math.round((runTime % 3600000) / 60000),
             });
             const [startTimeText, endTimeText] = [entry.startTime, entry.endTime].map((time) => {
-              return format(time, "hh:mm a");
+              return format(time, "hh:mm:ss a");
             });
             return (
               <Button
@@ -88,7 +94,7 @@ export const ScheduleList: React.FC<ScheduleProps> = observer(
                 )}
                 {started && (
                   <Flex alignItems="flex-start">
-                    <Badge variation="success">Started</Badge>
+                    <Badge variation={!status?.aborted ? "success" : undefined}>Started</Badge>
                     <span>
                       {relativeStartText} ({startTimeText})
                     </span>
@@ -119,12 +125,6 @@ export const ScheduleList: React.FC<ScheduleProps> = observer(
             );
           }}
         </Collection>
-        {!loading && (
-          <Button onClick={() => onEditEntry(-1)} gap="0.2em">
-            New
-            <AddScheduleIcon fontSize="small" />
-          </Button>
-        )}
       </Flex>
     );
   }

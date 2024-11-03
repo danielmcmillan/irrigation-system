@@ -1,4 +1,4 @@
-import { Alert, BaseStyleProps } from "@aws-amplify/ui-react";
+import { Alert, AlertVariations, BaseStyleProps } from "@aws-amplify/ui-react";
 import { formatDistanceStrict } from "date-fns";
 import { observer } from "mobx-react-lite";
 import { ScheduleStatus } from "../irrigation/schedule";
@@ -21,6 +21,7 @@ export const ScheduleStatusAlert: React.FC<
     : undefined;
 
   let summary: string;
+  let variation: AlertVariations;
   if (
     !showWhenInactive &&
     (!status ||
@@ -32,14 +33,19 @@ export const ScheduleStatusAlert: React.FC<
     return null;
   } else if (status?.aborted) {
     summary = "Schedule aborted due to failure";
+    variation = "error";
   } else if (status?.nextEventTime && !status.active) {
     summary = `Schedule starting ${nextEventTime}`;
+    variation = "info";
   } else if (status?.active && lastEventTime) {
     summary = `Schedule active, ${lastEventTime} remaining`;
+    variation = "success";
   } else if (status?.pending && status.pending.length > 0) {
     summary = "Schedule stopping";
+    variation = "info";
   } else {
     summary = "Schedule inactive";
+    variation = "info";
   }
   const pendingList = (status?.pending ?? [])
     .filter((pendingChange) => !pendingChange.since || now - pendingChange.since > 30000)
@@ -59,10 +65,7 @@ export const ScheduleStatusAlert: React.FC<
     });
 
   return (
-    <Alert
-      variation={status?.aborted ? "error" : pendingList.length > 0 ? "warning" : "success"}
-      {...alertProps}
-    >
+    <Alert variation={variation} {...alertProps}>
       {summary}
       {pendingList.length > 0 && (
         <div>
