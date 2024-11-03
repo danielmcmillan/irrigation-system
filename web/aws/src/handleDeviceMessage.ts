@@ -28,6 +28,7 @@ import {
   IrrigationDataStore,
   PropertyState,
 } from "./lib/store.js";
+import { IrrigationScheduleManager } from "./lib/schedule.js";
 
 const sqs = new SQSClient({});
 const store = new IrrigationDataStore({
@@ -39,6 +40,9 @@ const apigw = new ApiGatewayManagementApiClient({
 });
 const iotData = new IoTDataPlaneClient({
   endpoint: process.env.IOT_ENDPOINT,
+});
+const scheduleManager = new IrrigationScheduleManager({
+  queueUrl: process.env.SCHEDULE_QUEUE_URL!,
 });
 
 async function publishToSQS(message: DeviceMessage): Promise<void> {
@@ -66,6 +70,22 @@ async function sendNotifications(message: DeviceMessage): Promise<void> {
           },
           store
         );
+      }
+    }
+  }
+}
+
+async function abortScheduleOnReset(message: DeviceMessage): Promise<void> {
+  if (message.type === "event" && message.events) {
+    for (const event of message.events) {
+      if (event.type === DeviceEventType.Started) {
+        const schedule = await store.getSchedule(message.deviceId);
+        // Set abort on the schedule state only if it is currently active
+        if (schedule && schedule.state && schedule.state.length > 0) {
+          const messageId = IrrigationScheduleManager.generateMessageId();
+          await scheduleManager.sendMessage(message.deviceId, messageId, 0);
+          await store.updateSchedule(message.deviceId, { abort: true, messageId });
+        }
       }
     }
   }
@@ -377,6 +397,7 @@ export async function handleDeviceMessage(inputEvent: RawDeviceMessage): Promise
   const results = await Promise.allSettled([
     publishToSQS(message),
     sendNotifications(message),
+    abortScheduleOnReset(message),
     updateStateStore(message),
     requestDeviceState(message),
     sendControllerCommandEvent(message),

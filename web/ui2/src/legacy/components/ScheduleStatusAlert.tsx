@@ -22,22 +22,24 @@ export const ScheduleStatusAlert: React.FC<
 
   let summary: string;
   if (
-    !status ||
-    (!status.active && !status.aborted && !status.nextEventTime && status.pending.length === 0)
+    !showWhenInactive &&
+    (!status ||
+      (!status.active &&
+        !(status.aborted && status.lastEventTime && now - status.lastEventTime > 86400000) &&
+        !status.nextEventTime &&
+        status.pending.length === 0))
   ) {
-    if (showWhenInactive) {
-      summary = "Schedule inactive";
-    } else {
-      return null;
-    }
-  } else if (status.aborted) {
+    return null;
+  } else if (status?.aborted) {
     summary = "Schedule aborted due to failure";
-  } else if (status.nextEventTime && !status.active) {
+  } else if (status?.nextEventTime && !status.active) {
     summary = `Schedule starting ${nextEventTime}`;
-  } else if (status.active && lastEventTime) {
+  } else if (status?.active && lastEventTime) {
     summary = `Schedule active, ${lastEventTime} remaining`;
-  } else {
+  } else if (status?.pending && status.pending.length > 0) {
     summary = "Schedule stopping";
+  } else {
+    summary = "Schedule inactive";
   }
   const pendingList = (status?.pending ?? [])
     .filter((pendingChange) => !pendingChange.since || now - pendingChange.since > 30000)
