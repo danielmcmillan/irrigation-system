@@ -69,7 +69,7 @@ async function webPushUnsubscribe(send: (msg: object) => void) {
   }
 }
 
-const legacyStore = new IrrigationStore(config.deviceId);
+const legacyStore = new IrrigationStore(config.deviceId, webPush);
 
 const RootComponent = () => {
   const [connect, setConnect] = useState(true);

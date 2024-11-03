@@ -8,6 +8,7 @@ import {
   CheckboxField,
   Collection,
   Flex,
+  Heading,
   Loader,
   SwitchField,
   Table,
@@ -39,6 +40,7 @@ import { ScheduleEntryEditor } from "./ScheduleEntryEditor";
 import { ScheduleList } from "./ScheduleList";
 import { ScheduleStatusAlert } from "./ScheduleStatusAlert";
 import { Vacon100Tool } from "./Vacon100Tool";
+import { WebPushStatus } from "../../services/webPush";
 
 const LogEntryCard = ({ entry }: { entry: LogEntry }) => {
   const variation = (
@@ -572,6 +574,42 @@ const App = observer(
                     Device: {icu.controlDeviceId}
                   </Button>
                   <Button onClick={logout}>Logout</Button>
+                  <Heading>Push notifications</Heading>
+                  <Button
+                    onClick={() =>
+                      icu
+                        .pushNotificationsSubscribe()
+                        .then((success) =>
+                          alert(success ? "Subscribed successfully" : "Failed to subscribe")
+                        )
+                    }
+                  >
+                    Subscribe
+                  </Button>
+                  <Button
+                    onClick={() =>
+                      icu
+                        .pushNotificationsUnsubscribe()
+                        .then(() => alert("Unsubscribed from push notifications"))
+                    }
+                  >
+                    Unsubscribe
+                  </Button>
+                  <Button
+                    onClick={() =>
+                      icu
+                        .pushNotificationsVerify()
+                        .then((status) =>
+                          alert(
+                            status === WebPushStatus.Active
+                              ? "Sent a push notification for verification"
+                              : `Could not send test notification. Subscription status is ${WebPushStatus[status]}`
+                          )
+                        )
+                    }
+                  >
+                    Test
+                  </Button>
                 </ButtonGroup>
               </>
             ),

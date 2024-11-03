@@ -10,34 +10,30 @@ export class WebPush {
   vapidPublicKey: Uint8Array;
 
   constructor({ vapidPublicKeyString }: { vapidPublicKeyString: string }) {
-    this.vapidPublicKey = Uint8Array.from(
-      atob(vapidPublicKeyString),
-      (m) => m.codePointAt(0)!
-    );
+    this.vapidPublicKey = Uint8Array.from(atob(vapidPublicKeyString), (m) => m.codePointAt(0)!);
   }
 
-  async getStatus() {
+  async getSubscription(): Promise<{ status: WebPushStatus; subscription?: PushSubscription }> {
     if (!("serviceWorker" in navigator)) {
       console.warn("Push notifications are not available");
-      return WebPushStatus.Unavailable;
+      return { status: WebPushStatus.Unavailable };
     } else {
-      const registration = await navigator.serviceWorker.ready;
+      const registration = await navigator.serviceWorker.getRegistration();
+      if (!registration) {
+        return { status: WebPushStatus.Unavailable };
+      }
       const permissionState = await registration.pushManager.permissionState(
         this.subscriptionOptions
       );
-      console.log("permissionState", permissionState);
       if (permissionState !== "granted") {
-        return WebPushStatus.NoPermission;
+        return { status: WebPushStatus.NoPermission };
       }
       const subscription = await registration.pushManager.getSubscription();
       if (!subscription) {
-        return WebPushStatus.NotSubscribed;
+        return { status: WebPushStatus.NotSubscribed };
       }
-      if (
-        subscription.expirationTime !== null &&
-        subscription.expirationTime < Date.now()
-      ) {
-        return WebPushStatus.SubscriptionExpired;
+      if (subscription.expirationTime !== null && subscription.expirationTime < Date.now()) {
+        return { status: WebPushStatus.SubscriptionExpired, subscription };
       }
       const subscriptionVapidKey = subscription.options.applicationServerKey
         ? new Uint8Array(subscription.options.applicationServerKey)
@@ -49,9 +45,9 @@ export class WebPush {
       ) {
         // Subscription is for the wrong application
         await subscription.unsubscribe();
-        return WebPushStatus.NotSubscribed;
+        return { status: WebPushStatus.NotSubscribed, subscription };
       }
-      return WebPushStatus.Active;
+      return { status: WebPushStatus.Active, subscription };
     }
   }
 
@@ -60,28 +56,23 @@ export class WebPush {
    * Returns the subscription data for pushing notifications from the backend.
    */
   async subscribe(): Promise<object | undefined> {
-    const status = await this.getStatus();
+    const { status, subscription } = await this.getSubscription();
     if (status === WebPushStatus.Unavailable) {
       return undefined;
     } else {
       const registration = await navigator.serviceWorker.ready;
       if (status === WebPushStatus.Active) {
-        const subscription = await registration.pushManager.getSubscription();
         return subscription?.toJSON();
       }
       console.info("Subscribing for push notifications");
-      const subscription = await registration.pushManager.subscribe(
-        this.subscriptionOptions
-      );
-      return subscription.toJSON();
+      const newSubscription = await registration.pushManager.subscribe(this.subscriptionOptions);
+      return newSubscription.toJSON();
     }
   }
 
   async unsubscribe(): Promise<object | undefined> {
-    const status = await this.getStatus();
+    const { status, subscription } = await this.getSubscription();
     if (status !== WebPushStatus.Unavailable) {
-      const registration = await navigator.serviceWorker.ready;
-      const subscription = await registration.pushManager.getSubscription();
       await subscription?.unsubscribe();
       return subscription?.toJSON();
     }

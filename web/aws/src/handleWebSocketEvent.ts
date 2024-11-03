@@ -19,6 +19,7 @@ import {
   SubscribeDeviceRequest,
   SubscribeDeviceResponse,
   WebPushSubscribeRequest,
+  WebPushTestRequest,
   WebPushUnsubscribeRequest,
 } from "./lib/api/messages.js";
 import { sendPushNotification } from "./lib/pushNotifications.js";
@@ -69,12 +70,14 @@ export async function handleWebSocketEvent(
           await store.removePushNotificationSubscription(request.subscription);
           response = request;
         } else if (data.action === "webPush/test") {
+          const request = data as WebPushTestRequest;
           await sendPushNotification(
             {
-              title: "Test notification",
-              message: "This message is being sent to confirm that notifications are working",
+              title: "Irrigation system test notification",
+              message: "Notification received successfully!",
             },
-            store
+            store,
+            request.subscription.endpoint
           );
           response = data;
         } else if (data.action === "device/subscribe") {

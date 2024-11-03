@@ -4,6 +4,7 @@ import {
   DynamoDBDocumentClient,
   PutCommand,
   QueryCommand,
+  QueryCommandInput,
   UpdateCommand,
 } from "@aws-sdk/lib-dynamodb";
 import { PushSubscription } from "web-push";
@@ -514,17 +515,24 @@ export class IrrigationDataStore {
 
   /**
    * List all subscribed push notification clients.
+   * @param endpoint If specified, only list subscriptions for this endpoint.
    */
-  async listPushNotificationSubscriptions(): Promise<PushSubscription[]> {
-    const result = await this.db.send(
-      new QueryCommand({
-        TableName: this.tableName,
-        KeyConditionExpression: "pk = :pk",
-        ExpressionAttributeValues: {
-          ":pk": buildBinaryKey(tableKeys.pushNotificationSubscription.pk, {}),
-        },
-      })
-    );
+  async listPushNotificationSubscriptions(endpoint?: string): Promise<PushSubscription[]> {
+    const queryCommandInput: QueryCommandInput = {
+      TableName: this.tableName,
+      KeyConditionExpression: "pk = :pk",
+      ExpressionAttributeValues: {
+        ":pk": buildBinaryKey(tableKeys.pushNotificationSubscription.pk, {}),
+      },
+    };
+    if (endpoint !== undefined) {
+      queryCommandInput.KeyConditionExpression += " AND sk = :sk";
+      queryCommandInput.ExpressionAttributeValues![":sk"] = buildBinaryKey(
+        tableKeys.pushNotificationSubscription.sk,
+        { endpoint }
+      );
+    }
+    const result = await this.db.send(new QueryCommand(queryCommandInput));
     return (result.Items ?? []).map((item) => {
       const skParts = parseBinaryKey(item.sk, tableKeys.pushNotificationSubscription.sk);
       if (!skParts) {

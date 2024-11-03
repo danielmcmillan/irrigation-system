@@ -10,6 +10,7 @@ import {
 } from "./config";
 import { arrayBufferToBase64, base64ToArrayBuffer } from "./util";
 import { ScheduleEntry, ScheduleStatus } from "./schedule";
+import { WebPush, WebPushStatus } from "../../services/webPush";
 
 export enum ControllerStatus {
   Unconfigured = "Unconfigured",
@@ -77,7 +78,7 @@ export class IrrigationStore {
       };
   private sendJsonMessage: ((message: object) => void) | undefined;
 
-  constructor(public readonly controlDeviceId: string) {
+  constructor(public readonly controlDeviceId: string, public readonly webPush: WebPush) {
     this.log = [];
     makeObservable<this, "addLogEntries" | "updateProperties">(this, {
       log: observable,
@@ -420,5 +421,42 @@ export class IrrigationStore {
         });
       }
     }
+  }
+
+  public async pushNotificationsSubscribe(): Promise<boolean> {
+    const subscription = await this.webPush.subscribe();
+    if (subscription) {
+      console.log("Subscribed to web push notifications");
+      this.sendJsonMessage?.({
+        action: "webPush/subscribe",
+        subscription,
+      });
+      return true;
+    } else {
+      console.log("Failed to subscribe");
+      return false;
+    }
+  }
+
+  public async pushNotificationsUnsubscribe(): Promise<void> {
+    const subscription = await this.webPush.unsubscribe();
+    if (subscription) {
+      console.log("Unsubscribed from web push notifications");
+      this.sendJsonMessage?.({
+        action: "webPush/unsubscribe",
+        subscription,
+      });
+    }
+  }
+
+  public async pushNotificationsVerify(): Promise<WebPushStatus> {
+    const { status, subscription } = await this.webPush.getSubscription();
+    if (status === WebPushStatus.Active && subscription) {
+      this.sendJsonMessage?.({
+        action: "webPush/test",
+        subscription,
+      });
+    }
+    return status;
   }
 }

@@ -13,15 +13,16 @@ export interface PushNotification {
 }
 
 /**
- * Send a push notification to all subscriptions.
+ * Send a push notification to all subscriptions, or the specified endpoint.
  * Removes subscriptions that no longer exist.
  */
 export async function sendPushNotification(
   notification: PushNotification,
-  store: IrrigationDataStore
+  store: IrrigationDataStore,
+  endpoint?: string
 ) {
   const payload = JSON.stringify(notification);
-  const subscriptions = await store.listPushNotificationSubscriptions();
+  const subscriptions = await store.listPushNotificationSubscriptions(endpoint);
   await Promise.all(
     subscriptions.map(async (subscription) => {
       try {

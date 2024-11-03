@@ -111,6 +111,7 @@ export type DeviceControllerCommandResultEvent = ServerEventMessage<
 // Web Push
 export type WebPushSubscribeRequest = RequestMessage<"webPush/subscribe", WebPushSubscription>;
 export type WebPushUnsubscribeRequest = RequestMessage<"webPush/unsubscribe", WebPushSubscription>;
+export type WebPushTestRequest = RequestMessage<"webPush/test", WebPushSubscription>;
 
 // Scheduling
 export type DeviceGetScheduleRequest = RequestMessage<"device/getSchedule", { deviceId: string }>;

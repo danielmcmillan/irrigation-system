@@ -9,6 +9,7 @@ import {
   ApiGatewayManagementApiClient,
   PostToConnectionCommand,
 } from "@aws-sdk/client-apigatewaymanagementapi";
+import { sendPushNotification } from "./lib/pushNotifications.js";
 
 const store = new IrrigationDataStore({
   tableName: process.env.DYNAMODB_TABLE_NAME!,
@@ -116,6 +117,15 @@ export async function handleScheduleMessage(event: SQSEvent): Promise<void> {
       // Notify connected clients
       pending.push(sendScheduleStatusUpdates({ ...schedule, ...newScheduleState }));
       await Promise.all(pending);
+    }
+    if (aborting) {
+      await sendPushNotification(
+        {
+          title: `Irrigation system ${deviceId} schedule aborted`,
+          message: `Schedule was aborted due to failure. All operations will be stopped.`,
+        },
+        store
+      );
     }
   } else {
     const timestamp = +event.Records[0].attributes.SentTimestamp;

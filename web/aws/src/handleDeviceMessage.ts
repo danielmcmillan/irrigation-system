@@ -62,8 +62,7 @@ async function sendNotifications(message: DeviceMessage): Promise<void> {
         await sendPushNotification(
           {
             title: `Irrigation system ${message.deviceId} restarted`,
-            message:
-              "If the system is in use and the restart is not expected then check that it is still operating as expected.",
+            message: "If this is unexpected then check that it is still operational.",
           },
           store
         );
