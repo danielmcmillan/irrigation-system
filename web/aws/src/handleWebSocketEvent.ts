@@ -72,7 +72,7 @@ export async function handleWebSocketEvent(
           const request = data as WebPushTestRequest;
           await sendPushNotification(
             {
-              title: "Irrigation system test notification",
+              title: `Test notification for ${request.deviceId}`,
               message: "Notification received successfully!",
             },
             store,

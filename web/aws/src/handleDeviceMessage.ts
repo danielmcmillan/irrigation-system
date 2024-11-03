@@ -65,8 +65,9 @@ async function sendNotifications(message: DeviceMessage): Promise<void> {
       if (event.type === DeviceEventType.Started) {
         await sendPushNotification(
           {
-            title: `Irrigation system ${message.deviceId} restarted`,
-            message: "If this is unexpected then check that it is still operational.",
+            title: `${message.deviceId} restarted`,
+            message:
+              "The irrigation system has restarted. If this is unexpected then check that it is still operational.",
           },
           store,
           { deviceId: message.deviceId }
