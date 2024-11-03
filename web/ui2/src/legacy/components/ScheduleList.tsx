@@ -78,7 +78,7 @@ export const ScheduleList: React.FC<ScheduleProps> = observer(
               minutes: Math.round((runTime % 3600000) / 60000),
             });
             const [startTimeText, endTimeText] = [entry.startTime, entry.endTime].map((time) => {
-              return format(time, "hh:mm:ss a");
+              return format(time, started || pending ? "hh:mm:ss a" : "hh:mm a");
             });
             return (
               <Button
@@ -102,10 +102,27 @@ export const ScheduleList: React.FC<ScheduleProps> = observer(
                     </span>
                   </Flex>
                 )}
-                {aborted && <Badge variation={"error"}>Aborted</Badge>}
+                {aborted && (
+                  <Flex alignItems="flex-start">
+                    <Badge variation={"error"}>Aborted</Badge>
+                    <span>
+                      {startTimeText} to {endTimeText}
+                    </span>
+                  </Flex>
+                )}
+                {pending && (
+                  <span>
+                    For {runTimeText} ({endTimeText})
+                  </span>
+                )}
+                {started && (
+                  <span>
+                    Ending {relativeEndText} ({endTimeText})
+                  </span>
+                )}
                 {stopped && (
                   <span>
-                    Ended {relativeEndText} ({endTimeText})
+                    Ended {relativeEndText} ({startTimeText} to {endTimeText})
                   </span>
                 )}
                 {entry.propertyIds
@@ -114,16 +131,6 @@ export const ScheduleList: React.FC<ScheduleProps> = observer(
                     return p ? `${p.component?.name} ${p.name}` : id;
                   })
                   .join(", ")}
-                {pending && (
-                  <span>
-                    For {runTimeText} ({endTimeText})
-                  </span>
-                )}
-                {(started || aborted) && (
-                  <span>
-                    Ending {relativeEndText} ({endTimeText})
-                  </span>
-                )}
               </Button>
             );
           }}
