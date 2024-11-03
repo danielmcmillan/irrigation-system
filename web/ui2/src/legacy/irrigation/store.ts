@@ -9,7 +9,7 @@ import {
   serializeConfigEntriesToIni,
 } from "./config";
 import { arrayBufferToBase64, base64ToArrayBuffer } from "./util";
-import { ScheduleEntry } from "./schedule";
+import { ScheduleEntry, ScheduleStatus } from "./schedule";
 
 export enum ControllerStatus {
   Unconfigured = "Unconfigured",
@@ -62,6 +62,7 @@ export class IrrigationStore {
   configLoaded = false;
   scheduleEntries: ScheduleEntry[] = [];
   scheduleLoaded = false;
+  scheduleStatus: ScheduleStatus | undefined;
   controllerCommandResults: ControllerCommandResult[] = [];
   readyState: ReadyState = ReadyState.CLOSED;
   connectEnabled: boolean = true;
@@ -87,6 +88,7 @@ export class IrrigationStore {
       configLoaded: observable,
       scheduleEntries: observable,
       scheduleLoaded: observable,
+      scheduleStatus: observable,
       controllerCommandResults: observable,
       readyState: observable,
       connectEnabled: observable,
@@ -270,14 +272,20 @@ export class IrrigationStore {
 
   public async handleJsonMessage(message: any): Promise<void> {
     let device: any;
+    let scheduleStatus: any;
     if (message.error) {
       console.error("Received error message", message);
       return;
     }
     if (message.action === "device/subscribe") {
       device = message.devices[0];
+      if (message.scheduleStatus) {
+        scheduleStatus = message.scheduleStatus[0];
+      }
     } else if (message.type === "device/update") {
       device = message;
+    } else if (message.type === "device/scheduleStatus") {
+      scheduleStatus = message;
     }
     if (device) {
       console.debug("Legacy: handling new device state", device);
@@ -352,6 +360,12 @@ export class IrrigationStore {
           })
         );
       }
+    }
+    if (scheduleStatus) {
+      console.debug("Legacy: handling new schedule status", scheduleStatus);
+      runInAction(() => {
+        this.scheduleStatus = scheduleStatus;
+      });
     }
 
     if (message.action === "device/getConfig" && !message.error) {

@@ -252,7 +252,7 @@ export const ScheduleEntryEditor: React.FC<EntryEntryProps> = observer(
         />
         {editing && (
           <Button onClick={onDelete} alignSelf="flex-start" variation="destructive">
-            Delete
+            Cancel
           </Button>
         )}
       </Flex>

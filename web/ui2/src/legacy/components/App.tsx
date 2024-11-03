@@ -37,6 +37,7 @@ import { PropertyHistory } from "./PropertyHistory";
 import { RemoteUnitTool } from "./RemoteUnitTool";
 import { ScheduleEntryEditor } from "./ScheduleEntryEditor";
 import { ScheduleList } from "./ScheduleList";
+import { ScheduleStatusAlert } from "./ScheduleStatusAlert";
 import { Vacon100Tool } from "./Vacon100Tool";
 
 const LogEntryCard = ({ entry }: { entry: LogEntry }) => {
@@ -389,7 +390,7 @@ const App = observer(
           onDelete={() => {
             if (
               !confirm(
-                "This will cancel the scheduled changes. If it had already started, it will not be stopped."
+                "This will cancel the scheduled changes. If it had already started, it will be stopped."
               )
             ) {
               return;
@@ -465,6 +466,7 @@ const App = observer(
           onEditEntry={(index) => {
             setScheduleEntryIndex(index);
           }}
+          status={icu.scheduleStatus}
           properties={icu.propertiesWithComponents}
         />
       );
@@ -482,16 +484,29 @@ const App = observer(
             value: "properties",
             content: (
               <>
-                <Alert variation={icu.ready ? "info" : "error"}>
-                  Browser: {ReadyState[icu.readyState]}.
-                  {icu.readyState === ReadyState.OPEN && (
-                    <>
-                      {" "}
-                      Controller: {icu.controllerConnected ? icu.controllerStatus : "Disconnected"}.
-                    </>
-                  )}
-                  {!icu.connectEnabled && <Button onClick={reconnect}>Reconnect</Button>}
-                </Alert>
+                {!icu.ready && (
+                  <Alert
+                    variation={
+                      icu.readyState === ReadyState.OPEN && !icu.controllerConnected
+                        ? "error"
+                        : "warning"
+                    }
+                  >
+                    Browser: {ReadyState[icu.readyState]}.
+                    {icu.readyState === ReadyState.OPEN && (
+                      <>
+                        {" "}
+                        Controller:{" "}
+                        {icu.controllerConnected ? icu.controllerStatus : "Disconnected"}.
+                      </>
+                    )}
+                    {!icu.connectEnabled && <Button onClick={reconnect}>Reconnect</Button>}
+                  </Alert>
+                )}
+                <ScheduleStatusAlert
+                  status={icu.scheduleStatus}
+                  properties={icu.propertiesWithComponents}
+                />
                 <PropertyControls
                   icu={icu}
                   openHistory={openPropertyHistory}

@@ -41,7 +41,7 @@ export class IrrigationScheduleManager {
   }
 
   async sendMessage(deviceId: string, messageId: string, delay: number, isRetry?: boolean) {
-    const delaySeconds = Math.ceil(Math.max(0, Math.min(900000, delay)) / 1000);
+    const delaySeconds = Math.max(1, Math.ceil(Math.min(900000, delay) / 1000));
     const body: ScheduleMessageBody = { deviceId, messageId };
     if (isRetry !== undefined) {
       body.isRetry = isRetry;

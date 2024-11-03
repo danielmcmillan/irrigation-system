@@ -1,29 +1,11 @@
-import {
-  Badge,
-  Button,
-  Card,
-  Collection,
-  Flex,
-  Heading,
-  Loader,
-  Table,
-  TableBody,
-  TableCell,
-  TableRow,
-} from "@aws-amplify/ui-react";
-import EditIcon from "@mui/icons-material/Edit";
+import { Badge, Button, Collection, Flex, Loader } from "@aws-amplify/ui-react";
 import AddScheduleIcon from "@mui/icons-material/MoreTime";
-import {
-  format,
-  formatDistance,
-  formatDistanceStrict,
-  formatDuration,
-  formatRelative,
-} from "date-fns";
+import { format, formatDuration } from "date-fns";
 import { observer } from "mobx-react-lite";
-import { ScheduleEntry } from "../irrigation/schedule";
+import { ScheduleEntry, ScheduleStatus } from "../irrigation/schedule";
 import { IrrigationPropertyWithComponent } from "../irrigation/store";
-import { useState, useEffect } from "react";
+import { ScheduleStatusAlert } from "./ScheduleStatusAlert";
+import { useNow } from "./useNow";
 
 export interface ScheduleProps {
   entries: ScheduleEntry[];
@@ -31,19 +13,11 @@ export interface ScheduleProps {
   onClose: () => void;
   onEditEntry: (index: number) => void;
   properties: IrrigationPropertyWithComponent[];
+  status: ScheduleStatus | undefined;
 }
 
-const useNow = (period = 1000) => {
-  const [now, setNow] = useState(Date.now());
-  useEffect(() => {
-    const interval = setInterval(() => setNow(Date.now()), period);
-    return () => clearInterval(interval);
-  }, []);
-  return now;
-};
-
 export const ScheduleList: React.FC<ScheduleProps> = observer(
-  ({ entries, loading, onClose, onEditEntry, properties }) => {
+  ({ entries, loading, onClose, onEditEntry, properties, status }) => {
     const now = useNow();
     const sortedEntries = entries
       .map((entry, index) => ({ ...entry, index }))
@@ -57,9 +31,15 @@ export const ScheduleList: React.FC<ScheduleProps> = observer(
         }
       });
     return (
-      <Flex direction="column" margin="1rem">
+      <Flex direction="column" margin="1em">
         <Button onClick={onClose}>Close</Button>
-        <Heading level={3}>Schedule</Heading>
+        <ScheduleStatusAlert
+          status={status}
+          properties={properties}
+          showWhenInactive
+          marginLeft="-1em"
+          marginRight="-1em"
+        />
         {loading && <Loader alignSelf="center" />}
         <Collection
           items={sortedEntries}

@@ -175,6 +175,7 @@ resources:
         QueueName: irrigation-${sls:stage}-ScheduleQueue
         VisibilityTimeout: 30
         MessageRetentionPeriod: 1209600
+        DelaySeconds: 1
         RedrivePolicy:
           deadLetterTargetArn: !GetAtt ScheduleDLQ.Arn
           maxReceiveCount: 4
@@ -304,6 +305,10 @@ resources:
     SconnectWebsocketsRoute:
       Properties:
         AuthorizationType: AWS_IAM
+
+    ScheduleHandlerLambdaFunction:
+      Properties:
+        RecursiveLoop: Allow
 # resources not included:
 # thing https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-iot-thing.html
 # thing policy: permission to connect, publish, subscribe and receive
