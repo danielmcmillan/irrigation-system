@@ -1,6 +1,6 @@
 import { DeviceStatus } from "../deviceStatus.js";
 import { Alert, Device } from "./device.js";
-import { DeviceSchedule } from "./schedule.js";
+import { DeviceSchedule, ScheduleStatus } from "./schedule.js";
 import { WebPushSubscription } from "./webPush.js";
 
 export type RequestMessage<Action extends string = string, Params extends object = {}> = Params & {
@@ -25,10 +25,10 @@ export type ServerEventMessage<
 export type ServerMessage = ResponseMessage | ServerEventMessage | undefined;
 
 // Full state
-export interface DeviceList {
+export interface InitialDeviceState {
   devices: Device[];
+  scheduleStatus: ScheduleStatus[];
 }
-export type InitialDeviceState = DeviceList;
 export type SubscribeDeviceRequest = RequestMessage<"device/subscribe", { deviceIds: string[] }>;
 export type SubscribeDeviceResponse = ResponseMessage<"device/subscribe", InitialDeviceState>;
 
@@ -72,6 +72,10 @@ export interface DeviceUpdate {
   alerts?: Alert[];
 }
 export type DeviceUpdateEvent = ServerEventMessage<"device/update", DeviceUpdate>;
+export type DeviceScheduleStatusUpdateEvent = ServerEventMessage<
+  "device/scheduleStatus",
+  ScheduleStatus
+>;
 
 // Config
 export type DeviceGetConfigRequest = RequestMessage<"device/getConfig", { deviceId: string }>;

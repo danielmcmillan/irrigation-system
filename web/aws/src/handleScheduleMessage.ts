@@ -3,6 +3,12 @@ import { IrrigationScheduleManager, ScheduleMessageBody } from "./lib/schedule.j
 import { DeviceStateQueryType, IrrigationDataStore, ScheduleState } from "./lib/store.js";
 import { IoTDataPlaneClient } from "@aws-sdk/client-iot-data-plane";
 import { createSetPropertyCommand } from "./lib/deviceMessage/createSetPropertyCommand.js";
+import { DeviceScheduleStatusUpdateEvent } from "./lib/api/messages.js";
+import { getScheduleStatus } from "./lib/api/schedule.js";
+import {
+  ApiGatewayManagementApiClient,
+  PostToConnectionCommand,
+} from "@aws-sdk/client-apigatewaymanagementapi";
 
 const store = new IrrigationDataStore({
   tableName: process.env.DYNAMODB_TABLE_NAME!,
@@ -13,6 +19,35 @@ const iotData = new IoTDataPlaneClient({
 const scheduleManager = new IrrigationScheduleManager({
   queueUrl: process.env.SCHEDULE_QUEUE_URL!,
 });
+const apigw = new ApiGatewayManagementApiClient({
+  endpoint: process.env.API_GATEWAY_ENDPOINT,
+});
+
+async function sendScheduleStatusUpdates(state: ScheduleState) {
+  const clients = (await store.listWebSocketClients()).filter((client) =>
+    client.deviceIds?.includes(state.deviceId)
+  );
+  console.debug(
+    `Sending schedule status for device ${state?.deviceId} to ${clients.length} websocket clients`
+  );
+  if (clients.length === 0) {
+    return;
+  }
+  const event: DeviceScheduleStatusUpdateEvent = {
+    type: "device/scheduleStatus",
+    ...getScheduleStatus(state),
+  };
+  await Promise.all(
+    clients.map(async (client) =>
+      apigw.send(
+        new PostToConnectionCommand({
+          ConnectionId: client.connectionId,
+          Data: JSON.stringify(event),
+        })
+      )
+    )
+  );
+}
 
 export async function handleScheduleMessage(event: SQSEvent): Promise<void> {
   console.log("handleScheduleMessage", ...event.Records);
@@ -41,6 +76,7 @@ export async function handleScheduleMessage(event: SQSEvent): Promise<void> {
     if (!("abort" in result)) {
       const newScheduleState: Partial<ScheduleState> = {
         state: result.newPropertyScheduleStates,
+        lastEvaluated: now,
       };
       if (aborting) {
         newScheduleState.abort = true;
@@ -63,16 +99,23 @@ export async function handleScheduleMessage(event: SQSEvent): Promise<void> {
       // Must be completed before sending device message to avoid untracked property updates.
       // If messages fail after updating store, the next evaluation would always set the same properties again.
       await store.updateSchedule(deviceId, newScheduleState);
+      // Send any required setProperty device messages
+      const pending: Promise<unknown>[] = [];
       for (const action of result.propertySetActions) {
-        await iotData.send(
-          createSetPropertyCommand(
-            deviceId,
-            action.controllerId,
-            action.propertyId,
-            action.value ? 1 : 0
+        pending.push(
+          iotData.send(
+            createSetPropertyCommand(
+              deviceId,
+              action.controllerId,
+              action.propertyId,
+              action.value ? 1 : 0
+            )
           )
         );
       }
+      // Notify connected clients
+      pending.push(sendScheduleStatusUpdates({ ...schedule, ...newScheduleState }));
+      await Promise.all(pending);
     }
   } else {
     const timestamp = +event.Records[0].attributes.SentTimestamp;

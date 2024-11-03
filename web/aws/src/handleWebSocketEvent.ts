@@ -27,6 +27,7 @@ import { IoTDataPlaneClient, PublishCommand } from "@aws-sdk/client-iot-data-pla
 import { getConfiguredDeviceControllerDefinitions } from "./lib/deviceControllers/configureDeviceControllers.js";
 import { IrrigationScheduleManager } from "./lib/schedule.js";
 import { createSetPropertyCommand } from "./lib/deviceMessage/createSetPropertyCommand.js";
+import { getScheduleStatus } from "./lib/api/schedule.js";
 
 const store = new IrrigationDataStore({
   tableName: process.env.DYNAMODB_TABLE_NAME!,
@@ -84,8 +85,11 @@ export async function handleWebSocketEvent(
             WEB_SOCKET_CLIENT_TTL
           );
           // Respond with the current state of the requested devices
-          // TOOD - consistency issue for updates happening at subscription time?
-          const { devices, properties } = await store.getDeviceState();
+          // TODO - consistency issue for updates happening at subscription time?
+          const [{ devices, properties }, ...scheduleStates] = await Promise.all([
+            store.getDeviceState(),
+            ...request.deviceIds.map((id) => store.getSchedule(id)),
+          ]);
           const subscribeResponse: SubscribeDeviceResponse = {
             action: request.action,
             requestId: request.requestId,
@@ -93,6 +97,7 @@ export async function handleWebSocketEvent(
               devices.filter((device) => request.deviceIds.includes(device.deviceId)),
               properties
             ),
+            scheduleStatus: scheduleStates.map((state) => getScheduleStatus(state)),
           };
           response = subscribeResponse;
         } else if (data.action === "property/set") {
@@ -109,7 +114,7 @@ export async function handleWebSocketEvent(
         } else if (data.action === "propertyHistory/get") {
           const request = data as GetPropertyHistoryRequest;
           const { controllerId, propertyId, bitIndex } = parsePropertyId(request.propertyId);
-          // Query values for the last 7 days
+          // Query values for the last 14 days
           const [
             {
               devices: [device],

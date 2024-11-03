@@ -4,11 +4,11 @@ import { PropertyState, ScheduleState } from "./store.js";
 /** Time after setting a property until it is considered to have failed. */
 const SET_TIME_LIMIT = 300000;
 /** Time after setting a property during abort until giving up. */
-const ABORT_TIME_LIMIT = 600000;
+const ABORT_TIME_LIMIT = 300000;
 /** Time to wait between evaluations when some property change is pending. */
-const EVALUATE_DELAY = 30000;
+const EVALUATE_DELAY = 20000;
 /** Time after an entry's end time before it will be cleaned up. */
-const CLEAR_ENTRY_DELAY = 24 * 3600000;
+const CLEAR_ENTRY_DELAY = 12 * 3600000;
 
 export interface ScheduleMessageBody {
   deviceId: string;
@@ -41,7 +41,7 @@ export class IrrigationScheduleManager {
   }
 
   async sendMessage(deviceId: string, messageId: string, delay: number, isRetry?: boolean) {
-    const delaySeconds = Math.max(0, Math.min(900000, delay)) / 1000;
+    const delaySeconds = Math.ceil(Math.max(0, Math.min(900000, delay)) / 1000);
     const body: ScheduleMessageBody = { deviceId, messageId };
     if (isRetry !== undefined) {
       body.isRetry = isRetry;

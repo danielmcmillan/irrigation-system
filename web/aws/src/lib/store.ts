@@ -53,6 +53,7 @@ export interface ScheduleState {
     seen: boolean;
     setTime?: number;
   }>;
+  lastEvaluated?: number;
 }
 
 const tableKeys: {
@@ -556,7 +557,8 @@ export class IrrigationDataStore {
       entries: item?.e ?? [],
       state: item?.s ?? [],
       abort: item?.a ?? false,
-      messageId: item?.m ?? undefined,
+      messageId: item?.m,
+      lastEvaluated: item?.t,
     };
   }
 
@@ -587,6 +589,11 @@ export class IrrigationDataStore {
       names["#s"] = "s";
       values[":s"] = schedule.state;
       updateExpressions.push("#s = :s");
+    }
+    if (schedule.lastEvaluated !== undefined) {
+      names["#t"] = "t";
+      values[":t"] = schedule.lastEvaluated;
+      updateExpressions.push("#t = :t");
     }
     const updateExpression = `SET ${updateExpressions.join(", ")}`;
 
