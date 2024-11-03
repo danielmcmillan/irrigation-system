@@ -55,8 +55,9 @@ export const ScheduleList: React.FC<ScheduleProps> = observer(
         >
           {(entry) => {
             const stopped = entry.endTime <= now;
-            const started = entry.startTime <= now && !stopped;
-            const pending = !started && !stopped;
+            const aborted = status?.aborted === true && !stopped;
+            const started = entry.startTime <= now && !stopped && !aborted;
+            const pending = !started && !stopped && !aborted;
             const [relativeStartText, relativeEndText] = [entry.startTime, entry.endTime].map(
               (time) => {
                 const relativeTime = Math.abs(time - now);
@@ -66,6 +67,7 @@ export const ScheduleList: React.FC<ScheduleProps> = observer(
                 const durationText = formatDuration({
                   hours: Math.floor(relativeTime / 3600000),
                   minutes: Math.round((relativeTime % 3600000) / 60000),
+                  seconds: relativeTime < 30000 ? Math.round(relativeTime / 1000) : undefined,
                 });
                 return time < now ? `${durationText} ago` : `in ${durationText}`;
               }
@@ -94,15 +96,16 @@ export const ScheduleList: React.FC<ScheduleProps> = observer(
                 )}
                 {started && (
                   <Flex alignItems="flex-start">
-                    <Badge variation={!status?.aborted ? "success" : undefined}>Started</Badge>
+                    <Badge variation={"success"}>Started</Badge>
                     <span>
                       {relativeStartText} ({startTimeText})
                     </span>
                   </Flex>
                 )}
+                {aborted && <Badge variation={"error"}>Aborted</Badge>}
                 {stopped && (
                   <span>
-                    Done {relativeEndText} ({endTimeText})
+                    Ended {relativeEndText} ({endTimeText})
                   </span>
                 )}
                 {entry.propertyIds
@@ -116,9 +119,9 @@ export const ScheduleList: React.FC<ScheduleProps> = observer(
                     For {runTimeText} ({endTimeText})
                   </span>
                 )}
-                {started && (
+                {(started || aborted) && (
                   <span>
-                    Stopping {relativeEndText} ({endTimeText})
+                    Ending {relativeEndText} ({endTimeText})
                   </span>
                 )}
               </Button>
