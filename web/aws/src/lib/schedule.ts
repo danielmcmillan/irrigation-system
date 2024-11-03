@@ -197,13 +197,16 @@ export class IrrigationScheduleManager {
     if (result.newPropertyScheduleStates.some((p) => p.set !== p.seen)) {
       result.timeToNextEvaluation = EVALUATE_DELAY;
     } else {
-      const nextTime = schedule.entries
-        .flatMap((e) => [e.startTime, e.endTime])
-        .filter((t) => t > now)
-        .reduce<number | undefined>(
-          (min, t) => (min === undefined ? t : Math.min(min, t)),
-          undefined
-        );
+      let nextTime: number | undefined;
+      if (!schedule.abort) {
+        nextTime = schedule.entries
+          .flatMap((e) => [e.startTime, e.endTime])
+          .filter((t) => t > now)
+          .reduce<number | undefined>(
+            (min, t) => (min === undefined ? t : Math.min(min, t)),
+            undefined
+          );
+      }
       if (nextTime !== undefined) {
         result.timeToNextEvaluation = Math.max(EVALUATE_DELAY, nextTime - now);
       } else if (result.newPropertyScheduleStates.length > 0) {

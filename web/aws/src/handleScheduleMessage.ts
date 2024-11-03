@@ -15,7 +15,7 @@ const scheduleManager = new IrrigationScheduleManager({
 });
 
 export async function handleScheduleMessage(event: SQSEvent): Promise<void> {
-  console.log("handleScheduleMessage", event);
+  console.log("handleScheduleMessage", ...event.Records);
   const now = Date.now();
   const { deviceId, messageId, isRetry } = JSON.parse(
     event.Records[0].body!
@@ -25,20 +25,26 @@ export async function handleScheduleMessage(event: SQSEvent): Promise<void> {
     store.getDeviceState(DeviceStateQueryType.Properties, deviceId),
   ]);
   if (schedule.messageId === messageId) {
+    let aborting = false;
     let result = IrrigationScheduleManager.evaluateSchedule(schedule, properties, now);
     console.debug("Evaluated schedule", result);
     // Re-evaluate for abort
     if (!schedule.abort && "abort" in result && result.abort) {
+      aborting = true;
       result = IrrigationScheduleManager.evaluateSchedule(
         { ...schedule, abort: true },
         properties,
         now
       );
+      console.debug("Re-evaluated schedule", result);
     }
     if (!("abort" in result)) {
       const newScheduleState: Partial<ScheduleState> = {
         state: result.newPropertyScheduleStates,
       };
+      if (aborting) {
+        newScheduleState.abort = true;
+      }
       if (result.newEntries !== undefined) {
         newScheduleState.entries = result.newEntries;
       }

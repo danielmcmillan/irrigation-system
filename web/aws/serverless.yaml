@@ -177,7 +177,7 @@ resources:
         MessageRetentionPeriod: 1209600
         RedrivePolicy:
           deadLetterTargetArn: !GetAtt ScheduleDLQ.Arn
-          maxReceiveCount: 3
+          maxReceiveCount: 4
 
     ScheduleDLQ:
       Type: AWS::SQS::Queue
