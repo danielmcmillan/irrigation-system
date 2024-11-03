@@ -124,7 +124,8 @@ export async function handleScheduleMessage(event: SQSEvent): Promise<void> {
           title: `Irrigation system ${deviceId} schedule aborted`,
           message: `Schedule was aborted due to failure. All operations will be stopped.`,
         },
-        store
+        store,
+        { deviceId }
       );
     }
   } else {

@@ -68,7 +68,8 @@ async function sendNotifications(message: DeviceMessage): Promise<void> {
             title: `Irrigation system ${message.deviceId} restarted`,
             message: "If this is unexpected then check that it is still operational.",
           },
-          store
+          store,
+          { deviceId: message.deviceId }
         );
       }
     }

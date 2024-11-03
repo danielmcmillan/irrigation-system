@@ -13,32 +13,37 @@ export interface PushNotification {
 }
 
 /**
- * Send a push notification to all subscriptions, or the specified endpoint.
+ * Send a push notification to all subscriptions, or subscription for the specified endpoint or deviceId.
  * Removes subscriptions that no longer exist.
  */
 export async function sendPushNotification(
   notification: PushNotification,
   store: IrrigationDataStore,
-  endpoint?: string
+  filter?: { deviceId?: string; endpoint?: string }
 ) {
   const payload = JSON.stringify(notification);
-  const subscriptions = await store.listPushNotificationSubscriptions(endpoint);
+  const subscriptions = await store.listPushNotificationSubscriptions(filter?.endpoint);
   await Promise.all(
-    subscriptions.map(async (subscription) => {
-      try {
-        await webpush.sendNotification(subscription, payload);
-      } catch (err) {
-        if (err instanceof WebPushError) {
-          if ([404, 410].includes(err.statusCode)) {
-            console.warn("Dropping web notification subscription since it no longer exists", err);
-            await store.removePushNotificationSubscription(subscription);
+    subscriptions
+      .filter(
+        (subscription) =>
+          filter?.deviceId === undefined || subscription.deviceId === filter?.deviceId
+      )
+      .map(async (subscription) => {
+        try {
+          await webpush.sendNotification(subscription, payload);
+        } catch (err) {
+          if (err instanceof WebPushError) {
+            if ([404, 410].includes(err.statusCode)) {
+              console.warn("Dropping web notification subscription since it no longer exists", err);
+              await store.removePushNotificationSubscription(subscription);
+            } else {
+              console.error("Failed to push web notification", err);
+            }
           } else {
-            console.error("Failed to push web notification", err);
+            throw err;
           }
-        } else {
-          throw err;
         }
-      }
-    })
+      })
   );
 }

@@ -484,7 +484,10 @@ export class IrrigationDataStore {
   /**
    * Record a subscribed push notification client.
    */
-  async addPushNotificationSubscription(subscription: PushSubscription): Promise<void> {
+  async addPushNotificationSubscription(
+    subscription: PushSubscription,
+    deviceId: string
+  ): Promise<void> {
     const { endpoint: _endpoint, ...data } = subscription;
     await this.db.send(
       new PutCommand({
@@ -493,6 +496,7 @@ export class IrrigationDataStore {
           pk: buildBinaryKey(tableKeys.pushNotificationSubscription.pk, subscription),
           sk: buildBinaryKey(tableKeys.pushNotificationSubscription.sk, subscription),
           ...data,
+          deviceId,
         },
       })
     );
@@ -517,7 +521,9 @@ export class IrrigationDataStore {
    * List all subscribed push notification clients.
    * @param endpoint If specified, only list subscriptions for this endpoint.
    */
-  async listPushNotificationSubscriptions(endpoint?: string): Promise<PushSubscription[]> {
+  async listPushNotificationSubscriptions(
+    endpoint?: string
+  ): Promise<Array<PushSubscription & { deviceId: string }>> {
     const queryCommandInput: QueryCommandInput = {
       TableName: this.tableName,
       KeyConditionExpression: "pk = :pk",
@@ -541,6 +547,7 @@ export class IrrigationDataStore {
       return {
         endpoint: skParts.endpoint,
         keys: item.keys,
+        deviceId: item.deviceId,
       };
     });
   }

@@ -1,3 +1,4 @@
+import { IoTDataPlaneClient, PublishCommand } from "@aws-sdk/client-iot-data-plane";
 import { APIGatewayProxyResultV2, APIGatewayProxyWebsocketEventV2 } from "aws-lambda";
 import { getDevices, getPropertyId, getPropertyValue, parsePropertyId } from "./lib/api/device.js";
 import {
@@ -7,7 +8,6 @@ import {
   DeviceGetScheduleRequest,
   DeviceGetScheduleResponse,
   DeviceSetConfigRequest,
-  DeviceSetConfigResponse,
   DeviceSetScheduleRequest,
   DeviceSetScheduleResponse,
   GetPropertyHistoryRequest,
@@ -22,13 +22,12 @@ import {
   WebPushTestRequest,
   WebPushUnsubscribeRequest,
 } from "./lib/api/messages.js";
-import { sendPushNotification } from "./lib/pushNotifications.js";
-import { DeviceStateQueryType, IrrigationDataStore, ScheduleState } from "./lib/store.js";
-import { IoTDataPlaneClient, PublishCommand } from "@aws-sdk/client-iot-data-plane";
-import { getConfiguredDeviceControllerDefinitions } from "./lib/deviceControllers/configureDeviceControllers.js";
-import { IrrigationScheduleManager } from "./lib/schedule.js";
-import { createSetPropertyCommand } from "./lib/deviceMessage/createSetPropertyCommand.js";
 import { getScheduleStatus } from "./lib/api/schedule.js";
+import { getConfiguredDeviceControllerDefinitions } from "./lib/deviceControllers/configureDeviceControllers.js";
+import { createSetPropertyCommand } from "./lib/deviceMessage/createSetPropertyCommand.js";
+import { sendPushNotification } from "./lib/pushNotifications.js";
+import { IrrigationScheduleManager } from "./lib/schedule.js";
+import { DeviceStateQueryType, IrrigationDataStore, ScheduleState } from "./lib/store.js";
 
 const store = new IrrigationDataStore({
   tableName: process.env.DYNAMODB_TABLE_NAME!,
@@ -63,7 +62,7 @@ export async function handleWebSocketEvent(
       try {
         if (data.action === "webPush/subscribe") {
           const request = data as WebPushSubscribeRequest;
-          await store.addPushNotificationSubscription(request.subscription);
+          await store.addPushNotificationSubscription(request.subscription, request.deviceId);
           response = request;
         } else if (data.action === "webPush/unsubscribe") {
           const request = data as WebPushUnsubscribeRequest;
@@ -77,7 +76,7 @@ export async function handleWebSocketEvent(
               message: "Notification received successfully!",
             },
             store,
-            request.subscription.endpoint
+            { endpoint: request.subscription.endpoint, deviceId: request.deviceId }
           );
           response = data;
         } else if (data.action === "device/subscribe") {

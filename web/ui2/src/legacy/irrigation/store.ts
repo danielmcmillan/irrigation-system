@@ -430,6 +430,7 @@ export class IrrigationStore {
       this.sendJsonMessage?.({
         action: "webPush/subscribe",
         subscription,
+        deviceId: this.controlDeviceId,
       });
       return true;
     } else {
@@ -445,6 +446,7 @@ export class IrrigationStore {
       this.sendJsonMessage?.({
         action: "webPush/unsubscribe",
         subscription,
+        deviceId: this.controlDeviceId,
       });
     }
   }
@@ -455,6 +457,7 @@ export class IrrigationStore {
       this.sendJsonMessage?.({
         action: "webPush/test",
         subscription,
+        deviceId: this.controlDeviceId,
       });
     }
     return status;
