@@ -20,6 +20,7 @@ env:
   VITE_API_ENDPOINT: ${{ vars.API_ENDPOINT }}
   VITE_VAPID_PUB_KEY: ${{ vars.VAPID_PUB_KEY }}
   VITE_DEVICE_ID: ${{ vars.DEVICE_ID }}
+  VITE_TITLE: ${{ vars.APP_TITLE }}
 
 jobs:
   build:

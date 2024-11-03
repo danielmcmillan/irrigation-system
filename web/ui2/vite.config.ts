@@ -9,8 +9,8 @@ export default defineConfig({
     VitePWA({
       registerType: "autoUpdate",
       manifest: {
-        name: "Irrigation System 2",
-        short_name: "Irrigation2",
+        name: "Irrigation System",
+        short_name: process.env.VITE_TITLE ?? "Irrigation",
         icons: [
           {
             src: "favicon.ico",
