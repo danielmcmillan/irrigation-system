@@ -21,7 +21,7 @@ export const ScheduleStatusAlert: React.FC<
     : undefined;
 
   let summary: string;
-  let variation: AlertVariations;
+  let variation: AlertVariations = "info";
   if (
     !showWhenInactive &&
     (!status ||
@@ -36,16 +36,13 @@ export const ScheduleStatusAlert: React.FC<
     variation = "error";
   } else if (status?.nextEventTime && !status.active) {
     summary = `Schedule starting ${nextEventTime}`;
-    variation = "info";
   } else if (status?.active && lastEventTime) {
     summary = `Schedule active, ${lastEventTime} remaining`;
     variation = "success";
   } else if (status?.pending && status.pending.length > 0) {
     summary = "Schedule stopping";
-    variation = "info";
   } else {
     summary = "Schedule inactive";
-    variation = "info";
   }
   const pendingList = (status?.pending ?? [])
     .filter((pendingChange) => !pendingChange.since || now - pendingChange.since > 30000)
@@ -63,6 +60,9 @@ export const ScheduleStatusAlert: React.FC<
         </span>
       );
     });
+  if (pendingList.length > 0 && variation !== "error") {
+    variation = "warning";
+  }
 
   return (
     <Alert variation={variation} {...alertProps}>
