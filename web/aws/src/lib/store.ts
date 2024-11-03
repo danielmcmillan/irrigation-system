@@ -38,14 +38,20 @@ export enum DeviceStateQueryType {
 export interface ScheduleState {
   deviceId: string;
   entries: Array<{
-    id?: string;
-    properties: Array<[number, number]>;
+    properties: Array<number>;
     startTime: number;
     endTime: number;
-    abortOnFailure?: boolean;
-    applyStatus?: boolean;
-    applyTimestamp?: number;
-    applyCount?: number;
+  }>;
+
+  messageId?: string;
+  abort?: boolean;
+  state?: Array<{
+    id: number;
+    /** The latest value requested */
+    set: boolean;
+    /** The actual value seen after being requested */
+    seen: boolean;
+    setTime?: number;
   }>;
 }
 
@@ -544,32 +550,52 @@ export class IrrigationDataStore {
         },
       })
     );
+    const item = result.Items?.[0];
     return {
       deviceId,
-      entries: result.Items?.[0]?.e ?? [],
+      entries: item?.e ?? [],
+      state: item?.s ?? [],
+      abort: item?.a ?? false,
+      messageId: item?.m ?? undefined,
     };
   }
 
   /**
    * Set the scheduled property changes for a device.
    */
-  async setSchedule(schedule: ScheduleState): Promise<void> {
-    const names: Record<string, string> = {
-      "#e": "e",
-    };
-    const values: Record<string, unknown> = {
-      ":e": schedule.entries,
-    };
-    let updateExpression = "SET #e = :e";
+  async updateSchedule(deviceId: string, schedule: Partial<ScheduleState>): Promise<void> {
+    const names: Record<string, string> = {};
+    const values: Record<string, unknown> = {};
+    const updateExpressions: string[] = [];
+
+    if (schedule.entries) {
+      names["#e"] = "e";
+      values[":e"] = schedule.entries;
+      updateExpressions.push("#e = :e");
+    }
+    if (schedule.abort !== undefined) {
+      names["#a"] = "a";
+      values[":a"] = schedule.abort;
+      updateExpressions.push("#a = :a");
+    }
+    if (schedule.messageId !== undefined) {
+      names["#m"] = "m";
+      values[":m"] = schedule.messageId;
+      updateExpressions.push("#m = :m");
+    }
+    if (schedule.state) {
+      names["#s"] = "s";
+      values[":s"] = schedule.state;
+      updateExpressions.push("#s = :s");
+    }
+    const updateExpression = `SET ${updateExpressions.join(", ")}`;
 
     await this.db.send(
       new UpdateCommand({
         TableName: this.tableName,
         Key: {
           pk: buildBinaryKey(tableKeys.schedule.pk, {}),
-          sk: buildBinaryKey(tableKeys.schedule.sk, {
-            deviceId: schedule.deviceId,
-          }),
+          sk: buildBinaryKey(tableKeys.schedule.sk, { deviceId }),
         },
         ExpressionAttributeNames: names,
         ExpressionAttributeValues: values,

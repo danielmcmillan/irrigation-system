@@ -61,7 +61,12 @@ export const ScheduleList: React.FC<ScheduleProps> = observer(
         <Button onClick={onClose}>Close</Button>
         <Heading level={3}>Schedule</Heading>
         {loading && <Loader alignSelf="center" />}
-        <Collection items={sortedEntries} type="list" direction="column">
+        <Collection
+          items={sortedEntries}
+          searchNoResultsFound="Press New to start a schedule"
+          type="list"
+          direction="column"
+        >
           {(entry) => {
             const stopped = entry.endTime <= now;
             const started = entry.startTime <= now && !stopped;

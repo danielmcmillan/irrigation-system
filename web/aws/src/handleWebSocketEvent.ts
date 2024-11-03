@@ -25,6 +25,8 @@ import { sendPushNotification } from "./lib/pushNotifications.js";
 import { DeviceStateQueryType, IrrigationDataStore, ScheduleState } from "./lib/store.js";
 import { IoTDataPlaneClient, PublishCommand } from "@aws-sdk/client-iot-data-plane";
 import { getConfiguredDeviceControllerDefinitions } from "./lib/deviceControllers/configureDeviceControllers.js";
+import { IrrigationScheduleManager } from "./lib/schedule.js";
+import { createSetPropertyCommand } from "./lib/deviceMessage/createSetPropertyCommand.js";
 
 const store = new IrrigationDataStore({
   tableName: process.env.DYNAMODB_TABLE_NAME!,
@@ -34,6 +36,10 @@ const WEB_SOCKET_CLIENT_TTL = 2.5 * 3600;
 
 const iotData = new IoTDataPlaneClient({
   endpoint: process.env.IOT_ENDPOINT,
+});
+
+const scheduleManager = new IrrigationScheduleManager({
+  queueUrl: process.env.SCHEDULE_QUEUE_URL!,
 });
 
 export async function handleWebSocketEvent(
@@ -92,17 +98,8 @@ export async function handleWebSocketEvent(
         } else if (data.action === "property/set") {
           const request = data as SetPropertyRequest;
           const { controllerId, propertyId } = parsePropertyId(request.propertyId);
-          const payload = new DataView(new ArrayBuffer(4));
-          payload.setUint8(0, controllerId);
-          payload.setUint16(1, propertyId, true);
-          // TODO handle value conversion (currently all mutable values are only 1 or 0)
-          payload.setUint8(3, request.value);
           await iotData.send(
-            new PublishCommand({
-              topic: `icu-in/${request.deviceId}/setProperty`,
-              payload: payload.buffer,
-              qos: 1,
-            })
+            createSetPropertyCommand(request.deviceId, controllerId, propertyId, request.value)
           );
           const setPropertyResponse: SetPropertyResponse = {
             action: request.action,
@@ -225,68 +222,39 @@ export async function handleWebSocketEvent(
             deviceId: request.deviceId,
             requestId: request.requestId,
             entries: schedule.entries.map((entry) => ({
-              id: entry.id,
-              propertyIds: entry.properties.map(([controllerId, propertyId]) =>
-                getPropertyId(controllerId, propertyId, undefined)
+              propertyIds: entry.properties.map((num) =>
+                getPropertyId(num >> 16, num & 0xffff, undefined)
               ),
               startTime: entry.startTime,
               endTime: entry.endTime,
-              abortOnFailure: entry.abortOnFailure,
             })),
           };
           response = getScheduleResponse;
         } else if (data.action === "device/setSchedule") {
           const request = data as DeviceSetScheduleRequest;
-          const existingSchedule = await store.getSchedule(request.deviceId);
-          const entries = request.entries
-            // Omit entries from the request where the corresponding entry in the store has been removed
-            .filter(
-              (entry) =>
-                entry.id === undefined ||
-                existingSchedule.entries.some((existing) => existing.id === entry.id)
-            )
-            // Assign an id to new entries
-            .map((entry) =>
-              entry.id
-                ? entry
-                : {
-                    ...entry,
-                    id: Math.floor(Math.random() * 2 ** 52)
-                      .toString(16)
-                      .padStart(13, "0"),
-                  }
-            );
-          const schedule: ScheduleState = {
-            deviceId: request.deviceId,
-            entries: entries.map((entry) => {
-              const existing = existingSchedule.entries.find(
-                (existing) => existing.id === entry.id
-              );
-              const newEntry: ScheduleState["entries"][number] = {
-                id: entry.id,
-                properties: entry.propertyIds.map((propertyId) => {
-                  const parsed = parsePropertyId(propertyId);
-                  return [parsed.controllerId, parsed.propertyId];
-                }),
-                startTime: entry.startTime,
-                endTime: entry.endTime,
-                abortOnFailure: entry.abortOnFailure ?? false,
-              };
-              // Merge state with the existing entry if there is one
-              if (existing) {
-                newEntry.applyTimestamp = existing.applyTimestamp;
-                newEntry.applyStatus = existing.applyStatus;
-                newEntry.applyCount = existing.applyCount;
-              }
-              return newEntry;
+          const entries: ScheduleState["entries"] = request.entries.map((entry) => ({
+            properties: entry.propertyIds.map((propertyId) => {
+              const parsed = parsePropertyId(propertyId);
+              return (parsed.controllerId << 16) | parsed.propertyId;
             }),
+            startTime: entry.startTime,
+            endTime: entry.endTime,
+          }));
+          const messageId = IrrigationScheduleManager.generateMessageId();
+          const schedule: Partial<ScheduleState> = {
+            entries,
+            abort: false,
+            messageId,
           };
-          await store.setSchedule(schedule);
+          await Promise.all([
+            store.updateSchedule(request.deviceId, schedule),
+            scheduleManager.sendMessage(request.deviceId, messageId, 1),
+          ]);
           const setScheduleResponse: DeviceSetScheduleResponse = {
             action: request.action,
             requestId: request.requestId,
             deviceId: request.deviceId,
-            entries: entries,
+            entries: request.entries,
           };
           response = setScheduleResponse;
         } else {

@@ -30,7 +30,6 @@ const getDefaultEntry = (entry?: Partial<ScheduleEntry>): ScheduleEntry => ({
   startTime: Date.now() + defaultStartIn,
   endTime: Date.now() + defaultRunTime,
   propertyIds: [],
-  abortOnFailure: true,
   ...entry,
 });
 

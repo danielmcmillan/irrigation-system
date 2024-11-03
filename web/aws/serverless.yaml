@@ -16,7 +16,9 @@ provider:
       statements:
         - Effect: Allow
           Action: sqs:SendMessage
-          Resource: !GetAtt StorageQueue.Arn
+          Resource:
+            - !GetAtt StorageQueue.Arn
+            - !GetAtt ScheduleQueue.Arn
         - Effect: Allow
           Action:
             - dynamodb:GetItem
@@ -32,6 +34,7 @@ provider:
           Resource: "*"
   environment:
     DYNAMODB_TABLE_NAME: !Ref StateTable
+    SCHEDULE_QUEUE_URL: !Ref ScheduleQueue
     API_GATEWAY_ENDPOINT: !Sub "https://${WebsocketsApi.ApiId}.execute-api.${AWS::Region}.amazonaws.com/${sls:stage}"
     IOT_ENDPOINT: ${env:IOT_ENDPOINT}
     VAPID_SUBJECT: ${env:VAPID_SUBJECT}
@@ -64,6 +67,14 @@ functions:
       - websocket:
           route: $default
           routeResponseSelectionExpression: $default
+
+  ScheduleHandler:
+    handler: src/handleScheduleMessage.handleScheduleMessage
+    events:
+      - sqs:
+          arn: !GetAtt ScheduleQueue.Arn
+          batchSize: 10
+          maximumConcurrency: 2
 
 resources:
   Parameters:
@@ -157,6 +168,23 @@ resources:
         TimeToLiveSpecification:
           Enabled: true
           AttributeName: exp
+
+    ScheduleQueue:
+      Type: AWS::SQS::Queue
+      Properties:
+        QueueName: irrigation-${sls:stage}-ScheduleQueue
+        VisibilityTimeout: 30
+        MessageRetentionPeriod: 1209600
+        RedrivePolicy:
+          deadLetterTargetArn: !GetAtt ScheduleDLQ.Arn
+          maxReceiveCount: 3
+
+    ScheduleDLQ:
+      Type: AWS::SQS::Queue
+      Properties:
+        QueueName: irrigation-${sls:stage}-ScheduleDLQ
+        VisibilityTimeout: 30
+        MessageRetentionPeriod: 1209600
 
     AuthenticatedUserRole:
       Type: AWS::IAM::Role
