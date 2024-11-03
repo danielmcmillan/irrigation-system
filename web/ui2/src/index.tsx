@@ -8,6 +8,9 @@ import { IrrigationStore } from "./legacy/irrigation/store";
 import { ApiRequestSigner } from "./services/apiRequestSigner";
 import { CognitoIdentityTokenProvider } from "./services/cognitoIdentityTokenProvider";
 import { WebPush } from "./services/webPush";
+import { registerSW } from "virtual:pwa-register";
+
+registerSW({ immediate: true });
 
 const config = {
   region: import.meta.env.VITE_REGION,
