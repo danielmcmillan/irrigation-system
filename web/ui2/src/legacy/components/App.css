@@ -1,7 +1,8 @@
 #root > div > div[role="tablist"] {
   position: sticky;
   top: 0;
-  z-index: 1;
+  z-index: 3;
+  backdrop-filter: blur(3px);
 }
 
 .tab-page {
