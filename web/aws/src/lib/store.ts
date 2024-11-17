@@ -53,6 +53,8 @@ export interface ScheduleState {
     /** The actual value seen after being requested */
     seen: boolean;
     setTime?: number;
+    /** True when the time limit for the pending change has been reached */
+    expired?: boolean;
   }>;
   lastEvaluated?: number;
 }

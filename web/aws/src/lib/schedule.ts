@@ -2,9 +2,11 @@ import { SendMessageCommand, SQSClient } from "@aws-sdk/client-sqs";
 import { PropertyState, ScheduleState } from "./store.js";
 
 /** Time after setting a property until it is considered to have failed. */
-const SET_TIME_LIMIT = 300000;
+const SET_TIME_LIMIT = 240000;
 /** Time after setting a property during abort until giving up. */
 const ABORT_TIME_LIMIT = 300000;
+/** Maximum number of properties that can be expired before triggering abort. */
+const EXPIRED_LIMIT = 2;
 /** Time to wait between evaluations when some property change is pending. */
 const EVALUATE_DELAY = 20000;
 /** Time after an entry's end time before it will be cleaned up. */
@@ -19,10 +21,13 @@ export interface ScheduleMessageBody {
 export type EvaluateScheduleResult =
   | { abort: true }
   | {
+      /** setProperty messages that should be sent */
       propertySetActions: Array<{ controllerId: number; propertyId: number; value: boolean }>;
+      /** Properties that have just reached the time limit */
+      expiredProperties: Array<{ controllerId: number; propertyId: number }>;
       newPropertyScheduleStates: NonNullable<ScheduleState["state"]>;
-      timeToNextEvaluation?: number;
       newEntries?: ScheduleState["entries"];
+      timeToNextEvaluation?: number;
     };
 
 export class IrrigationScheduleManager {
@@ -61,6 +66,7 @@ export class IrrigationScheduleManager {
     properties: PropertyState[],
     now: number
   ): EvaluateScheduleResult {
+    const timeLimit = schedule.abort ? ABORT_TIME_LIMIT : SET_TIME_LIMIT;
     console.debug("Enter evaluateSchedule", { schedule, properties, now });
     // for each property:
     // - run: should run - property is included in an entry where `start <= now < end`
@@ -115,6 +121,7 @@ export class IrrigationScheduleManager {
     const result: EvaluateScheduleResult = {
       propertySetActions: [],
       newPropertyScheduleStates: [],
+      expiredProperties: [],
     };
 
     for (const [id, scheduleState] of scheduleStates) {
@@ -125,6 +132,9 @@ export class IrrigationScheduleManager {
       };
       if (scheduleState.setTime !== undefined) {
         newScheduleState.setTime = scheduleState.setTime;
+      }
+      if (scheduleState.expired !== undefined) {
+        newScheduleState.expired = scheduleState.expired;
       }
       const controllerId = id >> 16;
       const propertyId = id & 0xffff;
@@ -141,6 +151,7 @@ export class IrrigationScheduleManager {
         value,
         ...scheduleState,
       });
+      // TODO: maybe do something different if at least desired value is correct (can stop sending set property requests)
       if (scheduleState.run) {
         if (!scheduleState.set || (!scheduleState.seen && (desiredValue === 0 || value === 0))) {
           result.propertySetActions.push({
@@ -171,26 +182,35 @@ export class IrrigationScheduleManager {
         if (newScheduleState.set !== (scheduleState.set ?? false)) {
           // New change just applied
           newScheduleState.setTime = now;
+          delete newScheduleState.expired;
         } else if (newScheduleState.set !== newScheduleState.seen) {
-          // Previously applied change still pending
+          // Notify about expired property when time limit is reached
+          if (scheduleState.setTime !== undefined && now - scheduleState.setTime > SET_TIME_LIMIT) {
+            if (!newScheduleState.expired) {
+              newScheduleState.expired = true;
+              result.expiredProperties.push({ controllerId, propertyId });
+            }
+          }
+          // When aborting, give up after a time limit
           if (
-            !schedule.abort &&
-            scheduleState.setTime !== undefined &&
-            now - scheduleState.setTime > SET_TIME_LIMIT
-          ) {
-            // Start aborting
-            return { abort: true };
-          } else if (
             schedule.abort &&
             scheduleState.setTime !== undefined &&
             now - scheduleState.setTime > ABORT_TIME_LIMIT
           ) {
-            // Give up aborting this property
             continue;
           }
+        } else {
+          delete newScheduleState.expired;
         }
         result.newPropertyScheduleStates.push(newScheduleState);
       }
+    }
+
+    const expired = result.newPropertyScheduleStates.filter((p) => p.expired);
+    // Abort when too many properties are expired
+    if (expired.length > EXPIRED_LIMIT) {
+      console.error("Too many properties are expired", { expired });
+      return { abort: true };
     }
 
     // Work out when to evaluate next

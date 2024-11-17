@@ -1,15 +1,17 @@
-import { SQSEvent } from "aws-lambda";
-import { IrrigationScheduleManager, ScheduleMessageBody } from "./lib/schedule.js";
-import { DeviceStateQueryType, IrrigationDataStore, ScheduleState } from "./lib/store.js";
-import { IoTDataPlaneClient } from "@aws-sdk/client-iot-data-plane";
-import { createSetPropertyCommand } from "./lib/deviceMessage/createSetPropertyCommand.js";
-import { DeviceScheduleStatusUpdateEvent } from "./lib/api/messages.js";
-import { getScheduleStatus } from "./lib/api/schedule.js";
 import {
   ApiGatewayManagementApiClient,
   PostToConnectionCommand,
 } from "@aws-sdk/client-apigatewaymanagementapi";
+import { IoTDataPlaneClient } from "@aws-sdk/client-iot-data-plane";
+import { SQSEvent } from "aws-lambda";
+import { DeviceScheduleStatusUpdateEvent } from "./lib/api/messages.js";
+import { getScheduleStatus } from "./lib/api/schedule.js";
+import { getConfiguredDeviceControllerDefinitions } from "./lib/deviceControllers/configureDeviceControllers.js";
+import { DeviceControllerDefinitions } from "./lib/deviceControllers/types.js";
+import { createSetPropertyCommand } from "./lib/deviceMessage/createSetPropertyCommand.js";
 import { sendPushNotification } from "./lib/pushNotifications.js";
+import { IrrigationScheduleManager, ScheduleMessageBody } from "./lib/schedule.js";
+import { DeviceStateQueryType, IrrigationDataStore, ScheduleState } from "./lib/store.js";
 
 const store = new IrrigationDataStore({
   tableName: process.env.DYNAMODB_TABLE_NAME!,
@@ -121,8 +123,46 @@ export async function handleScheduleMessage(event: SQSEvent): Promise<void> {
     if (aborting) {
       await sendPushNotification(
         {
-          title: `Schedule aborted for ${deviceId}`,
-          message: "Schedule was aborted due to failure. All operations will be stopped.",
+          title: "Schedule aborted",
+          message: `Schedule was aborted due to failure. All operations will be stopped (${deviceId}).`,
+        },
+        store,
+        { deviceId }
+      );
+    } else if ("expiredProperties" in result && result.expiredProperties.length > 0) {
+      // Try to get the property definitions for populating friendly property names
+      let controllers: DeviceControllerDefinitions | undefined = undefined;
+      try {
+        const { devices } = await store.getDeviceState(DeviceStateQueryType.Device, deviceId);
+        controllers =
+          devices.length > 0 && devices[0].config
+            ? getConfiguredDeviceControllerDefinitions(devices[0].config)
+            : undefined;
+      } catch (err) {
+        console.error(
+          `Failed to get friendly property names for schedule failure notification (${deviceId})`,
+          err
+        );
+      }
+      const propertyDescription = result.expiredProperties
+        .map(({ controllerId, propertyId }) => {
+          const property = controllers
+            ?.get(controllerId)
+            ?.getProperties()
+            ?.find((p) => p.propertyId === propertyId);
+          const component = controllers
+            ?.get(controllerId)
+            ?.getComponents()
+            ?.find((c) => c.id === property?.componentId);
+          return component && property
+            ? `${component.name} ${property.name}`
+            : `${controllerId}:${propertyId}`;
+        })
+        .join(", ");
+      await sendPushNotification(
+        {
+          title: "Scheduled change failing",
+          message: `${propertyDescription} is failing for a long time (${deviceId})}.`,
         },
         store,
         { deviceId }
