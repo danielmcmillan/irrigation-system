@@ -381,6 +381,17 @@ const App = observer(
           }
           editing={scheduleEntryIndex >= 0}
           onSave={(entry) => {
+            // Snap entry start time to other entry end time if one is close
+            const otherEntry = icu.scheduleEntries.find(
+              (e, i) =>
+                i !== scheduleEntryIndex &&
+                e.endTime < entry.startTime + 60000 &&
+                e.endTime > entry.startTime - 60000
+            );
+            if (otherEntry) {
+              entry.endTime += otherEntry.endTime - entry.startTime;
+              entry.startTime = otherEntry.endTime;
+            }
             if (scheduleEntryIndex >= 0 && scheduleEntryIndex < icu.scheduleEntries.length) {
               icu.requestUpdateScheduleEntry(scheduleEntryIndex, entry);
             } else if (scheduleEntryIndex === -1) {
