@@ -233,7 +233,9 @@ async function updateStateStore(message: DeviceMessage): Promise<void> {
   }
   for (const prop of newPropertyStates) {
     promises.push(limit(() => store.updatePropertyState(prop)));
-    promises.push(limit(() => store.addPropertyHistory(prop, historyTtl)));
+    if (!prop.isDesiredValue) {
+      promises.push(limit(() => store.addPropertyHistory(prop, historyTtl)));
+    }
   }
   await Promise.all(promises);
 
