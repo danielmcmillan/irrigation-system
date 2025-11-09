@@ -6,7 +6,7 @@
 	(paper "A4")
 	(title_block
 		(title "Irrigation Remote Unit")
-		(rev "1")
+		(rev "3")
 		(company "Daniel McMillan")
 	)
 	(lib_symbols
@@ -5793,7 +5793,7 @@
 		)
 		(uuid "059b86f3-7e97-4c57-8257-a0f076d59296")
 	)
-	(text "3v3 TPS5430"
+	(text "3v3 Buck converter"
 		(exclude_from_sim no)
 		(at 102.87 13.97 0)
 		(effects
@@ -11165,7 +11165,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "750"
+		(property "Value" "20k"
 			(at 133.858 46.863 0)
 			(effects
 				(font
@@ -11174,7 +11174,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "Resistor_SMD:R_0603_1608Metric"
+		(property "Footprint" "Resistor_SMD:R_0402_1005Metric"
 			(at 130.302 45.72 90)
 			(effects
 				(font
@@ -11183,7 +11183,7 @@
 				(hide yes)
 			)
 		)
-		(property "Datasheet" "https://datasheet.lcsc.com/lcsc/1811081723_UNI-ROYAL-Uniroyal-Elec-0603WAF7500T5E_C23241.pdf"
+		(property "Datasheet" "https://www.lcsc.com/datasheet/lcsc_datasheet_2206010100_UNI-ROYAL-Uniroyal-Elec-0402WGF2002TCE_C25765.pdf"
 			(at 132.08 45.72 0)
 			(effects
 				(font
@@ -11200,16 +11200,7 @@
 				)
 			)
 		)
-		(property "JLCPCB Part" "C23241"
-			(at 132.08 45.72 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Purchase Link" "NA"
+		(property "JLCPCB Part" "C25765"
 			(at 132.08 45.72 0)
 			(effects
 				(font
@@ -11251,7 +11242,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "6.8nF"
+		(property "Value" "10pF"
 			(at 121.031 49.403 0)
 			(effects
 				(font
@@ -11269,7 +11260,7 @@
 				(hide yes)
 			)
 		)
-		(property "Datasheet" "https://datasheet.lcsc.com/lcsc/1811061811_FH-Guangdong-Fenghua-Advanced-Tech-0603B682K500NT_C1631.pdf"
+		(property "Datasheet" "https://www.lcsc.com/datasheet/C1634.pdf"
 			(at 118.11 48.26 0)
 			(effects
 				(font
@@ -11286,16 +11277,7 @@
 				)
 			)
 		)
-		(property "JLCPCB Part" "C1631"
-			(at 118.11 48.26 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Purchase Link" "NA"
+		(property "JLCPCB Part" "C1634"
 			(at 118.11 48.26 0)
 			(effects
 				(font
@@ -11337,7 +11319,7 @@
 				(justify left)
 			)
 		)
-		(property "Value" "22nF 25V"
+		(property "Value" "1.5nF 25V"
 			(at 135.001 55.753 0)
 			(effects
 				(font
@@ -11355,7 +11337,7 @@
 				(hide yes)
 			)
 		)
-		(property "Datasheet" "https://datasheet.lcsc.com/lcsc/1811101610_Samsung-Electro-Mechanics-CL10B223KB8NNNC_C21122.pdf"
+		(property "Datasheet" "https://www.lcsc.com/datasheet/C1595.pdf"
 			(at 132.08 54.61 0)
 			(effects
 				(font
@@ -11372,16 +11354,7 @@
 				)
 			)
 		)
-		(property "JLCPCB Part" "C21122"
-			(at 132.08 54.61 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Purchase Link" "NA"
+		(property "JLCPCB Part" "C1595"
 			(at 132.08 54.61 0)
 			(effects
 				(font
