@@ -16009,7 +16009,7 @@
 				(justify left)
 			)
 		)
-		(property "Footprint" "Package_DIP:DIP-8_W7.62mm"
+		(property "Footprint" "Package_SO:MSOP-8_3x3mm_P0.65mm"
 			(at 122.555 170.18 0)
 			(effects
 				(font
@@ -16018,7 +16018,7 @@
 				(hide yes)
 			)
 		)
-		(property "Datasheet" "https://datasheets.maximintegrated.com/en/ds/MAX3483-MAX3491.pdf"
+		(property "Datasheet" "https://xonstorage.z8.web.core.windows.net/pdf/hgsemi_max3485ecmmtr_apr22_xonlink.pdf"
 			(at 122.555 151.13 0)
 			(effects
 				(font
@@ -16033,6 +16033,15 @@
 				(font
 					(size 1.27 1.27)
 				)
+			)
+		)
+		(property "JLCPCB Part" "C5310819"
+			(at 122.555 152.4 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
 			)
 		)
 		(pin "1"
