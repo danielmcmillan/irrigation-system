@@ -10497,7 +10497,7 @@
 				(hide yes)
 			)
 		)
-		(property "Purchase Link" "NA"
+		(property "FT Rotation Offset" "-90"
 			(at 133.35 24.13 0)
 			(effects
 				(font
@@ -11097,7 +11097,7 @@
 				(hide yes)
 			)
 		)
-		(property "Datasheet" "https://datasheet.lcsc.com/lcsc/1811061811_FH-Guangdong-Fenghua-Advanced-Tech-0603B682K500NT_C1631.pdf"
+		(property "Datasheet" "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2304140030_FH--Guangdong-Fenghua-Advanced-Tech-0603B822K500NT_C1322360.pdf"
 			(at 129.54 34.29 0)
 			(effects
 				(font
@@ -11114,16 +11114,7 @@
 				)
 			)
 		)
-		(property "JLCPCB Part" "C1631"
-			(at 129.54 34.29 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Purchase Link" "NA (Note replaced with 6.8nF)"
+		(property "JLCPCB Part" "C1322360"
 			(at 129.54 34.29 0)
 			(effects
 				(font
@@ -12887,7 +12878,7 @@
 		(at 144.145 135.255 270)
 		(unit 1)
 		(exclude_from_sim no)
-		(in_bom yes)
+		(in_bom no)
 		(on_board yes)
 		(dnp no)
 		(uuid "00000000-0000-0000-0000-00006153c961")
@@ -13363,7 +13354,7 @@
 				(hide yes)
 			)
 		)
-		(property "Purchase Link" "NA (Extended)"
+		(property "FT Rotation Offset" "-90"
 			(at 49.53 144.78 0)
 			(effects
 				(font
@@ -13605,7 +13596,7 @@
 		(at 17.78 157.48 0)
 		(unit 1)
 		(exclude_from_sim no)
-		(in_bom yes)
+		(in_bom no)
 		(on_board yes)
 		(dnp no)
 		(uuid "00000000-0000-0000-0000-0000616d3744")
@@ -13885,7 +13876,7 @@
 				(hide yes)
 			)
 		)
-		(property "Purchase Link" "NA (Extended)"
+		(property "FT Rotation Offset" "-90"
 			(at 49.53 177.8 0)
 			(effects
 				(font
@@ -15427,7 +15418,7 @@
 		(at 270.51 52.07 270)
 		(unit 1)
 		(exclude_from_sim no)
-		(in_bom yes)
+		(in_bom no)
 		(on_board yes)
 		(dnp no)
 		(uuid "00000000-0000-0000-0000-000061a87884")

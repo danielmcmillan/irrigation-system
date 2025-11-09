@@ -234,7 +234,7 @@
 		(path "/00000000-0000-0000-0000-0000616d3744")
 		(sheetname "/")
 		(sheetfile "remote-unit.kicad_sch")
-		(attr through_hole)
+		(attr through_hole exclude_from_bom)
 		(fp_line
 			(start 3.75 -8.081)
 			(end 3.75 8.081)
@@ -5303,7 +5303,7 @@
 		(path "/00000000-0000-0000-0000-000061a87884")
 		(sheetname "/")
 		(sheetfile "remote-unit.kicad_sch")
-		(attr through_hole)
+		(attr through_hole exclude_from_bom)
 		(fp_circle
 			(center 2.5 0)
 			(end 6.97 0)
@@ -10100,6 +10100,19 @@
 				)
 			)
 		)
+		(property "FT Rotation Offset" "90"
+			(at 0 0 180)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "3fa3433a-9c2e-46a3-8f21-f04124ef7291")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
 		(property ki_fp_filters "Texas*HTSOP*1EP*3.9x4.9mm*P1.27mm*EP2.95x4.9mm*Mask2.4x3.1mm*")
 		(path "/00000000-0000-0000-0000-0000615e5fd9")
 		(sheetname "/")
@@ -10557,6 +10570,19 @@
 			(layer "F.Fab")
 			(hide yes)
 			(uuid "5194700f-3022-46fb-9fdc-3cf0b52812f9")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "FT Rotation Offset" "90"
+			(at 0 0 180)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "825bedec-e343-42cc-af57-d088a52c6cbd")
 			(effects
 				(font
 					(size 1 1)
@@ -14220,7 +14246,7 @@
 				)
 			)
 		)
-		(property "Datasheet" "https://datasheet.lcsc.com/lcsc/1811061811_FH-Guangdong-Fenghua-Advanced-Tech-0603B682K500NT_C1631.pdf"
+		(property "Datasheet" "https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2304140030_FH--Guangdong-Fenghua-Advanced-Tech-0603B822K500NT_C1322360.pdf"
 			(at 0 0 0)
 			(layer "F.Fab")
 			(hide yes)
@@ -14244,7 +14270,7 @@
 				)
 			)
 		)
-		(property "JLCPCB Part" "C1631"
+		(property "JLCPCB Part" "C1322360"
 			(at 254.736 172.466 0)
 			(layer "F.Fab")
 			(hide yes)
@@ -15200,6 +15226,19 @@
 			(layer "F.Fab")
 			(hide yes)
 			(uuid "f76984cb-f193-4493-8e60-49e32a2c4c05")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+			)
+		)
+		(property "FT Rotation Offset" "90"
+			(at 0 0 0)
+			(unlocked yes)
+			(layer "F.Fab")
+			(hide yes)
+			(uuid "bb23de49-5b20-405c-92c2-129450bcd310")
 			(effects
 				(font
 					(size 1 1)
