@@ -4302,6 +4302,293 @@
 			)
 			(embedded_fonts no)
 		)
+		(symbol "Transistor_FET:Q_PMOS_GSD"
+			(pin_names
+				(offset 0)
+				(hide yes)
+			)
+			(exclude_from_sim no)
+			(in_bom yes)
+			(on_board yes)
+			(property "Reference" "Q"
+				(at 5.08 1.905 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(justify left)
+				)
+			)
+			(property "Value" "Q_PMOS_GSD"
+				(at 5.08 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(justify left)
+				)
+			)
+			(property "Footprint" ""
+				(at 5.08 2.54 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "Datasheet" "~"
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "Description" "P-MOSFET transistor, gate/source/drain"
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(property "ki_keywords" "transistor PMOS P-MOS P-MOSFET"
+				(at 0 0 0)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+					(hide yes)
+				)
+			)
+			(symbol "Q_PMOS_GSD_0_1"
+				(polyline
+					(pts
+						(xy 0.254 1.905) (xy 0.254 -1.905)
+					)
+					(stroke
+						(width 0.254)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(polyline
+					(pts
+						(xy 0.254 0) (xy -2.54 0)
+					)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(polyline
+					(pts
+						(xy 0.762 2.286) (xy 0.762 1.27)
+					)
+					(stroke
+						(width 0.254)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(polyline
+					(pts
+						(xy 0.762 1.778) (xy 3.302 1.778) (xy 3.302 -1.778) (xy 0.762 -1.778)
+					)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(polyline
+					(pts
+						(xy 0.762 0.508) (xy 0.762 -0.508)
+					)
+					(stroke
+						(width 0.254)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(polyline
+					(pts
+						(xy 0.762 -1.27) (xy 0.762 -2.286)
+					)
+					(stroke
+						(width 0.254)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(circle
+					(center 1.651 0)
+					(radius 2.794)
+					(stroke
+						(width 0.254)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(polyline
+					(pts
+						(xy 2.286 0) (xy 1.27 0.381) (xy 1.27 -0.381) (xy 2.286 0)
+					)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type outline)
+					)
+				)
+				(polyline
+					(pts
+						(xy 2.54 2.54) (xy 2.54 1.778)
+					)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(circle
+					(center 2.54 1.778)
+					(radius 0.254)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type outline)
+					)
+				)
+				(circle
+					(center 2.54 -1.778)
+					(radius 0.254)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type outline)
+					)
+				)
+				(polyline
+					(pts
+						(xy 2.54 -2.54) (xy 2.54 0) (xy 0.762 0)
+					)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(polyline
+					(pts
+						(xy 2.921 -0.381) (xy 3.683 -0.381)
+					)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(polyline
+					(pts
+						(xy 3.302 -0.381) (xy 2.921 0.254) (xy 3.683 0.254) (xy 3.302 -0.381)
+					)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+			)
+			(symbol "Q_PMOS_GSD_1_1"
+				(pin input line
+					(at -5.08 0 0)
+					(length 2.54)
+					(name "G"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at 2.54 5.08 270)
+					(length 2.54)
+					(name "D"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "3"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at 2.54 -5.08 90)
+					(length 2.54)
+					(name "S"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "2"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+			)
+			(embedded_fonts no)
+		)
 		(symbol "power:+12V"
 			(power)
 			(pin_names
@@ -6282,16 +6569,6 @@
 	)
 	(wire
 		(pts
-			(xy 166.37 154.305) (xy 166.37 153.67)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "306cdd0e-0ec8-42d7-9aac-2cd97bfac248")
-	)
-	(wire
-		(pts
 			(xy 39.37 149.86) (xy 29.21 149.86)
 		)
 		(stroke
@@ -6439,6 +6716,16 @@
 			(type default)
 		)
 		(uuid "3ec97300-8ec1-48b6-b8df-b5f7313a4eeb")
+	)
+	(wire
+		(pts
+			(xy 148.59 160.02) (xy 148.59 162.56)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "3ed94d02-05a2-4009-9623-853c3a35e391")
 	)
 	(polyline
 		(pts
@@ -6702,7 +6989,7 @@
 	)
 	(wire
 		(pts
-			(xy 149.225 168.91) (xy 142.24 168.91)
+			(xy 149.225 168.91) (xy 143.51 168.91)
 		)
 		(stroke
 			(width 0)
@@ -6972,7 +7259,7 @@
 	)
 	(wire
 		(pts
-			(xy 136.525 160.02) (xy 136.525 135.255)
+			(xy 135.89 161.29) (xy 135.89 135.255)
 		)
 		(stroke
 			(width 0)
@@ -7110,16 +7397,6 @@
 		)
 		(uuid "8c7051cd-c69b-4b68-b004-6c8355548bfe")
 	)
-	(wire
-		(pts
-			(xy 148.59 159.385) (xy 148.59 162.56)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "8defc997-44cb-47db-b721-624fed837180")
-	)
 	(polyline
 		(pts
 			(xy 12.7 127) (xy 12.7 196.85)
@@ -7189,6 +7466,16 @@
 			(type default)
 		)
 		(uuid "9c471d7f-6f67-4a14-8457-959cf736ea02")
+	)
+	(wire
+		(pts
+			(xy 166.37 162.56) (xy 166.37 161.29)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "9c5f211c-6548-4003-884c-c4479a7a3210")
 	)
 	(polyline
 		(pts
@@ -7292,16 +7579,6 @@
 	)
 	(wire
 		(pts
-			(xy 142.24 168.275) (xy 142.24 168.91)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "a735ef6f-c0d9-40f1-88e2-ad630a3c002e")
-	)
-	(wire
-		(pts
 			(xy 243.84 37.465) (xy 243.84 28.575)
 		)
 		(stroke
@@ -7392,7 +7669,7 @@
 	)
 	(wire
 		(pts
-			(xy 148.59 147.955) (xy 148.59 151.765)
+			(xy 148.59 147.955) (xy 148.59 152.4)
 		)
 		(stroke
 			(width 0)
@@ -7409,6 +7686,16 @@
 			(type default)
 		)
 		(uuid "af2db46e-c604-4664-8a9a-fda932e96379")
+	)
+	(wire
+		(pts
+			(xy 135.89 161.29) (xy 143.51 161.29)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "afbce514-4934-40ae-a117-9093f547a9c7")
 	)
 	(wire
 		(pts
@@ -7672,7 +7959,7 @@
 	)
 	(wire
 		(pts
-			(xy 136.525 135.255) (xy 122.555 135.255)
+			(xy 135.89 135.255) (xy 122.555 135.255)
 		)
 		(stroke
 			(width 0)
@@ -7779,16 +8066,6 @@
 			(type default)
 		)
 		(uuid "cb5e5577-46e6-47cb-979f-865dec53dbfd")
-	)
-	(wire
-		(pts
-			(xy 142.24 160.02) (xy 136.525 160.02)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "cd4a7a70-49be-41c5-b850-b88368849c06")
 	)
 	(wire
 		(pts
@@ -7962,16 +8239,6 @@
 	)
 	(wire
 		(pts
-			(xy 166.37 162.56) (xy 166.37 161.925)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "ea89c2a2-fd38-443c-a645-2d2344b76fef")
-	)
-	(wire
-		(pts
 			(xy 242.57 59.69) (xy 224.79 59.69)
 		)
 		(stroke
@@ -8032,7 +8299,7 @@
 	)
 	(wire
 		(pts
-			(xy 166.37 162.56) (xy 156.845 162.56)
+			(xy 156.845 162.56) (xy 166.37 162.56)
 		)
 		(stroke
 			(width 0)
@@ -8059,16 +8326,6 @@
 			(type default)
 		)
 		(uuid "f3ba2034-248b-4dd4-871d-d40b950d8cdc")
-	)
-	(wire
-		(pts
-			(xy 142.24 160.655) (xy 142.24 160.02)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "f4977ccc-efc2-4b79-9d9b-a4df3c9f0378")
 	)
 	(wire
 		(pts
@@ -15723,6 +15980,92 @@
 		)
 	)
 	(symbol
+		(lib_id "Device:R")
+		(at 148.59 156.21 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "280353c9-fa5b-4367-aea2-b640d8dd4fa9")
+		(property "Reference" "R11"
+			(at 150.368 155.0416 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "750"
+			(at 150.368 157.353 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" "Resistor_SMD:R_0603_1608Metric"
+			(at 146.812 156.21 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "https://datasheet.lcsc.com/lcsc/1811081723_UNI-ROYAL-Uniroyal-Elec-0603WAF7500T5E_C23241.pdf"
+			(at 148.59 156.21 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" ""
+			(at 148.59 156.21 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "JLCPCB Part" "C23241"
+			(at 148.59 156.21 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Purchase Link" "NA"
+			(at 148.59 156.21 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "c10e4a98-5ff0-4452-b812-39a7aec1220d")
+		)
+		(pin "2"
+			(uuid "dd15af2d-6767-4dd3-9501-389891933aa5")
+		)
+		(instances
+			(project "remote-unit"
+				(path "/18be3b1b-9bcf-4c4f-bb2a-ca2504ea30e0"
+					(reference "R11")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
 		(lib_id "power:GND")
 		(at 139.065 177.165 0)
 		(unit 1)
@@ -15787,111 +16130,7 @@
 		)
 	)
 	(symbol
-		(lib_id "Device:R")
-		(at 148.59 155.575 0)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(uuid "4ce56b12-723e-4fda-8aab-7a9e28ca1341")
-		(property "Reference" "R11"
-			(at 150.368 154.4066 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Value" "10k"
-			(at 150.368 156.718 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Footprint" "Resistor_SMD:R_0402_1005Metric"
-			(at 146.812 155.575 90)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" "https://datasheet.lcsc.com/lcsc/1809301717_UNI-ROYAL-Uniroyal-Elec-0402WGF1002TCE_C25744.pdf"
-			(at 148.59 155.575 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" ""
-			(at 148.59 155.575 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "JLCPCB Part" "C25744"
-			(at 148.59 155.575 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "JLCPCB UP" ""
-			(at 148.59 155.575 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "JLCPCB Basic" ""
-			(at 148.59 155.575 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Purchase Link" "NA"
-			(at 148.59 155.575 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "b77f95ed-aa22-47c6-bb6a-07194bc49e12")
-		)
-		(pin "2"
-			(uuid "1fd9350e-5fa1-48c4-a1d8-249e401a1cae")
-		)
-		(instances
-			(project "remote-unit"
-				(path "/18be3b1b-9bcf-4c4f-bb2a-ca2504ea30e0"
-					(reference "R11")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "Device:Q_PNP_BEC")
+		(lib_id "Transistor_FET:Q_PMOS_GSD")
 		(at 154.305 147.955 0)
 		(unit 1)
 		(exclude_from_sim no)
@@ -15901,7 +16140,7 @@
 		(fields_autoplaced yes)
 		(uuid "5fa9a9b5-897a-426d-97c4-96216fb5adcc")
 		(property "Reference" "Q3"
-			(at 159.385 146.685 0)
+			(at 160.02 146.6849 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -15909,8 +16148,8 @@
 				(justify left)
 			)
 		)
-		(property "Value" "PNP"
-			(at 159.385 149.225 0)
+		(property "Value" "VGS<-14v"
+			(at 160.02 149.2249 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -15927,7 +16166,7 @@
 				(hide yes)
 			)
 		)
-		(property "Datasheet" "https://datasheet.lcsc.com/lcsc/1810161212_Jiangsu-Changjing-Electronics-Technology-Co---Ltd--SS8550-Y2_C8542.pdf"
+		(property "Datasheet" "https://www.lcsc.com/datasheet/C8492.pdf"
 			(at 154.305 147.955 0)
 			(effects
 				(font
@@ -15942,18 +16181,10 @@
 				(font
 					(size 1.27 1.27)
 				)
-			)
-		)
-		(property "JLCPCB Part" "C8542"
-			(at 154.305 147.955 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
 				(hide yes)
 			)
 		)
-		(property "Purchase Link" "NA"
+		(property "JLCPCB Part" "C8492"
 			(at 154.305 147.955 0)
 			(effects
 				(font
@@ -15975,6 +16206,92 @@
 			(project "remote-unit"
 				(path "/18be3b1b-9bcf-4c4f-bb2a-ca2504ea30e0"
 					(reference "Q3")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "Device:R")
+		(at 143.51 165.1 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "691ebe29-61b9-40e8-aa3e-85868719d035")
+		(property "Reference" "R12"
+			(at 145.288 163.9316 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "3k"
+			(at 145.288 166.243 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Footprint" "Resistor_SMD:R_0603_1608Metric"
+			(at 141.732 165.1 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Datasheet" "https://datasheet.lcsc.com/lcsc/1811081711_UNI-ROYAL-Uniroyal-Elec-0603WAF3001T5E_C4211.pdf"
+			(at 143.51 165.1 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Description" ""
+			(at 143.51 165.1 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "JLCPCB Part" "C4211"
+			(at 143.51 165.1 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "Purchase Link" "NA"
+			(at 143.51 165.1 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(pin "1"
+			(uuid "5580db50-d08b-41b0-a56f-1f0c8c77981a")
+		)
+		(pin "2"
+			(uuid "707d0126-95c4-4257-81bf-4ff4c72fefa6")
+		)
+		(instances
+			(project "remote-unit"
+				(path "/18be3b1b-9bcf-4c4f-bb2a-ca2504ea30e0"
+					(reference "R12")
 					(unit 1)
 				)
 			)
@@ -16130,15 +16447,15 @@
 	)
 	(symbol
 		(lib_id "Device:R")
-		(at 166.37 158.115 0)
+		(at 166.37 157.48 0)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "954c461b-ebf0-46ac-9a53-fadaff1701aa")
+		(uuid "9af742a2-ea66-4d5c-a11c-61db3952bc0f")
 		(property "Reference" "R13"
-			(at 168.148 156.9466 0)
+			(at 168.148 156.3116 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -16146,8 +16463,8 @@
 				(justify left)
 			)
 		)
-		(property "Value" "20k"
-			(at 168.148 159.258 0)
+		(property "Value" "10k"
+			(at 168.148 158.623 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -16156,7 +16473,7 @@
 			)
 		)
 		(property "Footprint" "Resistor_SMD:R_0402_1005Metric"
-			(at 164.592 158.115 90)
+			(at 164.592 157.48 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -16164,8 +16481,8 @@
 				(hide yes)
 			)
 		)
-		(property "Datasheet" ""
-			(at 166.37 158.115 0)
+		(property "Datasheet" "https://datasheet.lcsc.com/lcsc/1809301717_UNI-ROYAL-Uniroyal-Elec-0402WGF1002TCE_C25744.pdf"
+			(at 166.37 157.48 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -16174,15 +16491,15 @@
 			)
 		)
 		(property "Description" ""
-			(at 166.37 158.115 0)
+			(at 166.37 157.48 0)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 			)
 		)
-		(property "JLCPCB Part" "C25765"
-			(at 166.37 158.115 0)
+		(property "JLCPCB Part" "C25744"
+			(at 166.37 157.48 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -16191,7 +16508,7 @@
 			)
 		)
 		(property "JLCPCB UP" ""
-			(at 166.37 158.115 0)
+			(at 166.37 157.48 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -16200,7 +16517,7 @@
 			)
 		)
 		(property "JLCPCB Basic" ""
-			(at 166.37 158.115 0)
+			(at 166.37 157.48 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -16209,7 +16526,7 @@
 			)
 		)
 		(property "Purchase Link" "NA"
-			(at 166.37 158.115 0)
+			(at 166.37 157.48 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -16218,10 +16535,10 @@
 			)
 		)
 		(pin "1"
-			(uuid "e8dc9ff8-9246-4e05-a174-01a57c025efe")
+			(uuid "878152e6-b3b9-4967-8841-d3bbdbc4b750")
 		)
 		(pin "2"
-			(uuid "f8faee3d-40a2-45ec-b1e9-b250e0f9301a")
+			(uuid "52a6548a-21d0-4549-ac7e-e3f52bf91250")
 		)
 		(instances
 			(project "remote-unit"
@@ -16496,110 +16813,6 @@
 			(project "remote-unit"
 				(path "/18be3b1b-9bcf-4c4f-bb2a-ca2504ea30e0"
 					(reference "R9")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "Device:R")
-		(at 142.24 164.465 0)
-		(unit 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(dnp no)
-		(uuid "fa047b8c-c5ee-486b-af19-ae4a6da05d4f")
-		(property "Reference" "R12"
-			(at 144.018 163.2966 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Value" "10k"
-			(at 144.018 165.608 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Footprint" "Resistor_SMD:R_0402_1005Metric"
-			(at 140.462 164.465 90)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Datasheet" "https://datasheet.lcsc.com/lcsc/1809301717_UNI-ROYAL-Uniroyal-Elec-0402WGF1002TCE_C25744.pdf"
-			(at 142.24 164.465 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Description" ""
-			(at 142.24 164.465 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "JLCPCB Part" "C25744"
-			(at 142.24 164.465 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "JLCPCB UP" ""
-			(at 142.24 164.465 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "JLCPCB Basic" ""
-			(at 142.24 164.465 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(property "Purchase Link" "NA"
-			(at 142.24 164.465 0)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(hide yes)
-			)
-		)
-		(pin "1"
-			(uuid "ad0895e6-fe54-422c-a1d1-9378cc26c2da")
-		)
-		(pin "2"
-			(uuid "9c30c9fe-4360-455f-a07e-86157b0fca7a")
-		)
-		(instances
-			(project "remote-unit"
-				(path "/18be3b1b-9bcf-4c4f-bb2a-ca2504ea30e0"
-					(reference "R12")
 					(unit 1)
 				)
 			)
