@@ -9,6 +9,7 @@ struct SolenoidDefinition
 {
   uint8_t positivePin;
   uint8_t negativePin;
+  uint8_t currentSensePin;
 };
 
 class Solenoids
@@ -17,7 +18,10 @@ class Solenoids
   const SolenoidDefinition (&definitions)[SOLENOID_COUNT];
   uint8_t state;
 
+  void checkCurrent(uint8_t pin);
+
 public:
+  bool lowCurrentDetected;
   Solenoids(const RemoteUnitConfig &config, const SolenoidDefinition (&definitions)[SOLENOID_COUNT]);
   void setup();
   void sleep();

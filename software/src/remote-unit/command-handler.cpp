@@ -29,7 +29,12 @@ int RemoteUnitCommandHandler::setSolenoidState(uint8_t state, uint8_t *newSoleno
         this->faults.setFault(RemoteUnitFault::SolenoidNotActivated);
         state = 0;
     }
+    solenoids.lowCurrentDetected = false;
     *newSolenoidStateOut = solenoids.setState(state);
+    if (solenoids.lowCurrentDetected)
+    {
+        this->faults.setFault(RemoteUnitFault::SolenoidLowCurrent);
+    }
     return 0;
 }
 

@@ -25,6 +25,10 @@
 #define DRV_B1 5
 #define DRV_B2 6
 
+// Solenoid current sense pins
+#define SOL_A_ADC 6
+#define SOL_B_ADC 7
+
 // Pulled low to enable solar charge
 #define DISABLE_CHARGE A4
 
@@ -41,8 +45,8 @@ volatile unsigned long counts = 0;
 
 RemoteUnitConfig config;
 SolenoidDefinition solenoidDefinitions[] = {
-    {DRV_A1, DRV_A2},
-    {DRV_B1, DRV_B2}};
+    {DRV_A1, DRV_A2, SOL_A_ADC},
+    {DRV_B1, DRV_B2, SOL_B_ADC}};
 RemoteUnitRfModule rfModule(NODE_ID, config, RF_EN);
 Solenoids solenoids(config, solenoidDefinitions);
 RemoteUnitBattery battery(config, 0, DISABLE_CHARGE);

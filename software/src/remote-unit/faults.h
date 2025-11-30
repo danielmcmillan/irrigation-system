@@ -8,7 +8,8 @@ enum class RemoteUnitFault : uint8_t
   SolenoidNotActivated,
   BatteryVoltageError,
   ConfigReadFailed,
-  ConfigureRfModuleFailed
+  ConfigureRfModuleFailed,
+  SolenoidLowCurrent
 };
 
 class RemoteUnitFaults

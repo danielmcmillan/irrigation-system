@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include "solenoids.h"
+#include "settings.h"
 
 Solenoids::Solenoids(const RemoteUnitConfig &config, const SolenoidDefinition (&definitions)[SOLENOID_COUNT])
     : config(config), definitions(definitions), state(SOLENOID_FORCE_FLAG)
@@ -28,6 +29,17 @@ void Solenoids::sleep()
   }
 }
 
+void Solenoids::checkCurrent(uint8_t pin)
+{
+  #ifdef HAS_CURRENT_SENSOR
+  int current = analogRead(pin);
+  if (current < 5)
+  {
+    this->lowCurrentDetected = true;
+  }
+  #endif
+}
+
 void Solenoids::solenoidOn(uint8_t index)
 {
   if (index < SOLENOID_COUNT)
@@ -36,7 +48,9 @@ void Solenoids::solenoidOn(uint8_t index)
     uint8_t pulseWidth = index == 0 ? this->config.getSolenoidAOnPulseWidth() : this->config.getSolenoidBOnPulseWidth();
     digitalWrite(definition.positivePin, HIGH);
     digitalWrite(definition.negativePin, LOW);
-    delay(pulseWidth * 2);
+    delay(pulseWidth);
+    this->checkCurrent(definition.currentSensePin);
+    delay(pulseWidth);
     digitalWrite(definition.positivePin, LOW);
   }
   this->state |= 1 << index;
@@ -50,7 +64,9 @@ void Solenoids::solenoidOff(uint8_t index)
     uint8_t pulseWidth = index == 0 ? this->config.getSolenoidAOffPulseWidth() : this->config.getSolenoidBOffPulseWidth();
     digitalWrite(definition.positivePin, LOW);
     digitalWrite(definition.negativePin, HIGH);
-    delay(pulseWidth * 2);
+    delay(pulseWidth);
+    this->checkCurrent(definition.currentSensePin);
+    delay(pulseWidth);
     digitalWrite(definition.negativePin, LOW);
   }
   this->state &= ~(1 << index);
