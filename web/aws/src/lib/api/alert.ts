@@ -54,6 +54,7 @@ export function getControllerErrorMessage(controllerId: number, errorData: Array
           2: "BatteryVoltageError",
           3: "ConfigReadFailed",
           4: "ConfigureRfModuleFailed",
+          5: "SolenoidLowCurrent"
         }[faultNum] ?? `Unknown (${faultNum})`;
     } else {
       message +=
