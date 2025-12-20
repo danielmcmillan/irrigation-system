@@ -75,6 +75,18 @@ async function sendNotifications(message: DeviceMessage): Promise<void> {
       }
     }
   }
+  for (const alert of getAlerts(message)) {
+    if (alert.notify) {
+        await sendPushNotification(
+          {
+            title: `${message.deviceId} alert`,
+            message: alert.message,
+          },
+          store,
+          { deviceId: message.deviceId }
+        );
+    }
+  }
 }
 
 async function abortScheduleOnReset(message: DeviceMessage): Promise<void> {
@@ -130,6 +142,69 @@ export function getDeviceUpdate(
     properties: propertyUpdates,
     alerts: alerts.length > 0 ? alerts : undefined,
   };
+}
+
+function getAlerts(message: DeviceMessage): Alert[] {
+  const messageTimeSeconds = (message.time / 1000) | 0;
+  const alerts: Alert[] = [];
+  if (message.type === "event" && message.events) {
+    for (const event of message.events) {
+      switch (event.type) {
+        case DeviceEventType.Started:
+          alerts.push({
+            time: messageTimeSeconds,
+            severity: AlertSeverity.Critical,
+            message: "Irrigation system restarted",
+          });
+          break;
+        case DeviceEventType.GeneralError:
+          alerts.push({
+            time: messageTimeSeconds,
+            severity: AlertSeverity.Error,
+            message: Buffer.from(event.data).toString("hex"),
+          });
+          break;
+        case DeviceEventType.GeneralWarning:
+          alerts.push({
+            time: messageTimeSeconds,
+            severity: AlertSeverity.Warning,
+            message: Buffer.from(event.data).toString("hex"),
+          });
+          break;
+        case DeviceEventType.GeneralInfo:
+          alerts.push({
+            time: messageTimeSeconds,
+            severity: AlertSeverity.Info,
+            message: Buffer.from(event.data).toString("hex"),
+          });
+          break;
+        case DeviceEventType.ControllerError:
+          alerts.push({
+            time: messageTimeSeconds,
+            severity: AlertSeverity.Error,
+            ...getControllerErrorMessage(event.controllerId, event.data),
+          });
+          break;
+        case DeviceEventType.PropertyError:
+          alerts.push({
+            time: messageTimeSeconds,
+            severity: AlertSeverity.Error,
+            message: getPropertyErrorMessage(event.controllerId, event.propertyId, event.data),
+            propertyId: getPropertyId(event.controllerId, event.propertyId, undefined), // TODO doesn't support bit flag properties
+          });
+          break;
+      }
+    }
+  } else if (message.type === "error" && message.error) {
+    alerts.push({
+      time: messageTimeSeconds,
+      severity: AlertSeverity.Error,
+      message: `${["Wifi", "Mqtt", "Config", "Controller", "Update"][message.error.component]} (${
+        message.error.code
+      }): ${message.error.text}`,
+    });
+  }
+  return alerts;
 }
 
 async function updateStateStore(message: DeviceMessage): Promise<void> {
@@ -240,64 +315,7 @@ async function updateStateStore(message: DeviceMessage): Promise<void> {
   await Promise.all(promises);
 
   // TODO separate function to build alerts from events/errors
-  const alerts: Alert[] = [];
-  if (message.type === "event" && message.events) {
-    for (const event of message.events) {
-      switch (event.type) {
-        case DeviceEventType.Started:
-          alerts.push({
-            time: messageTimeSeconds,
-            severity: AlertSeverity.Critical,
-            message: "Irrigation system restarted",
-          });
-          break;
-        case DeviceEventType.GeneralError:
-          alerts.push({
-            time: messageTimeSeconds,
-            severity: AlertSeverity.Error,
-            message: Buffer.from(event.data).toString("hex"),
-          });
-          break;
-        case DeviceEventType.GeneralWarning:
-          alerts.push({
-            time: messageTimeSeconds,
-            severity: AlertSeverity.Warning,
-            message: Buffer.from(event.data).toString("hex"),
-          });
-          break;
-        case DeviceEventType.GeneralInfo:
-          alerts.push({
-            time: messageTimeSeconds,
-            severity: AlertSeverity.Info,
-            message: Buffer.from(event.data).toString("hex"),
-          });
-          break;
-        case DeviceEventType.ControllerError:
-          alerts.push({
-            time: messageTimeSeconds,
-            severity: AlertSeverity.Error,
-            message: getControllerErrorMessage(event.controllerId, event.data),
-          });
-          break;
-        case DeviceEventType.PropertyError:
-          alerts.push({
-            time: messageTimeSeconds,
-            severity: AlertSeverity.Error,
-            message: getPropertyErrorMessage(event.controllerId, event.propertyId, event.data),
-            propertyId: getPropertyId(event.controllerId, event.propertyId, undefined), // TODO doesn't support bit flag properties
-          });
-          break;
-      }
-    }
-  } else if (message.type === "error" && message.error) {
-    alerts.push({
-      time: messageTimeSeconds,
-      severity: AlertSeverity.Error,
-      message: `${["Wifi", "Mqtt", "Config", "Controller", "Update"][message.error.component]} (${
-        message.error.code
-      }): ${message.error.text}`,
-    });
-  }
+  const alerts: Alert[] = getAlerts(message);
   // TODO persist alerts in store
 
   // Send events to subscribed websocket clients

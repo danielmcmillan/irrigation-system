@@ -1,6 +1,7 @@
-export function getControllerErrorMessage(controllerId: number, errorData: ArrayBuffer): string {
+export function getControllerErrorMessage(controllerId: number, errorData: ArrayBuffer): { message: string; notify: boolean } {
   const view = new DataView(errorData);
   let message: string;
+  let notify = false;
   if (controllerId == 2 && errorData.byteLength === 3) {
     const typeNum = view.getUint8(0);
     const codeNum = view.getUint16(1, true);
@@ -56,6 +57,10 @@ export function getControllerErrorMessage(controllerId: number, errorData: Array
           4: "ConfigureRfModuleFailed",
           5: "SolenoidLowCurrent"
         }[faultNum] ?? `Unknown (${faultNum})`;
+      // Enable alert notification for some remote unit faults
+      if ([0, 1, 2, 5].includes(faultNum)) {
+        notify = true;
+      }
     } else {
       message +=
         {
@@ -71,7 +76,7 @@ export function getControllerErrorMessage(controllerId: number, errorData: Array
   } else {
     message = `Unknown controller ${controllerId} error: ${Buffer.from(errorData).toString("hex")}`;
   }
-  return message;
+  return { message, notify };
 }
 
 export function getPropertyErrorMessage(

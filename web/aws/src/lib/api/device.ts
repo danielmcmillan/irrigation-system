@@ -42,6 +42,7 @@ export interface Alert {
   /** Id of the property if the alert is specific to a property. */
   propertyId?: string;
   message: string;
+  notify?: boolean;
 }
 
 export interface Device {
