@@ -25,7 +25,7 @@ export interface EntryEntryProps {
 }
 
 const defaultStartIn = 0;
-const defaultRunTime = 900000;
+const defaultRunTime = 300000;
 const getDefaultEntry = (entry?: Partial<ScheduleEntry>): ScheduleEntry => ({
   startTime: Date.now() + defaultStartIn,
   endTime: Date.now() + defaultRunTime,
