@@ -3,7 +3,7 @@
 #include "settings.h"
 
 Solenoids::Solenoids(const RemoteUnitConfig &config, const SolenoidDefinition (&definitions)[SOLENOID_COUNT])
-    : config(config), definitions(definitions), state(SOLENOID_FORCE_FLAG)
+    : config(config), definitions(definitions), state(SOLENOID_FORCE_FLAG), lowCurrentDetected(false)
 {
 }
 

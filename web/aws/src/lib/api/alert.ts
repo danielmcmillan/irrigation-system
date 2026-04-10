@@ -58,7 +58,7 @@ export function getControllerErrorMessage(controllerId: number, errorData: Array
           5: "SolenoidLowCurrent"
         }[faultNum] ?? `Unknown (${faultNum})`;
       // Enable alert notification for some remote unit faults
-      if ([0, 1, 2, 5].includes(faultNum)) {
+      if ([0, 1, 5].includes(faultNum)) {
         notify = true;
       }
     } else {
