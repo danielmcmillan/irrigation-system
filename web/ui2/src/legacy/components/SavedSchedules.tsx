@@ -47,20 +47,18 @@ export const SavedScheduleRow: React.FC<{
                 shrink={0}
               >
                 <option value={0}>Now</option>
+                <option value={-1}>Next</option>
                 <option value={60000}>1 minute</option>
                 <option value={300000}>5 minutes</option>
                 <option value={900000}>15 minutes</option>
                 <option value={3600000}>1 hour</option>
               </SelectField>
-              <Button variation="primary" onClick={() => onStart({ time: timeAfter })} shrink={0}>
-                <StartIcon />
-              </Button>
               <Button
-                isDisabled={!isScheduleActive}
-                onClick={() => onStart({ next: true })}
+                variation="primary"
+                onClick={() => onStart(timeAfter === -1 ? { next: true } : { time: timeAfter })}
                 shrink={0}
               >
-                Start next
+                <StartIcon />
               </Button>
             </>
           )}
