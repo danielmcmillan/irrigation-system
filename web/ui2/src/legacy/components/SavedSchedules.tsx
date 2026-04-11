@@ -34,38 +34,40 @@ export const SavedScheduleRow: React.FC<{
   const empty = schedule.entries.length === 0;
   return (
     <Card variation="elevated">
-      <Flex direction="row" alignItems="center">
-        <span style={{ flex: 1 }}>{schedule.name}</span>
-        {!empty && (
-          <>
-            <SelectField
-              value={`${timeAfter}`}
-              onChange={(e) => setTimeAfter(+e.target.value)}
-              label="Start in"
-              labelHidden
-              shrink={0}
-            >
-              <option value={0}>Now</option>
-              <option value={60000}>1 minute</option>
-              <option value={300000}>5 minutes</option>
-              <option value={900000}>15 minutes</option>
-              <option value={3600000}>1 hour</option>
-            </SelectField>
-            <Button variation="primary" onClick={() => onStart({ time: timeAfter })} shrink={0}>
-              <StartIcon />
-            </Button>
-            <Button
-              isDisabled={!isScheduleActive}
-              onClick={() => onStart({ next: true })}
-              shrink={0}
-            >
-              Start next
-            </Button>
-          </>
-        )}
-        <Button variation="menu" onClick={() => onEdit()}>
-          <EditIcon />
-        </Button>
+      <Flex direction="row" wrap="wrap" justifyContent="flex-end">
+        <span style={{ flexGrow: 1 }}>{schedule.name}</span>
+        <Flex direction="row" alignItems="center" justifyContent="flex-end">
+          {!empty && (
+            <>
+              <SelectField
+                value={`${timeAfter}`}
+                onChange={(e) => setTimeAfter(+e.target.value)}
+                label="Start in"
+                labelHidden
+                shrink={0}
+              >
+                <option value={0}>Now</option>
+                <option value={60000}>1 minute</option>
+                <option value={300000}>5 minutes</option>
+                <option value={900000}>15 minutes</option>
+                <option value={3600000}>1 hour</option>
+              </SelectField>
+              <Button variation="primary" onClick={() => onStart({ time: timeAfter })} shrink={0}>
+                <StartIcon />
+              </Button>
+              <Button
+                isDisabled={!isScheduleActive}
+                onClick={() => onStart({ next: true })}
+                shrink={0}
+              >
+                Start next
+              </Button>
+            </>
+          )}
+          <Button variation="menu" onClick={() => onEdit()}>
+            <EditIcon />
+          </Button>
+        </Flex>
       </Flex>
     </Card>
   );
