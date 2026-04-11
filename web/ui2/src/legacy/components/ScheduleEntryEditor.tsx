@@ -23,6 +23,7 @@ export interface EntryEntryProps {
   onDelete: () => void;
   onCancel: () => void;
   relativeOnly?: boolean;
+  lastTime?: number;
 }
 
 const defaultStartIn = 0;
@@ -86,21 +87,25 @@ const PropertySelector: React.FC<{
   );
 });
 
-const getDurationBaseTime = (now: number, relativeTo: number | undefined, timeOffset: number | undefined) =>
-  (relativeTo ?? now) + (timeOffset ?? 0);
+const getDurationBaseTime = (
+  now: number,
+  relativeTo: number | undefined,
+  timeOffset: number | undefined,
+) => (relativeTo ?? now) + (timeOffset ?? 0);
 const calculateRelativeTime = (
   absoluteTime: number,
   relativeTo: number | undefined,
-  timeOffset: number | undefined
+  timeOffset: number | undefined,
 ) =>
   Math.max(
     0,
-    Math.round((absoluteTime - getDurationBaseTime(Date.now(), relativeTo, timeOffset)) / 60000) * 60000
+    Math.round((absoluteTime - getDurationBaseTime(Date.now(), relativeTo, timeOffset)) / 60000) *
+      60000,
   );
 const calculateAbsoluteTime = (
   relativeTime: number,
   relativeTo: number | undefined,
-  timeOffset: number | undefined
+  timeOffset: number | undefined,
 ) => getDurationBaseTime(Date.now(), relativeTo, timeOffset) + relativeTime;
 export const TimeDurationInput: React.FC<{
   label: string;
@@ -116,12 +121,24 @@ export const TimeDurationInput: React.FC<{
   min?: number;
   max?: number;
 }> = observer(
-  ({ label, relativeOnly, relativeTime, onChange, absoluteTime, relativeTo, timeOffset, min, max }) => {
+  ({
+    label,
+    relativeOnly,
+    relativeTime,
+    onChange,
+    absoluteTime,
+    relativeTo,
+    timeOffset,
+    min,
+    max,
+  }) => {
     const [calculatedRelativeTime, setCalculatedRelativeTime] = useState(
-      () => relativeTime ?? calculateRelativeTime(absoluteTime, relativeTo, timeOffset)
+      () => relativeTime ?? calculateRelativeTime(absoluteTime, relativeTo, timeOffset),
     );
     const [calculatedAbsoluteTime, setCalculatedAbsoluteTime] = useState(() =>
-      relativeTime && !relativeOnly ? calculateAbsoluteTime(relativeTime, relativeTo, timeOffset) : absoluteTime
+      relativeTime && !relativeOnly
+        ? calculateAbsoluteTime(relativeTime, relativeTo, timeOffset)
+        : absoluteTime,
     );
     useEffect(() => {
       const calculate = () => {
@@ -132,6 +149,7 @@ export const TimeDurationInput: React.FC<{
           setCalculatedAbsoluteTime(calculateAbsoluteTime(relativeTime, relativeTo, timeOffset));
         } else {
           setCalculatedRelativeTime(calculateRelativeTime(absoluteTime, relativeTo, timeOffset));
+          setCalculatedAbsoluteTime(absoluteTime);
         }
       };
       const interval = setInterval(calculate, 1000);
@@ -192,21 +210,30 @@ export const TimeDurationInput: React.FC<{
         </Grid>
       </Fieldset>
     );
-  }
+  },
 );
 
 export const ScheduleEntryEditor: React.FC<EntryEntryProps> = observer(
-  ({ properties, defaultEntry, editing, onSave, onDelete, onCancel, relativeOnly }) => {
+  ({
+    properties,
+    defaultEntry,
+    editing,
+    onSave,
+    onDelete,
+    onCancel,
+    relativeOnly,
+    lastTime,
+  }) => {
     const getNow = relativeOnly ? () => 0 : () => Date.now();
     const [entry, setEntry] = useState<ScheduleEntry>(getDefaultEntry(getNow(), defaultEntry));
     // Relative schedule times. Won't be set when editing until a change is made
     const [relativeStartTime, setRelativeStartTime] = useState(
-      editing ? undefined : defaultStartIn
+      editing ? undefined : defaultStartIn,
     );
     const [runTime, setRunTime] = useState(
       defaultEntry?.endTime && defaultEntry?.startTime
         ? defaultEntry.endTime - defaultEntry.startTime
-        : defaultRunTime
+        : defaultRunTime,
     );
     // useEffect(() => {
     //   setEntry(getDefaultEntry(defaultEntry));
@@ -251,6 +278,16 @@ export const ScheduleEntryEditor: React.FC<EntryEntryProps> = observer(
           onChange={setRelativeStartTime}
           absoluteTime={entry.startTime}
         />
+        {!!lastTime && (
+          <Button
+            onClick={() => {
+              setEntry((entry) => ({ ...entry, startTime: lastTime }));
+              setRelativeStartTime(undefined);
+            }}
+          >
+            After last
+          </Button>
+        )}
         <TimeDurationInput
           label="Run for"
           relativeOnly={relativeOnly}
@@ -268,5 +305,5 @@ export const ScheduleEntryEditor: React.FC<EntryEntryProps> = observer(
         )}
       </Flex>
     );
-  }
+  },
 );

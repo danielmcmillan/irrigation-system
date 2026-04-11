@@ -45,6 +45,7 @@ import { ScheduleEntryEditor } from "./ScheduleEntryEditor";
 import { ScheduleList } from "./ScheduleList";
 import { ScheduleStatusAlert } from "./ScheduleStatusAlert";
 import { Vacon100Tool } from "./Vacon100Tool";
+import { SavedSchedule } from "../irrigation/schedule";
 
 const LogEntryCard = ({ entry }: { entry: LogEntry }) => {
   const variation = (
@@ -462,6 +463,10 @@ const App = observer(
                 ? icu.scheduleEntries[scheduleEntryIndex]
                 : { propertyIds: scheduleEntryDefaultPropertyIds }
             }
+            lastTime={icu.scheduleEntries.reduce<number | undefined>(
+              (prev, e, i) => (prev && i !== scheduleEntryIndex ? Math.max(prev, e.endTime) : prev),
+              icu.scheduleEntries[0]?.endTime,
+            )}
             editing={scheduleEntryIndex >= 0}
             onSave={(entry) => {
               // Snap entry start time to other entry end time if one is close
@@ -517,15 +522,20 @@ const App = observer(
         scheduleEntryIndex !== undefined &&
         icu.savedSchedulesLoaded
       ) {
+        const schedule: SavedSchedule | undefined = icu.savedSchedules[savedScheduleIndex];
         return (
           <ScheduleEntryEditor
             relativeOnly={true}
             properties={icu.propertiesWithComponents.filter((p) => p.mutable)}
             defaultEntry={
               savedScheduleIndex >= 0 && scheduleEntryIndex >= 0
-                ? icu.savedSchedules[savedScheduleIndex]?.entries[scheduleEntryIndex]
+                ? schedule?.entries[scheduleEntryIndex]
                 : {}
             }
+            lastTime={schedule?.entries.reduce<number | undefined>(
+              (prev, e, i) => (prev && i !== scheduleEntryIndex ? Math.max(prev, e.endTime) : prev),
+              schedule?.entries[0]?.endTime,
+            )}
             editing={scheduleEntryIndex >= 0}
             onSave={(entry) => {
               let newEntries = icu.savedSchedules[savedScheduleIndex]?.entries ?? [];
