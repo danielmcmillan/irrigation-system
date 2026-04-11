@@ -1,6 +1,6 @@
 import { DeviceStatus } from "../deviceStatus.js";
 import { Alert, Device } from "./device.js";
-import { DeviceSchedule, ScheduleStatus } from "./schedule.js";
+import { DeviceSavedSchedules, DeviceSchedule, ScheduleStatus } from "./schedule.js";
 import { WebPushSubscription } from "./webPush.js";
 
 export type RequestMessage<Action extends string = string, Params extends object = {}> = Params & {
@@ -9,7 +9,7 @@ export type RequestMessage<Action extends string = string, Params extends object
 };
 export type ResponseMessage<
   Action extends string = string,
-  Params extends object = {}
+  Params extends object = {},
 > = RequestMessage<Action, Params> & {
   error?: {
     message: string;
@@ -17,7 +17,7 @@ export type ResponseMessage<
 };
 export type ServerEventMessage<
   Type extends string = string,
-  Params extends object = {}
+  Params extends object = {},
 > = Params & {
   type: Type;
 };
@@ -118,3 +118,19 @@ export type DeviceGetScheduleRequest = RequestMessage<"device/getSchedule", { de
 export type DeviceGetScheduleResponse = ResponseMessage<"device/getSchedule", DeviceSchedule>;
 export type DeviceSetScheduleRequest = RequestMessage<"device/setSchedule", DeviceSchedule>;
 export type DeviceSetScheduleResponse = ResponseMessage<"device/setSchedule", DeviceSchedule>;
+export type DeviceGetSavedSchedulesRequest = RequestMessage<
+  "device/getSavedSchedules",
+  { deviceId: string }
+>;
+export type DeviceGetSavedSchedulesResponse = ResponseMessage<
+  "device/getSavedSchedules",
+  DeviceSavedSchedules
+>;
+export type DeviceSetSavedSchedulesRequest = RequestMessage<
+  "device/setSavedSchedules",
+  DeviceSavedSchedules
+>;
+export type DeviceSetSavedSchedulesResponse = ResponseMessage<
+  "device/setSavedSchedules",
+  DeviceSavedSchedules
+>;

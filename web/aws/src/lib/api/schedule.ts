@@ -10,6 +10,11 @@ export interface DeviceSchedule {
   }>;
 }
 
+export interface DeviceSavedSchedules {
+  deviceId: string;
+  schedules: object[];
+}
+
 export interface ScheduleStatus {
   deviceId: string;
   /** Timestamp for the next scheduled change (next start/end time after now) */

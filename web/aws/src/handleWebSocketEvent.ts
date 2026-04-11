@@ -5,9 +5,13 @@ import {
   DeviceControllerCommandRequest,
   DeviceGetConfigRequest,
   DeviceGetConfigResponse,
+  DeviceGetSavedSchedulesRequest,
+  DeviceGetSavedSchedulesResponse,
   DeviceGetScheduleRequest,
   DeviceGetScheduleResponse,
   DeviceSetConfigRequest,
+  DeviceSetSavedSchedulesRequest,
+  DeviceSetSavedSchedulesResponse,
   DeviceSetScheduleRequest,
   DeviceSetScheduleResponse,
   GetPropertyHistoryRequest,
@@ -44,7 +48,7 @@ const scheduleManager = new IrrigationScheduleManager({
 });
 
 export async function handleWebSocketEvent(
-  event: APIGatewayProxyWebsocketEventV2
+  event: APIGatewayProxyWebsocketEventV2,
 ): Promise<APIGatewayProxyResultV2> {
   console.debug("WebSocket event", {
     type: event.requestContext.eventType,
@@ -76,7 +80,7 @@ export async function handleWebSocketEvent(
               message: "Notification received successfully!",
             },
             store,
-            { endpoint: request.subscription.endpoint, deviceId: request.deviceId }
+            { endpoint: request.subscription.endpoint, deviceId: request.deviceId },
           );
           response = data;
         } else if (data.action === "device/subscribe") {
@@ -84,7 +88,7 @@ export async function handleWebSocketEvent(
           // Subscribe the client to updates for the requested devices
           await store.addWebSocketClient(
             { connectionId, deviceIds: request.deviceIds },
-            WEB_SOCKET_CLIENT_TTL
+            WEB_SOCKET_CLIENT_TTL,
           );
           // Respond with the current state of the requested devices
           // TODO - consistency issue for updates happening at subscription time?
@@ -97,7 +101,7 @@ export async function handleWebSocketEvent(
             requestId: request.requestId,
             devices: getDevices(
               devices.filter((device) => request.deviceIds.includes(device.deviceId)),
-              properties
+              properties,
             ),
             scheduleStatus: scheduleStates.map((state) => getScheduleStatus(state)),
           };
@@ -106,7 +110,7 @@ export async function handleWebSocketEvent(
           const request = data as SetPropertyRequest;
           const { controllerId, propertyId } = parsePropertyId(request.propertyId);
           await iotData.send(
-            createSetPropertyCommand(request.deviceId, controllerId, propertyId, request.value)
+            createSetPropertyCommand(request.deviceId, controllerId, propertyId, request.value),
           );
           const setPropertyResponse: SetPropertyResponse = {
             action: request.action,
@@ -131,7 +135,7 @@ export async function handleWebSocketEvent(
                 propertyId,
               },
               Date.now() / 1000 - 14 * 24 * 3600,
-              Date.now() / 1000
+              Date.now() / 1000,
             ),
           ]);
           const controllerDefinitions = getConfiguredDeviceControllerDefinitions(device?.config);
@@ -140,7 +144,7 @@ export async function handleWebSocketEvent(
             ?.getProperties()
             .find(
               (property) =>
-                property.propertyId === propertyId && property.format.bitIndex === bitIndex
+                property.propertyId === propertyId && property.format.bitIndex === bitIndex,
             );
           if (propertyDefinition) {
             const propertyHistoryResponse: GetPropertyHistoryResponse = {
@@ -193,7 +197,7 @@ export async function handleWebSocketEvent(
                 topic: `icu-in/${request.deviceId}/setConfig`,
                 payload: Buffer.from(request.config, "base64"),
                 qos: 1,
-              })
+              }),
             );
             response = { action: request.action, requestId: request.requestId };
           } else {
@@ -218,7 +222,7 @@ export async function handleWebSocketEvent(
               topic: `icu-in/${request.deviceId}/command`,
               payload,
               qos: 1,
-            })
+            }),
           );
           response = { action: request.action, requestId: request.requestId };
         } else if (data.action === "device/getSchedule") {
@@ -230,7 +234,7 @@ export async function handleWebSocketEvent(
             requestId: request.requestId,
             entries: schedule.entries.map((entry) => ({
               propertyIds: entry.properties.map((num) =>
-                getPropertyId(num >> 16, num & 0xffff, undefined)
+                getPropertyId(num >> 16, num & 0xffff, undefined),
               ),
               startTime: entry.startTime,
               endTime: entry.endTime,
@@ -264,6 +268,26 @@ export async function handleWebSocketEvent(
             entries: request.entries,
           };
           response = setScheduleResponse;
+        } else if (data.action === "device/getSavedSchedules") {
+          const request = data as DeviceGetSavedSchedulesRequest;
+          const schedules = await store.getSavedSchedules(request.deviceId);
+          const getSavedSchedulesResponse: DeviceGetSavedSchedulesResponse = {
+            action: request.action,
+            deviceId: request.deviceId,
+            requestId: request.requestId,
+            schedules,
+          };
+          response = getSavedSchedulesResponse;
+        } else if (data.action === "device/setSavedSchedules") {
+          const request = data as DeviceSetSavedSchedulesRequest;
+          await store.setSavedSchedules(request.deviceId, request.schedules);
+          const setSavedSchedulesResponse: DeviceSetSavedSchedulesResponse = {
+            action: request.action,
+            requestId: request.requestId,
+            deviceId: request.deviceId,
+            schedules: request.schedules,
+          };
+          response = setSavedSchedulesResponse;
         } else {
           response = {
             action: data.action,

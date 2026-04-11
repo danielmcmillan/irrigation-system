@@ -90,6 +90,10 @@ const tableKeys: {
     pk: KeyDefinition<{}>;
     sk: KeyDefinition<{ deviceId: string }>;
   };
+  savedSchedules: {
+    pk: KeyDefinition<{}>;
+    sk: KeyDefinition<{ deviceId: string }>;
+  };
   webSocketClient: {
     pk: KeyDefinition<{}>;
     sk: KeyDefinition<{ connectionId: string }>;
@@ -143,6 +147,13 @@ const tableKeys: {
     pk: [
       { value: 0x00, type: KeyPartType.uint8 },
       { value: 0x03, type: KeyPartType.uint8 },
+    ],
+    sk: [{ field: "deviceId", type: KeyPartType.utf8 }],
+  },
+  savedSchedules: {
+    pk: [
+      { value: 0x00, type: KeyPartType.uint8 },
+      { value: 0x04, type: KeyPartType.uint8 },
     ],
     sk: [{ field: "deviceId", type: KeyPartType.utf8 }],
   },
@@ -620,6 +631,49 @@ export class IrrigationDataStore {
         Key: {
           pk: buildBinaryKey(tableKeys.schedule.pk, {}),
           sk: buildBinaryKey(tableKeys.schedule.sk, { deviceId }),
+        },
+        ExpressionAttributeNames: names,
+        ExpressionAttributeValues: values,
+        UpdateExpression: updateExpression,
+      })
+    );
+  }
+
+  /**
+   * Get the saved schedules for a device
+   */
+  async getSavedSchedules(deviceId: string): Promise<object[]> {
+    const result = await this.db.send(
+      new QueryCommand({
+        TableName: this.tableName,
+        KeyConditionExpression: "pk = :pk AND sk = :sk",
+        ExpressionAttributeValues: {
+          ":pk": buildBinaryKey(tableKeys.savedSchedules.pk, {}),
+          ":sk": buildBinaryKey(tableKeys.savedSchedules.sk, { deviceId }),
+        },
+      })
+    );
+    const item = result.Items?.[0];
+    return item?.s ?? [];
+  }
+
+  /**
+   * Set the saved schedules for a device
+   */
+  async setSavedSchedules(deviceId: string, schedules: object[]): Promise<void> {
+    const names: Record<string, string> = {};
+    const values: Record<string, unknown> = {};
+
+    names["#s"] = "s";
+    values[":s"] = schedules;
+    const updateExpression = "SET #s = :s";
+
+    await this.db.send(
+      new UpdateCommand({
+        TableName: this.tableName,
+        Key: {
+          pk: buildBinaryKey(tableKeys.savedSchedules.pk, {}),
+          sk: buildBinaryKey(tableKeys.savedSchedules.sk, { deviceId }),
         },
         ExpressionAttributeNames: names,
         ExpressionAttributeValues: values,
