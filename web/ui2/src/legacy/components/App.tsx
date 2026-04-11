@@ -22,13 +22,17 @@ import {
   useTheme,
 } from "@aws-amplify/ui-react";
 import "@aws-amplify/ui-react/styles.css";
+import DeleteIcon from "@mui/icons-material/Delete";
+import EditIcon from "@mui/icons-material/Edit";
 import AddScheduleIcon from "@mui/icons-material/MoreTime";
 import ScheduleIcon from "@mui/icons-material/Schedule";
+import SavedScheduleIcon from "@mui/icons-material/ViewTimeline";
 import { intlFormatDistance } from "date-fns";
 import { runInAction } from "mobx";
 import { observer } from "mobx-react-lite";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { ReadyState } from "react-use-websocket";
+import { WebPushStatus } from "../../services/webPush";
 import { LogEntry, LogLevel, getLogLevelString, logLevels } from "../irrigation/log";
 import { IrrigationProperty, PropertyType } from "../irrigation/property";
 import { DeviceComponentDefinition, IrrigationStore } from "../irrigation/store";
@@ -36,11 +40,11 @@ import "./App.css";
 import { IniConfigEditor } from "./IniConfigEditor";
 import { PropertyHistory } from "./PropertyHistory";
 import { RemoteUnitTool } from "./RemoteUnitTool";
+import { SavedSchedules } from "./SavedSchedules";
 import { ScheduleEntryEditor } from "./ScheduleEntryEditor";
 import { ScheduleList } from "./ScheduleList";
 import { ScheduleStatusAlert } from "./ScheduleStatusAlert";
 import { Vacon100Tool } from "./Vacon100Tool";
-import { WebPushStatus } from "../../services/webPush";
 
 const LogEntryCard = ({ entry }: { entry: LogEntry }) => {
   const variation = (
@@ -73,7 +77,7 @@ const LogEntries = observer(({ icu }: { icu: IrrigationStore }) => {
   const showStates = Object.fromEntries(logLevels.map((level) => [level, useState(true)]));
   const logs = useMemo(
     () => icu.log.filter((entry) => showStates[entry.level][0]).reverse(),
-    [icu.log.at(-1)?.id, showStates[0][0], showStates[1][0], showStates[2][0]]
+    [icu.log.at(-1)?.id, showStates[0][0], showStates[1][0], showStates[2][0]],
   );
 
   return (
@@ -122,7 +126,7 @@ const PropertyBooleanControl = ({
       // Optimistically update the local value
       setLocalValue(newValue);
     },
-    [setLocalValue, desiredValue, onDesiredValueChange]
+    [setLocalValue, desiredValue, onDesiredValueChange],
   );
   const isChanging = desiredValue !== localValue;
 
@@ -175,10 +179,12 @@ const PropertyControls = observer(
     icu,
     openHistory,
     openScheduleList,
+    openSavedSchedules,
   }: {
     icu: IrrigationStore;
     openHistory: (propertyId: string) => void;
     openScheduleList: (propertyId?: string) => void;
+    openSavedSchedules: () => void;
   }) => {
     const { tokens } = useTheme();
     const [filter, setFilter] = useState("all");
@@ -216,8 +222,21 @@ const PropertyControls = observer(
             <ToggleButton value="control">Control</ToggleButton>
             <ToggleButton value="monitor">Monitor</ToggleButton>
           </ToggleButtonGroup>
-          <Button onClick={() => openScheduleList()} size="large" variation="link">
+          <Button
+            onClick={() => openScheduleList()}
+            size="large"
+            variation="link"
+            title="Active schedule"
+          >
             <ScheduleIcon fontSize="small" />
+          </Button>
+          <Button
+            onClick={() => openSavedSchedules()}
+            size="large"
+            variation="link"
+            title="Saved schedules"
+          >
+            <SavedScheduleIcon fontSize="small" />
           </Button>
         </Flex>
         <Table variation="bordered">
@@ -248,8 +267,8 @@ const PropertyControls = observer(
                     (value === undefined
                       ? "-"
                       : typeof value === "number"
-                      ? (+value.toFixed(2)).toString()
-                      : value.toString()) +
+                        ? (+value.toFixed(2)).toString()
+                        : value.toString()) +
                     suffix +
                     " ";
                   return (
@@ -319,13 +338,13 @@ const PropertyControls = observer(
                     </TableRow>
                   );
                 }),
-              ]
+              ],
             )}
           </TableBody>
         </Table>
       </Flex>
     );
-  }
+  },
 );
 
 const App = observer(
@@ -342,19 +361,20 @@ const App = observer(
     const [tabValue, setTabValue] = useState<string>("properties");
 
     const [openPage, setOpenPage] = useState<
-      "config" | "vaconTool" | "remoteUnitTool" | "history" | "schedule" | null
+      "config" | "vaconTool" | "remoteUnitTool" | "history" | "schedule" | "savedSchedule" | null
     >(null);
     const [scheduleEntryIndex, setScheduleEntryIndex] = useState<number | undefined>();
     const [scheduleEntryDefaultPropertyIds, setScheduleEntryDefaultPropertyIds] = useState<
       string[]
     >([]);
+    const [savedScheduleIndex, setSavedScheduleIndex] = useState<number | undefined>();
     const onClose = useCallback(() => setOpenPage(null), [setOpenPage]);
     const openPropertyHistory = useCallback(
       (propertyId: string) => {
         icu.requestPropertyHistory(propertyId);
         setOpenPage("history");
       },
-      [setOpenPage]
+      [setOpenPage],
     );
     const openScheduleList = useCallback(
       (propertyId?: string) => {
@@ -367,53 +387,15 @@ const App = observer(
           setScheduleEntryDefaultPropertyIds([]);
         }
       },
-      [setOpenPage]
+      [setOpenPage],
     );
+    const openSavedSchedules = useCallback(() => {
+      icu.requestSavedSchedules();
+      icu.requestSchedule();
+      setOpenPage("savedSchedule");
+      setSavedScheduleIndex(undefined);
+    }, [setOpenPage]);
 
-    if (scheduleEntryIndex !== undefined && icu.scheduleLoaded) {
-      return (
-        <ScheduleEntryEditor
-          properties={icu.propertiesWithComponents.filter((p) => p.mutable)}
-          defaultEntry={
-            scheduleEntryIndex >= 0
-              ? icu.scheduleEntries[scheduleEntryIndex]
-              : { propertyIds: scheduleEntryDefaultPropertyIds }
-          }
-          editing={scheduleEntryIndex >= 0}
-          onSave={(entry) => {
-            // Snap entry start time to other entry end time if one is close
-            const otherEntry = icu.scheduleEntries.find(
-              (e, i) =>
-                i !== scheduleEntryIndex &&
-                e.endTime < entry.startTime + 60000 &&
-                e.endTime > entry.startTime - 60000
-            );
-            if (otherEntry) {
-              entry.endTime += otherEntry.endTime - entry.startTime;
-              entry.startTime = otherEntry.endTime;
-            }
-            if (scheduleEntryIndex >= 0 && scheduleEntryIndex < icu.scheduleEntries.length) {
-              icu.requestUpdateScheduleEntry(scheduleEntryIndex, entry);
-            } else if (scheduleEntryIndex === -1) {
-              icu.requestAddScheduleEntry(entry);
-            }
-            setScheduleEntryIndex(undefined);
-          }}
-          onCancel={() => setScheduleEntryIndex(undefined)}
-          onDelete={() => {
-            if (
-              !confirm(
-                "This will cancel the scheduled changes. If it had already started, it will be stopped."
-              )
-            ) {
-              return;
-            }
-            icu.requestDeleteScheduleEntry(scheduleEntryIndex);
-            setScheduleEntryIndex(undefined);
-          }}
-        />
-      );
-    }
     if (openPage === "config") {
       return (
         <IniConfigEditor
@@ -471,8 +453,53 @@ const App = observer(
         )
       );
     } else if (openPage === "schedule") {
+      if (scheduleEntryIndex !== undefined && icu.scheduleLoaded) {
+        return (
+          <ScheduleEntryEditor
+            properties={icu.propertiesWithComponents.filter((p) => p.mutable)}
+            defaultEntry={
+              scheduleEntryIndex >= 0
+                ? icu.scheduleEntries[scheduleEntryIndex]
+                : { propertyIds: scheduleEntryDefaultPropertyIds }
+            }
+            editing={scheduleEntryIndex >= 0}
+            onSave={(entry) => {
+              // Snap entry start time to other entry end time if one is close
+              const otherEntry = icu.scheduleEntries.find(
+                (e, i) =>
+                  i !== scheduleEntryIndex &&
+                  e.endTime < entry.startTime + 60000 &&
+                  e.endTime > entry.startTime - 60000,
+              );
+              if (otherEntry) {
+                entry.endTime += otherEntry.endTime - entry.startTime;
+                entry.startTime = otherEntry.endTime;
+              }
+              if (scheduleEntryIndex >= 0 && scheduleEntryIndex < icu.scheduleEntries.length) {
+                icu.requestUpdateScheduleEntry(scheduleEntryIndex, entry);
+              } else if (scheduleEntryIndex === -1) {
+                icu.requestAddScheduleEntry(entry);
+              }
+              setScheduleEntryIndex(undefined);
+            }}
+            onCancel={() => setScheduleEntryIndex(undefined)}
+            onDelete={() => {
+              if (
+                !confirm(
+                  "This will cancel the scheduled changes. If it had already started, it will be stopped.",
+                )
+              ) {
+                return;
+              }
+              icu.requestDeleteScheduleEntry(scheduleEntryIndex);
+              setScheduleEntryIndex(undefined);
+            }}
+          />
+        );
+      }
       return (
         <ScheduleList
+          title="Active schedule"
           entries={icu.scheduleEntries}
           loading={!icu.scheduleLoaded}
           onClose={onClose}
@@ -481,6 +508,133 @@ const App = observer(
           }}
           status={icu.scheduleStatus}
           properties={icu.propertiesWithComponents}
+        />
+      );
+    } else if (openPage === "savedSchedule") {
+      if (
+        savedScheduleIndex !== undefined &&
+        savedScheduleIndex >= 0 &&
+        scheduleEntryIndex !== undefined &&
+        icu.savedSchedulesLoaded
+      ) {
+        return (
+          <ScheduleEntryEditor
+            relativeOnly={true}
+            properties={icu.propertiesWithComponents.filter((p) => p.mutable)}
+            defaultEntry={
+              savedScheduleIndex >= 0 && scheduleEntryIndex >= 0
+                ? icu.savedSchedules[savedScheduleIndex]?.entries[scheduleEntryIndex]
+                : {}
+            }
+            editing={scheduleEntryIndex >= 0}
+            onSave={(entry) => {
+              let newEntries = icu.savedSchedules[savedScheduleIndex]?.entries ?? [];
+              // Snap entry start time to other entry end time if one is close
+              const otherEntry = newEntries.find(
+                (e, i) =>
+                  i !== scheduleEntryIndex &&
+                  e.endTime < entry.startTime + 60000 &&
+                  e.endTime > entry.startTime - 60000,
+              );
+              if (otherEntry) {
+                entry.endTime += otherEntry.endTime - entry.startTime;
+                entry.startTime = otherEntry.endTime;
+              }
+              if (scheduleEntryIndex >= 0 && scheduleEntryIndex < newEntries.length) {
+                newEntries = newEntries.map((e, i) => (i === scheduleEntryIndex ? entry : e));
+              } else if (scheduleEntryIndex === -1) {
+                newEntries = [...newEntries, entry];
+              }
+              if (savedScheduleIndex >= 0) {
+                icu.requestUpdateSavedSchedule(savedScheduleIndex, { entries: newEntries });
+              }
+              setScheduleEntryIndex(undefined);
+            }}
+            onCancel={() => setScheduleEntryIndex(undefined)}
+            onDelete={() => {
+              if (!confirm("Delete this entry from the saved schedule?")) {
+                return;
+              }
+              icu.requestUpdateSavedSchedule(savedScheduleIndex, {
+                entries: icu.savedSchedules[savedScheduleIndex].entries.filter(
+                  (_, j) => j !== scheduleEntryIndex,
+                ),
+              });
+              setScheduleEntryIndex(undefined);
+            }}
+          />
+        );
+      }
+      if (savedScheduleIndex !== undefined) {
+        const name = icu.savedSchedules[savedScheduleIndex]?.name;
+        return (
+          <ScheduleList
+            relativeOnly={true}
+            title={
+              <>
+                Edit saved schedule: {name}
+                <Button
+                  variation="menu"
+                  onClick={() => {
+                    const newName = prompt("Enter new name for saved schedule", name);
+                    if (newName) {
+                      icu.requestUpdateSavedSchedule(savedScheduleIndex, { name: newName });
+                    }
+                  }}
+                >
+                  <EditIcon />
+                </Button>
+                <Button
+                  variation="menu"
+                  onClick={() => {
+                    if (confirm(`Are you sure you want to delete schedule ${name}?`)) {
+                      icu.requestDeleteSavedSchedule(savedScheduleIndex);
+                      setSavedScheduleIndex(undefined);
+                    }
+                  }}
+                >
+                  <DeleteIcon />
+                </Button>
+              </>
+            }
+            entries={icu.savedSchedules[savedScheduleIndex]?.entries ?? []}
+            loading={!icu.savedSchedulesLoaded}
+            onClose={() => setSavedScheduleIndex(undefined)}
+            onEditEntry={(index) => {
+              setScheduleEntryIndex(index);
+            }}
+            status={undefined}
+            properties={icu.propertiesWithComponents}
+          />
+        );
+      }
+      return (
+        <SavedSchedules
+          savedSchedules={icu.savedSchedules}
+          isScheduleActive={!!icu.scheduleStatus?.lastEventTime}
+          loading={!icu.savedSchedulesLoaded}
+          onClose={onClose}
+          onNew={() => {
+            const name = prompt("Enter name for new schedule");
+            if (name) {
+              const newIndex = icu.savedSchedules.length;
+              icu.requestSetSavedSchedules([
+                ...icu.savedSchedules,
+                {
+                  name,
+                  entries: [],
+                },
+              ]);
+              setSavedScheduleIndex(newIndex);
+            }
+          }}
+          onEdit={(index) => {
+            setSavedScheduleIndex(index);
+          }}
+          onStart={(index, after) => {
+            icu.requestStartSavedSchedule(index, after);
+            setOpenPage("schedule");
+          }}
         />
       );
     }
@@ -524,6 +678,7 @@ const App = observer(
                   icu={icu}
                   openHistory={openPropertyHistory}
                   openScheduleList={openScheduleList}
+                  openSavedSchedules={openSavedSchedules}
                 />
               </>
             ),
@@ -591,7 +746,7 @@ const App = observer(
                       icu
                         .pushNotificationsSubscribe()
                         .then((success) =>
-                          alert(success ? "Subscribed successfully" : "Failed to subscribe")
+                          alert(success ? "Subscribed successfully" : "Failed to subscribe"),
                         )
                     }
                   >
@@ -614,8 +769,8 @@ const App = observer(
                           alert(
                             status === WebPushStatus.Active
                               ? "Sent a push notification for verification"
-                              : `Could not send test notification. Subscription status is ${WebPushStatus[status]}`
-                          )
+                              : `Could not send test notification. Subscription status is ${WebPushStatus[status]}`,
+                          ),
                         )
                     }
                   >
@@ -628,7 +783,7 @@ const App = observer(
         ]}
       ></Tabs>
     );
-  }
+  },
 );
 
 export default App;

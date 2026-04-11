@@ -1,16 +1,16 @@
 import { action, computed, makeObservable, observable, runInAction } from "mobx";
-import { LogEntry, LogLevel } from "./log";
-import { IrrigationProperty } from "./property";
 import { ReadyState } from "react-use-websocket";
+import { WebPush, WebPushStatus } from "../../services/webPush";
 import {
   deserializeConfigEntriesFromBinary,
   deserializeConfigEntriesFromIni,
   serializeConfigEntriesToBinary,
   serializeConfigEntriesToIni,
 } from "./config";
+import { LogEntry, LogLevel } from "./log";
+import { IrrigationProperty } from "./property";
+import { SavedSchedule, ScheduleEntry, ScheduleStatus } from "./schedule";
 import { arrayBufferToBase64, base64ToArrayBuffer } from "./util";
-import { ScheduleEntry, ScheduleStatus } from "./schedule";
-import { WebPush, WebPushStatus } from "../../services/webPush";
 
 export enum ControllerStatus {
   Unconfigured = "Unconfigured",
@@ -64,6 +64,8 @@ export class IrrigationStore {
   scheduleEntries: ScheduleEntry[] = [];
   scheduleLoaded = false;
   scheduleStatus: ScheduleStatus | undefined;
+  savedSchedulesLoaded = false;
+  savedSchedules: SavedSchedule[] = [];
   controllerCommandResults: ControllerCommandResult[] = [];
   readyState: ReadyState = ReadyState.CLOSED;
   connectEnabled: boolean = true;
@@ -78,7 +80,10 @@ export class IrrigationStore {
       };
   private sendJsonMessage: ((message: object) => void) | undefined;
 
-  constructor(public readonly controlDeviceId: string, public readonly webPush: WebPush) {
+  constructor(
+    public readonly controlDeviceId: string,
+    public readonly webPush: WebPush,
+  ) {
     this.log = [];
     makeObservable<this, "addLogEntries" | "updateProperties">(this, {
       log: observable,
@@ -90,6 +95,8 @@ export class IrrigationStore {
       scheduleEntries: observable,
       scheduleLoaded: observable,
       scheduleStatus: observable,
+      savedSchedules: observable,
+      savedSchedulesLoaded: observable,
       controllerCommandResults: observable,
       readyState: observable,
       connectEnabled: observable,
@@ -168,7 +175,7 @@ export class IrrigationStore {
         action: "device/setConfig",
         deviceId: this.controlDeviceId,
         config: arrayBufferToBase64(
-          serializeConfigEntriesToBinary(deserializeConfigEntriesFromIni(this.configIni))
+          serializeConfigEntriesToBinary(deserializeConfigEntriesFromIni(this.configIni)),
         ),
       });
     }
@@ -207,6 +214,55 @@ export class IrrigationStore {
         this.scheduleLoaded = false;
       });
     }
+  }
+
+  requestSavedSchedules() {
+    runInAction(() => {
+      this.savedSchedulesLoaded = false;
+    });
+    this.sendJsonMessage?.({
+      action: "device/getSavedSchedules",
+      deviceId: this.controlDeviceId,
+    });
+  }
+
+  requestUpdateSavedSchedule(index: number, schedule: Partial<SavedSchedule>) {
+    this.requestSetSavedSchedules(
+      this.savedSchedules.map((s, i) => (i === index ? { ...s, ...schedule } : s)),
+    );
+  }
+  requestDeleteSavedSchedule(index: number) {
+    this.requestSetSavedSchedules(this.savedSchedules.filter((_, i) => i !== index));
+  }
+  requestSetSavedSchedules(savedSchedules: SavedSchedule[]) {
+    if (this.savedSchedulesLoaded) {
+      this.sendJsonMessage?.({
+        action: "device/setSavedSchedules",
+        deviceId: this.controlDeviceId,
+        schedules: savedSchedules,
+      });
+      runInAction(() => {
+        this.savedSchedulesLoaded = false;
+      });
+    }
+  }
+  requestStartSavedSchedule(index: number, after?: { time?: number; next?: boolean }) {
+    let offset = Date.now();
+    if (after?.next) {
+      for (const entry of this.scheduleEntries) {
+        if (entry.endTime > offset) {
+          offset = entry.endTime;
+        }
+      }
+    } else if (after?.time) {
+      offset += after.time;
+    }
+    const entries = this.savedSchedules[index]?.entries.map((entry) => ({
+      ...entry,
+      startTime: entry.startTime + offset,
+      endTime: entry.endTime + offset,
+    }));
+    this.requestSetSchedule([...this.scheduleEntries, ...entries]);
   }
 
   requestControllerCommand(controllerId: number, commandData: ArrayBuffer) {
@@ -333,7 +389,7 @@ export class IrrigationStore {
                       values!.lastChanged && new Date(values!.lastChanged * 1000).toLocaleString(),
                   },
                 }));
-            })
+            }),
           );
         }
       }
@@ -358,7 +414,7 @@ export class IrrigationStore {
                 component: component ? `${component.typeName} ${component.name}` : undefined,
               },
             };
-          })
+          }),
         );
       }
     }
@@ -371,7 +427,7 @@ export class IrrigationStore {
 
     if (message.action === "device/getConfig" && !message.error) {
       const configIni = serializeConfigEntriesToIni(
-        deserializeConfigEntriesFromBinary(base64ToArrayBuffer(message.config))
+        deserializeConfigEntriesFromBinary(base64ToArrayBuffer(message.config)),
       );
       runInAction(() => {
         this.configIni = configIni;
@@ -391,7 +447,7 @@ export class IrrigationStore {
       } else {
         console.error(
           `Received controller command result for unknown command ID ${commandId}`,
-          message
+          message,
         );
       }
     }
@@ -405,6 +461,18 @@ export class IrrigationStore {
         });
       } else {
         console.error("Received unexpected device schedule message", message);
+      }
+    }
+
+    if (message.action === "device/getSavedSchedules" || message.action === "device/setSavedSchedules") {
+      if (message.deviceId === this.controlDeviceId && Array.isArray(message.schedules)) {
+        console.debug("Got saved schedules", message.schedules);
+        runInAction(() => {
+          this.savedSchedules = message.schedules;
+          this.savedSchedulesLoaded = true;
+        });
+      } else {
+        console.error("Received unexpected device saved schedules message", message);
       }
     }
 

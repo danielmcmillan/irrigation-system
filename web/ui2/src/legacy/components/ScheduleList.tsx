@@ -1,4 +1,4 @@
-import { Badge, Button, Collection, Flex, Loader } from "@aws-amplify/ui-react";
+import { Badge, Button, Collection, Flex, Heading, Loader } from "@aws-amplify/ui-react";
 import AddScheduleIcon from "@mui/icons-material/MoreTime";
 import { format, formatDuration } from "date-fns";
 import { observer } from "mobx-react-lite";
@@ -8,17 +8,22 @@ import { ScheduleStatusAlert } from "./ScheduleStatusAlert";
 import { useNow } from "./useNow";
 
 export interface ScheduleProps {
+  title?: string | React.ReactNode;
   entries: ScheduleEntry[];
   loading: boolean;
   onClose: () => void;
   onEditEntry: (index: number) => void;
   properties: IrrigationPropertyWithComponent[];
   status: ScheduleStatus | undefined;
+  relativeOnly?: boolean;
 }
 
 export const ScheduleList: React.FC<ScheduleProps> = observer(
-  ({ entries, loading, onClose, onEditEntry, properties, status }) => {
-    const now = useNow();
+  ({ title, entries, loading, onClose, onEditEntry, properties, status, relativeOnly }) => {
+    let now = useNow();
+    if (relativeOnly) {
+      now = 0;
+    }
     const sortedEntries = entries
       .map((entry, index) => ({ ...entry, index }))
       .sort((a, b) => {
@@ -31,15 +36,20 @@ export const ScheduleList: React.FC<ScheduleProps> = observer(
         }
       });
     return (
-      <Flex direction="column" margin="1em">
-        <Button onClick={onClose}>Close</Button>
-        <ScheduleStatusAlert
-          status={status}
-          properties={properties}
-          showWhenInactive
-          marginLeft="-1em"
-          marginRight="-1em"
-        />
+      <Flex direction="column" padding="1em">
+        <Flex direction="row" alignItems="center">
+          <Button onClick={onClose}>Close</Button>
+          <Heading level={4}>{title}</Heading>
+        </Flex>
+        {status && (
+          <ScheduleStatusAlert
+            status={status}
+            properties={properties}
+            showWhenInactive
+            marginLeft="-1em"
+            marginRight="-1em"
+          />
+        )}
         {loading && <Loader alignSelf="center" />}
         {!loading && (
           <Button onClick={() => onEditEntry(-1)} gap="0.2em">
@@ -62,15 +72,18 @@ export const ScheduleList: React.FC<ScheduleProps> = observer(
               (time) => {
                 const relativeTime = Math.abs(time - now);
                 if (relativeTime < 5000) {
-                  return "now";
+                  return !relativeOnly ? "now" : "immediately";
                 }
                 const durationText = formatDuration({
                   hours: Math.floor(relativeTime / 3600000),
                   minutes: Math.round((relativeTime % 3600000) / 60000),
                   seconds: relativeTime < 30000 ? Math.round(relativeTime / 1000) : undefined,
                 });
+                if (relativeOnly) {
+                  return `after ${durationText}`;
+                }
                 return time < now ? `${durationText} ago` : `in ${durationText}`;
-              }
+              },
             );
             const runTime = entry.endTime - entry.startTime;
             const runTimeText = formatDuration({
@@ -89,12 +102,18 @@ export const ScheduleList: React.FC<ScheduleProps> = observer(
                 alignItems="flex-start"
                 gap="0.5em"
               >
-                {pending && (
+                {relativeOnly && (
+                  <>
+                    <span>Starts {relativeStartText}</span>
+                    <span>For {runTimeText}</span>
+                  </>
+                )}
+                {!relativeOnly && pending && (
                   <span>
                     Starting {relativeStartText} ({startTimeText})
                   </span>
                 )}
-                {started && (
+                {!relativeOnly && started && (
                   <Flex alignItems="flex-start">
                     <Badge variation={"success"}>Started</Badge>
                     <span>
@@ -102,7 +121,7 @@ export const ScheduleList: React.FC<ScheduleProps> = observer(
                     </span>
                   </Flex>
                 )}
-                {aborted && (
+                {!relativeOnly && aborted && (
                   <Flex alignItems="flex-start">
                     <Badge variation={"error"}>Aborted</Badge>
                     <span>
@@ -110,17 +129,17 @@ export const ScheduleList: React.FC<ScheduleProps> = observer(
                     </span>
                   </Flex>
                 )}
-                {pending && (
+                {!relativeOnly && pending && (
                   <span>
                     For {runTimeText} ({endTimeText})
                   </span>
                 )}
-                {started && (
+                {!relativeOnly && started && (
                   <span>
                     Ending {relativeEndText} ({endTimeText})
                   </span>
                 )}
-                {stopped && (
+                {!relativeOnly && stopped && (
                   <span>
                     Ended {relativeEndText} ({startTimeText} to {endTimeText})
                   </span>
@@ -137,5 +156,5 @@ export const ScheduleList: React.FC<ScheduleProps> = observer(
         </Collection>
       </Flex>
     );
-  }
+  },
 );

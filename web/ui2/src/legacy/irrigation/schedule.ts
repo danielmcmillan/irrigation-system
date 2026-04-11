@@ -15,3 +15,8 @@ export interface ScheduleStatus {
     since?: number;
   }>;
 }
+
+export interface SavedSchedule {
+  name: string;
+  entries: ScheduleEntry[];
+}
