@@ -214,16 +214,7 @@ export const TimeDurationInput: React.FC<{
 );
 
 export const ScheduleEntryEditor: React.FC<EntryEntryProps> = observer(
-  ({
-    properties,
-    defaultEntry,
-    editing,
-    onSave,
-    onDelete,
-    onCancel,
-    relativeOnly,
-    lastTime,
-  }) => {
+  ({ properties, defaultEntry, editing, onSave, onDelete, onCancel, relativeOnly, lastTime }) => {
     const getNow = relativeOnly ? () => 0 : () => Date.now();
     const [entry, setEntry] = useState<ScheduleEntry>(getDefaultEntry(getNow(), defaultEntry));
     // Relative schedule times. Won't be set when editing until a change is made
@@ -278,16 +269,32 @@ export const ScheduleEntryEditor: React.FC<EntryEntryProps> = observer(
           onChange={setRelativeStartTime}
           absoluteTime={entry.startTime}
         />
-        {!!lastTime && (
+        <Flex direction="row">
+          {!!lastTime && (
+            <Button
+              onClick={() => {
+                setEntry((entry) => ({ ...entry, startTime: lastTime }));
+                setRelativeStartTime(undefined);
+              }}
+            >
+              After last
+            </Button>
+          )}
           <Button
             onClick={() => {
-              setEntry((entry) => ({ ...entry, startTime: lastTime }));
-              setRelativeStartTime(undefined);
+              setRelativeStartTime(300000);
             }}
           >
-            After last
+            5 minutes
           </Button>
-        )}
+          <Button
+            onClick={() => {
+              setRelativeStartTime(900000);
+            }}
+          >
+            15 minutes
+          </Button>
+        </Flex>
         <TimeDurationInput
           label="Run for"
           relativeOnly={relativeOnly}
@@ -298,6 +305,29 @@ export const ScheduleEntryEditor: React.FC<EntryEntryProps> = observer(
           timeOffset={relativeStartTime}
           min={60000}
         />
+        <Flex direction="row">
+          <Button
+            onClick={() => {
+              setRunTime(300000);
+            }}
+          >
+            5 minutes
+          </Button>
+          <Button
+            onClick={() => {
+              setRunTime(900000);
+            }}
+          >
+            15 minutes
+          </Button>
+          <Button
+            onClick={() => {
+              setRunTime(3600000);
+            }}
+          >
+            1 hour
+          </Button>
+        </Flex>
         {editing && (
           <Button onClick={onDelete} alignSelf="flex-start" variation="destructive">
             Cancel
